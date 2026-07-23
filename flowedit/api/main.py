@@ -125,6 +125,7 @@ async def synthesize_text(
     text: str = Form(..., description="Text to synthesize"),
     language: str = Form("en", description="Language code"),
     speaker_wav: UploadFile = File(..., description="Speaker reference audio for voice conditioning"),
+    ref_text: Optional[str] = Form(None, description="Optional transcription of the speaker audio. If empty, Whisper will auto-transcribe."),
 ):
     """
     Synthesize text, automatically applying learned corrections.
@@ -150,26 +151,37 @@ async def synthesize_text(
         
         corrections_applied = (gate_values > 0.5).sum().item()
         max_gate = gate_values.max().item() if gate_values.numel() > 0 else 0.0
+        diff_norm = torch.norm(corrected_embeddings - base_embeddings).item()
+        
         print(f"[Synthesize] Memory size: {pipeline.memory.size}, "
               f"Corrections applied: {corrections_applied}, "
-              f"Max gate: {max_gate:.4f}")
-        
-        if corrections_applied > 0:
-            # Log embedding difference to confirm corrections are real
-            diff_norm = torch.norm(corrected_embeddings - base_embeddings).item()
-            print(f"[Synthesize] Embedding diff norm: {diff_norm:.4f} "
-                  f"(should be >> 0 if corrections are active)")
+              f"Max gate: {max_gate:.4f}, "
+              f"Embedding diff norm: {diff_norm:.4f}")
         
         # Step 3: Get speaker conditioning
-        speaker_conditioning = pipeline.backbone.get_speaker_embedding(temp_speaker_path, language)
+        speaker_conditioning = pipeline.backbone.get_speaker_embedding(temp_speaker_path, language, ref_text=ref_text)
         
         # Step 4: Synthesize
-        waveform, sr = pipeline.backbone.synthesize_from_embeddings(
-            text_embeddings=corrected_embeddings.detach(),
-            speaker_conditioning=speaker_conditioning,
-            text=text,
-            language=language
-        )
+        # Use direct synthesis (no embedding hooks) when corrections don't
+        # actually change the embeddings.  The hook in synthesize_from_embeddings
+        # replaces context-aware embeddings with context-free ones, which
+        # causes extra words / repetition in the output audio.
+        if diff_norm < 1e-4:
+            print("[Synthesize] No meaningful embedding changes → using direct F5-TTS synthesis (no hooks)")
+            waveform, sr = pipeline.backbone.synthesize_direct(
+                text=text,
+                speaker_conditioning=speaker_conditioning,
+                language=language,
+                user_ref_text=ref_text,
+            )
+        else:
+            print(f"[Synthesize] Corrections active (diff={diff_norm:.4f}) → using hook-based synthesis")
+            waveform, sr = pipeline.backbone.synthesize_from_embeddings(
+                text_embeddings=corrected_embeddings.detach(),
+                speaker_conditioning=speaker_conditioning,
+                text=text,
+                language=language,
+            )
         
         # Save waveform to output_path using soundfile
         import soundfile as sf

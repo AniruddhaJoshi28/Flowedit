@@ -331,15 +331,16 @@ class F5TTSBackbone(nn.Module):
 
             hook_handle = target_embed_module.register_forward_hook(hook)
 
-        # 2. Register hook or monkey-patch Vocoder to grab the waveform TENSOR (with gradients!) before it is detached to numpy
-        grabbed_waveform = [None]
+        # 2. Register hook or monkey-patch Vocoder to grab waveform TENSORS from ALL batches
+        # F5-TTS splits long text into multiple batches; we must collect them all.
+        grabbed_waveforms = []
         vocoder_hook_handle = None
         orig_decode = None
         vocoder_obj = getattr(self.tts_api, "vocoder", getattr(self, "vocoder", None))
         if vocoder_obj is not None:
             # Standard forward hook if vocoder.__call__ / forward is invoked (e.g. BigVGAN)
             def vocoder_hook(module, inputs, output):
-                grabbed_waveform[0] = output
+                grabbed_waveforms.append(output)
             vocoder_hook_handle = vocoder_obj.register_forward_hook(vocoder_hook)
 
             # Monkey-patch decode method if it exists, since Vocos uses .decode() directly (bypassing forward/__call__)
@@ -347,7 +348,7 @@ class F5TTSBackbone(nn.Module):
                 orig_decode = vocoder_obj.decode
                 def wrapped_decode(*args, **kwargs):
                     output = orig_decode(*args, **kwargs)
-                    grabbed_waveform[0] = output
+                    grabbed_waveforms.append(output)
                     return output
                 vocoder_obj.decode = wrapped_decode
 
@@ -377,6 +378,19 @@ class F5TTSBackbone(nn.Module):
             if not ref_text:
                 ref_text = "."
 
+            # ── Dynamic overlap stripping ──────────────────────────────────
+            # F5-TTS concatenates ref_text + gen_text internally; overlapping
+            # words confuse boundary detection.  Strip matching words.
+            ref_words_list = ref_text.split()
+            gen_word_set = set(text.lower().split())
+            filtered = [w for w in ref_words_list if w.lower() not in gen_word_set]
+            ref_text = " ".join(filtered).strip()
+            if not ref_text:
+                ref_text = "."
+
+            logger.info(f"ref_text   {ref_text}")
+            logger.info(f"gen_text   {text}")
+
             # Run UNWRAPPED inference (allows gradients!)
             with torch.set_grad_enabled(True):
                 try:
@@ -401,9 +415,11 @@ class F5TTSBackbone(nn.Module):
                         target_rms=0.1,
                     )
 
-            # Retrieve the differentiable waveform!
-            if grabbed_waveform[0] is not None:
-                waveform = grabbed_waveform[0]
+            # Retrieve and concatenate all batch waveforms
+            if grabbed_waveforms:
+                waveform = torch.cat(grabbed_waveforms, dim=-1)
+                logger.info(f"Captured {len(grabbed_waveforms)} batch(es), "
+                            f"total waveform length: {waveform.shape[-1]} samples")
             else:
                 raise RuntimeError("Failed to intercept vocoder output tensor.")
 
@@ -421,13 +437,130 @@ class F5TTSBackbone(nn.Module):
         
 
                 
-    def _register_embedding_hook(self, target_embeddings: torch.Tensor):
-        """Register a forward hook to inject perturbed embeddings."""
-        def hook(module, inputs, output):
-            return target_embeddings
+    def synthesize_direct(
+        self,
+        text: str,
+        speaker_conditioning: Dict[str, str],
+        language: str = "en",
+        user_ref_text: Optional[str] = None,
+    ) -> Tuple[torch.Tensor, int]:
+        """Direct F5-TTS synthesis WITHOUT embedding injection hooks.
 
-        class DummyHandle:
-            def remove(self): pass
-        return DummyHandle()
+        Used when no Hopfield corrections are active (or corrections don't
+        change the embeddings).  This calls the native F5-TTS inference loop
+        without any forward-hooks on TextEmbedding, so the model processes
+        text normally and avoids the word-repetition / hallucination artefact
+        caused by replacing context-aware embeddings with context-free ones.
 
+        Args:
+            text: The gen_text to synthesize.
+            speaker_conditioning: Dict from get_speaker_embedding().
+            language: Language code.
+            user_ref_text: If the user explicitly provided a ref_text via the
+                API, pass it here.  When None, Whisper's auto-transcription is
+                used but overlapping words are dynamically stripped.
+        """
+        self._ensure_loaded()
+        logger.info("Synthesizing directly via F5-TTS (no embedding hooks)...")
 
+        import soundfile as sf
+        import torchaudio
+
+        # --- Prepare reference audio path ---
+        temp_ref = speaker_conditioning.get("processed_audio_path")
+        if not temp_ref or not os.path.exists(temp_ref):
+            temp_ref = speaker_conditioning.get("audio_path", "")
+
+        _orig_load = torchaudio.load
+        def _sf_load(path, *args, **kwargs):
+            data, sample_rate = sf.read(str(path))
+            tensor = torch.from_numpy(data.copy()).float()
+            if tensor.dim() == 1:
+                tensor = tensor.unsqueeze(0)
+            else:
+                tensor = tensor.T
+            return tensor, sample_rate
+        torchaudio.load = _sf_load
+
+        # --- Vocoder hook (to capture waveform tensors from ALL batches) ---
+        # F5-TTS splits long text into multiple batches and calls the vocoder
+        # separately for each.  We must collect every batch and concatenate.
+        grabbed_waveforms = []
+        vocoder_hook_handle = None
+        orig_decode = None
+        vocoder_obj = getattr(self.tts_api, "vocoder", getattr(self, "vocoder", None))
+        if vocoder_obj is not None:
+            def vocoder_hook(module, inputs, output):
+                grabbed_waveforms.append(output)
+            vocoder_hook_handle = vocoder_obj.register_forward_hook(vocoder_hook)
+
+            if hasattr(vocoder_obj, "decode"):
+                orig_decode = vocoder_obj.decode
+                def wrapped_decode(*args, **kwargs):
+                    output = orig_decode(*args, **kwargs)
+                    grabbed_waveforms.append(output)
+                    return output
+                vocoder_obj.decode = wrapped_decode
+
+        try:
+            # ── Determine ref_text ─────────────────────────────────────────
+            # If the user explicitly provided ref_text, trust it as-is.
+            # Otherwise, take Whisper's auto-transcription and dynamically
+            # strip any words that also appear in gen_text.  F5-TTS
+            # internally concatenates (ref_text + gen_text); overlapping
+            # words confuse the model's boundary detection and cause it
+            # to bleed reference content into the generated audio.
+            if user_ref_text:
+                ref_text = user_ref_text.strip()
+            else:
+                whisper_text = speaker_conditioning.get("text", "").strip()
+                if whisper_text:
+                    gen_word_set = set(text.lower().split())
+                    filtered = [w for w in whisper_text.split()
+                                if w.lower() not in gen_word_set]
+                    ref_text = " ".join(filtered).strip()
+                if not ref_text:
+                    ref_text = "."
+
+            logger.info(f"[Direct] ref_text: {ref_text}")
+            logger.info(f"[Direct] gen_text: {text}")
+
+            # Call F5-TTS inference directly (no embedding hooks)
+            try:
+                self.tts_api.infer(
+                    ref_file=temp_ref,
+                    ref_text=ref_text,
+                    gen_text=text,
+                    speed=1.0,
+                    nfe_step=32,
+                    cfg_strength=2.0,
+                    target_rms=0.1,
+                    remove_ref=True,
+                )
+            except TypeError:
+                self.tts_api.infer(
+                    ref_file=temp_ref,
+                    ref_text=ref_text,
+                    gen_text=text,
+                    speed=1.0,
+                    nfe_step=32,
+                    cfg_strength=2.0,
+                    target_rms=0.1,
+                )
+
+            if grabbed_waveforms:
+                # Concatenate all batch outputs along the time axis
+                waveform = torch.cat(grabbed_waveforms, dim=-1)
+                logger.info(f"[Direct] Captured {len(grabbed_waveforms)} batch(es), "
+                            f"total waveform length: {waveform.shape[-1]} samples")
+            else:
+                raise RuntimeError("Failed to intercept vocoder output tensor.")
+
+            return waveform, 24000
+
+        finally:
+            if vocoder_hook_handle is not None:
+                vocoder_hook_handle.remove()
+            if orig_decode is not None and vocoder_obj is not None:
+                vocoder_obj.decode = orig_decode
+            torchaudio.load = _orig_load

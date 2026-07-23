@@ -106,6 +106,12 @@ Examples:
 
     args = parser.parse_args()
 
+    # Pre-process text to reduce hallucinations
+    if args.text:
+        # Add trailing punctuation if missing (helps DiT/autoregressive models stop cleanly)
+        if not args.text.strip().endswith(('.', '!', '?')):
+            args.text = args.text.strip() + '.'
+
     # Setup logging
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
