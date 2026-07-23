@@ -22,6 +22,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import logging
+import re
 from typing import Optional, Tuple
 
 from flowedit.memory.hopfield_memory import HopfieldMemory
@@ -122,52 +123,75 @@ class HopfieldRefiner(nn.Module):
         for b in range(batch_size):
             processed_tokens = set()
 
-            # Optional Path 1: If text is provided, attempt word-level target span refinement
+            # Text is authoritative: exact lexical lookup prevents a nearby
+            # embedding from applying another word's pronunciation.
             if text is not None:
-                stored_words = [m["word"] for m in self.memory.metadata]
-                for word_idx, word in enumerate(stored_words):
-                    if not word:
-                        continue
-                    start_char = text.find(word)
-                    if start_char == -1:
-                        continue
-                    end_char = min(seq_len, start_char + len(word))
-                    if start_char >= end_char:
-                        continue
+                unique_words = {}
+                for metadata in self.memory.metadata:
+                    word = metadata.get("word", "")
+                    if word:
+                        unique_words.setdefault(word.casefold(), word)
 
-                    # Extract target word embeddings
-                    word_embeddings = embeddings[b, start_char:end_char, :]  # [N, d]
-                    query = word_embeddings.mean(dim=0)  # [d]
-                    retrieved_sequence, max_sim = self.memory.retrieve(query)
-                    gate = torch.sigmoid(10.0 * (max_sim - self.tau))
+                for word in unique_words.values():
+                    pattern = re.compile(
+                        rf"(?<!\w){re.escape(word)}(?!\w)", re.IGNORECASE
+                    )
+                    entry_indices = self.memory.entries_for_word(word)
+                    for match in pattern.finditer(text):
+                        start_char = match.start()
+                        end_char = min(seq_len, match.end())
+                        if start_char >= end_char or not entry_indices:
+                            continue
 
-                    if gate.item() > 0.5:
-                        logger.info(
-                            f"HopfieldRefiner: Triggered word correction for '{word}' "
-                            f"(sim={max_sim.item():.3f}, gate={gate.item():.3f})"
+                        word_embeddings = embeddings[b, start_char:end_char, :]
+                        query = F.normalize(word_embeddings.mean(dim=0), dim=0)
+                        scored_entries = []
+                        for entry_idx in entry_indices:
+                            stored_key, _, _ = self.memory.get_entry(
+                                entry_idx, embeddings.device
+                            )
+                            similarity = F.cosine_similarity(
+                                query.unsqueeze(0),
+                                stored_key.to(dtype=query.dtype).unsqueeze(0),
+                            ).item()
+                            scored_entries.append((similarity, entry_idx))
+                        max_sim_value, selected_idx = max(scored_entries)
+                        _, retrieved_sequence, _ = self.memory.get_entry(
+                            selected_idx, embeddings.device
                         )
-                        N_stored = retrieved_sequence.shape[0] if retrieved_sequence.dim() > 1 else 1
-                        N_current = end_char - start_char
+                        gate = torch.tensor(
+                            1.0, device=embeddings.device, dtype=embeddings.dtype
+                        )
+                        logger.info(
+                            f"HopfieldRefiner: exact correction for '{word}' "
+                            f"(entry={selected_idx}, sim={max_sim_value:.3f})"
+                        )
 
+                        n_stored = retrieved_sequence.shape[0] if retrieved_sequence.dim() > 1 else 1
+                        n_current = end_char - start_char
                         scale = getattr(self.config, "perturbation_scale", 1.8)
                         if retrieved_sequence.dim() == 1:
-                            correction = scale * gate.item() * retrieved_sequence
+                            correction = scale * retrieved_sequence
                             refined[b, start_char:end_char, :] = word_embeddings + correction.unsqueeze(0)
-                        elif N_stored == N_current:
-                            correction = scale * gate.item() * retrieved_sequence
+                        elif n_stored == n_current:
+                            correction = scale * retrieved_sequence
                             refined[b, start_char:end_char, :] = word_embeddings + correction
                         else:
-                            retrieved_seq_t = retrieved_sequence.unsqueeze(0).transpose(1, 2)
-                            interpolated_t = F.interpolate(retrieved_seq_t, size=N_current, mode='linear', align_corners=True)
-                            correction = scale * gate.item() * interpolated_t.transpose(1, 2).squeeze(0)
+                            sequence = retrieved_sequence.unsqueeze(0).transpose(1, 2)
+                            interpolated = F.interpolate(
+                                sequence, size=n_current, mode="linear", align_corners=True
+                            )
+                            correction = scale * interpolated.transpose(1, 2).squeeze(0)
                             refined[b, start_char:end_char, :] = word_embeddings + correction
 
                         for pos in range(start_char, end_char):
-                            gate_values[b, pos] = gate.item()
+                            gate_values[b, pos] = 1.0
                             processed_tokens.add(pos)
 
             # Path 2: Token-level continuous embedding Hopfield retrieval (Paper Eq. 6 & 7)
-            # Evaluates all tokens (or tokens not already handled by Path 1)
+            # Used only by legacy callers that do not provide source text.
+            if text is not None:
+                continue
             scale = getattr(self.config, "perturbation_scale", 1.8)
             for j in range(seq_len):
                 if j in processed_tokens:

@@ -23,6 +23,7 @@ Usage:
 import torch
 import logging
 import time
+import re
 from dataclasses import dataclass
 from typing import Optional, Dict, List
 from pathlib import Path
@@ -164,6 +165,21 @@ class CorrectionLoop:
             CorrectionResult with all pipeline outputs
         """
         self._ensure_loaded()
+
+        if language.casefold() not in {"en", "eng", "english"}:
+            raise ValueError(
+                "FlowEdit pronunciation corrections support English text only."
+            )
+        text = text.strip()
+        target_word = target_word.strip()
+        if not text or not target_word:
+            raise ValueError("Both text and target_word must be non-empty.")
+        if re.search(
+            rf"(?<!\w){re.escape(target_word)}(?!\w)", text, re.IGNORECASE
+        ) is None:
+            raise ValueError(
+                f"Target word '{target_word}' is not present as a complete word in text."
+            )
 
         start_time = time.time()
 

@@ -21,12 +21,18 @@ import torch.nn.functional as F
 import json
 import logging
 import time
+import unicodedata
 from typing import Optional, Tuple, List, Dict
 from pathlib import Path
 
 from flowedit.config import MemoryConfig
 
 logger = logging.getLogger(__name__)
+
+
+def normalize_lexeme(word: str) -> str:
+    """Canonical spelling used for deterministic pronunciation lookup."""
+    return unicodedata.normalize("NFKC", word).strip().casefold()
 
 
 class HopfieldMemory:
@@ -130,7 +136,8 @@ class HopfieldMemory:
         key = F.normalize(key, dim=0)
 
         # Check for duplicate — deduplication via cosine similarity
-        dedup_idx = self._find_duplicate(key)
+        normalized_word = normalize_lexeme(word)
+        dedup_idx = self._find_duplicate(key, normalized_word)
 
         if dedup_idx is not None:
             # EMA update instead of new insertion
@@ -153,6 +160,11 @@ class HopfieldMemory:
             self.metadata[dedup_idx]["update_count"] = (
                 self.metadata[dedup_idx].get("update_count", 1) + 1
             )
+            self.metadata[dedup_idx]["word"] = word
+            self.metadata[dedup_idx]["normalized_word"] = normalized_word
+            self.metadata[dedup_idx]["target_token_count"] = (
+                int(value.shape[0]) if value.dim() > 1 else 1
+            )
 
             logger.info(
                 f"Updated existing correction for '{word}' at index {dedup_idx} "
@@ -170,6 +182,8 @@ class HopfieldMemory:
         self.access_times.append(time.time())
         self.metadata.append({
             "word": word,
+            "normalized_word": normalized_word,
+            "target_token_count": int(value.shape[0]) if value.dim() > 1 else 1,
             "created_at": time.time(),
             "update_count": 1,
         })
@@ -277,7 +291,9 @@ class HopfieldMemory:
 
         return retrieved, max_sims
 
-    def _find_duplicate(self, key: torch.Tensor) -> Optional[int]:
+    def _find_duplicate(
+        self, key: torch.Tensor, normalized_word: str = ""
+    ) -> Optional[int]:
         """Check if a similar key already exists.
 
         Paper: "cosine similarities > 0.95 trigger EMA updates"
@@ -288,17 +304,44 @@ class HopfieldMemory:
         if self.is_empty:
             return None
 
-        K = torch.stack(self.keys).to(device=key.device, dtype=key.dtype)
-        similarities = F.cosine_similarity(
-            key.unsqueeze(0), K, dim=1
+        candidates = [
+            idx for idx, metadata in enumerate(self.metadata)
+            if normalize_lexeme(metadata.get("normalized_word", metadata.get("word", "")))
+            == normalized_word
+        ]
+        if not candidates:
+            return None
+
+        K = torch.stack([self.keys[idx] for idx in candidates]).to(
+            device=key.device, dtype=key.dtype
         )
+        similarities = F.cosine_similarity(key.unsqueeze(0), K, dim=1)
 
         max_sim, max_idx = similarities.max(dim=0)
 
         if max_sim.item() > self.config.dedup_cosine_threshold:
-            return max_idx.item()
+            return candidates[max_idx.item()]
 
         return None
+
+    def entries_for_word(self, word: str) -> List[int]:
+        """Return correction indices for an exact Unicode/casefold match."""
+        normalized = normalize_lexeme(word)
+        return [
+            idx for idx, metadata in enumerate(self.metadata)
+            if normalize_lexeme(metadata.get("normalized_word", metadata.get("word", "")))
+            == normalized
+        ]
+
+    def get_entry(self, index: int, device=None):
+        """Read an exact entry without nearest-neighbor drift."""
+        if index < 0 or index >= self.size:
+            raise IndexError(f"Memory index out of range: {index}")
+        self.access_times[index] = time.time()
+        key, value = self.keys[index], self.values[index]
+        if device is not None:
+            key, value = key.to(device), value.to(device)
+        return key, value, self.metadata[index]
 
     def _apply_context_conditioning(
         self,
@@ -447,6 +490,10 @@ class HopfieldMemory:
             self.values = list(raw_values)
 
         self.metadata = save_dict.get("metadata", [{}] * len(self.keys))
+        for metadata in self.metadata:
+            metadata.setdefault(
+                "normalized_word", normalize_lexeme(metadata.get("word", ""))
+            )
         self.access_times = save_dict.get(
             "access_times",
             [time.time()] * len(self.keys)
