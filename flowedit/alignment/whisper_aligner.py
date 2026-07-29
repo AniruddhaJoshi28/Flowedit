@@ -66,10 +66,18 @@ class WhisperAligner:
 
     def load_model(self) -> None:
         """Load the Whisper model for alignment."""
-        import stable_whisper
+        import whisperx
+        import torch
 
         logger.info(f"Loading Whisper model: {self.config.whisper_model}")
-        self._model = stable_whisper.load_model(self.config.whisper_model)
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        compute_type = "float16" if device == "cuda" else "int8"
+        
+        self._model = whisperx.load_model(
+            self.config.whisper_model, 
+            device=device, 
+            compute_type=compute_type
+        )
         logger.info("Whisper model loaded successfully")
 
     def align(
@@ -102,24 +110,39 @@ class WhisperAligner:
             ValueError: If target word is not found in the audio
         """
         self._ensure_loaded()
+        import whisperx
+        import torch
 
         audio_path = str(Path(audio_path).resolve())
         language = language or self.config.language
+        device = "cuda" if torch.cuda.is_available() else "cpu"
 
         # Run Whisper with word-level timestamps
         logger.info(f"Aligning '{target_word}' in {audio_path}")
+        
+        # Load audio using whisperx
+        audio = whisperx.load_audio(audio_path)
+        
+        # 1. Transcribe with Whisper
+        result = self._model.transcribe(audio, language=language)
+        
+        # 2. Align with Wav2Vec2
+        align_language = result.get("language", language or "en")
+        model_a, metadata = whisperx.load_align_model(language_code=align_language, device=device)
+        
+        # In whisperx, align modifies the segments to include word-level timings
+        aligned_result = whisperx.align(
+            result["segments"], 
+            model_a, 
+            metadata, 
+            audio, 
+            device, 
+            return_char_alignments=False
+        )
 
         if ref_is_word_only:
             # Reference audio contains ONLY the target word.
-            # Use free transcription to get the word boundaries,
-            # then treat the best-matching word (or entire audio) as the target.
-            result = self._model.transcribe(
-                audio_path,
-                language=language,
-                word_timestamps=True,
-            )
-
-            words = self._extract_word_segments(result)
+            words = self._extract_word_segments(aligned_result)
             full_transcript = " ".join(w["word"] for w in words)
 
             if words:
@@ -128,9 +151,7 @@ class WhisperAligner:
                 if match is None:
                     match = self._fuzzy_find_target(words, target_word)
                 if match is None:
-                    # Whisper may transcribe the word differently (e.g.,
-                    # "Siobhan" → "Shavon"). Since we know the entire
-                    # audio IS the target word, use the full audio span.
+                    # Whisper may transcribe the word differently
                     logger.info(
                         f"Whisper transcribed as '{full_transcript}', "
                         f"but we know the entire audio is '{target_word}'. "
@@ -169,24 +190,8 @@ class WhisperAligner:
                 full_transcript=full_transcript,
             )
 
-        # Original path: reference audio may contain the full sentence
-        if full_text:
-            # Forced alignment to provided text
-            result = self._model.align(
-                audio_path,
-                full_text,
-                language=language,
-            )
-        else:
-            # Free transcription with word timestamps
-            result = self._model.transcribe(
-                audio_path,
-                language=language,
-                word_timestamps=True,
-            )
-
-        # Extract word-level segments
-        words = self._extract_word_segments(result)
+        # Extract word-level segments from the aligned result
+        words = self._extract_word_segments(aligned_result)
 
         if not words:
             raise ValueError(
@@ -309,9 +314,9 @@ class WhisperAligner:
         return alignment
 
     def _extract_word_segments(self, result) -> List[dict]:
-        """Extract word-level segments from Whisper output.
+        """Extract word-level segments from WhisperX output.
 
-        Handles different output formats from stable-ts.
+        Handles different output formats from whisperx and stable-ts.
         """
         words = []
 
@@ -323,7 +328,7 @@ class WhisperAligner:
                             "word": word.word.strip() if hasattr(word, "word") else str(word).strip(),
                             "start": word.start if hasattr(word, "start") else 0,
                             "end": word.end if hasattr(word, "end") else 0,
-                            "confidence": word.probability if hasattr(word, "probability") else 0.0,
+                            "confidence": getattr(word, "score", getattr(word, "probability", 0.0)),
                         })
         elif isinstance(result, dict) and "segments" in result:
             for segment in result["segments"]:
@@ -332,7 +337,7 @@ class WhisperAligner:
                         "word": word.get("word", "").strip(),
                         "start": word.get("start", 0),
                         "end": word.get("end", 0),
-                        "confidence": word.get("probability", 0.0),
+                        "confidence": word.get("score", word.get("probability", 0.0)),
                     })
 
         return words

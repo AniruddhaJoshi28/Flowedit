@@ -9,7 +9,7 @@ torchaudio>=2.1.0
 f5-tts                     # Official F5-TTS package
 # Speech recognition & alignment
 openai-whisper>=20231117   # Whisper for forced alignment
-stable-ts>=2.15.0          # Word-level timestamp extraction
+whisperx>=2.15.0          # Word-level timestamp extraction
 
 # Audio processing
 librosa>=0.10.0
