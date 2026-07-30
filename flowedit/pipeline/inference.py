@@ -22,7 +22,7 @@ from typing import Optional, Dict, Tuple
 from pathlib import Path
 
 from flowedit.config import FlowEditConfig
-from flowedit.backbone.f5tts_wrapper import F5TTSBackbone
+from flowedit.backbone import create_backbone, F5TTSBackbone, XTTSBackbone
 from flowedit.memory.hopfield_memory import HopfieldMemory
 from flowedit.refiner.hopfield_refiner import HopfieldRefiner
 from flowedit.utils.audio import AudioProcessor
@@ -76,7 +76,7 @@ class FlowEditInference:
         if backbone is not None:
             self.backbone = backbone
         else:
-            self.backbone = F5TTSBackbone(self.config.backbone)
+            self.backbone = create_backbone(self.config.backbone)
             self.backbone.load_model()
 
         embed_dim = self.backbone.embedding_dim

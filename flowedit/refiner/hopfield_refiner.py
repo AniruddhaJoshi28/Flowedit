@@ -18,6 +18,7 @@ The gate enables FUZZY MORPHOLOGICAL MATCHING (paper Section 3.2):
     the strict 1:1 match constraints of dictionary lookups."
 """
 
+import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -125,18 +126,25 @@ class HopfieldRefiner(nn.Module):
             # Optional Path 1: If text is provided, attempt word-level target span refinement
             if text is not None:
                 stored_words = [m["word"] for m in self.memory.metadata]
+                text_len = max(1, len(text))
                 for word_idx, word in enumerate(stored_words):
                     if not word:
                         continue
                     start_char = text.find(word)
                     if start_char == -1:
+                        start_char = text.lower().find(word.lower())
+                    if start_char == -1:
                         continue
-                    end_char = min(seq_len, start_char + len(word))
-                    if start_char >= end_char:
+
+                    end_char = start_char + len(word)
+                    token_start = max(0, int((start_char / text_len) * seq_len))
+                    token_end = min(seq_len, max(token_start + 1, int(math.ceil((end_char / text_len) * seq_len))))
+
+                    if token_start >= token_end:
                         continue
 
                     # Extract target word embeddings
-                    word_embeddings = embeddings[b, start_char:end_char, :]  # [N, d]
+                    word_embeddings = embeddings[b, token_start:token_end, :]  # [N, d]
                     query = word_embeddings.mean(dim=0)  # [d]
                     retrieved_sequence, max_sim = self.memory.retrieve(query)
                     gate = torch.sigmoid(10.0 * (max_sim - self.tau))
@@ -144,25 +152,26 @@ class HopfieldRefiner(nn.Module):
                     if gate.item() > 0.5:
                         logger.info(
                             f"HopfieldRefiner: Triggered word correction for '{word}' "
-                            f"(sim={max_sim.item():.3f}, gate={gate.item():.3f})"
+                            f"(sim={max_sim.item():.3f}, gate={gate.item():.3f}, "
+                            f"tokens={token_start}:{token_end})"
                         )
                         N_stored = retrieved_sequence.shape[0] if retrieved_sequence.dim() > 1 else 1
-                        N_current = end_char - start_char
+                        N_current = token_end - token_start
 
-                        scale = getattr(self.config, "perturbation_scale", 1.8)
+                        scale = getattr(self.config, "perturbation_scale", 1.0)
                         if retrieved_sequence.dim() == 1:
                             correction = scale * gate.item() * retrieved_sequence
-                            refined[b, start_char:end_char, :] = word_embeddings + correction.unsqueeze(0)
+                            refined[b, token_start:token_end, :] = word_embeddings + correction.unsqueeze(0)
                         elif N_stored == N_current:
                             correction = scale * gate.item() * retrieved_sequence
-                            refined[b, start_char:end_char, :] = word_embeddings + correction
+                            refined[b, token_start:token_end, :] = word_embeddings + correction
                         else:
                             retrieved_seq_t = retrieved_sequence.unsqueeze(0).transpose(1, 2)
                             interpolated_t = F.interpolate(retrieved_seq_t, size=N_current, mode='linear', align_corners=True)
                             correction = scale * gate.item() * interpolated_t.transpose(1, 2).squeeze(0)
-                            refined[b, start_char:end_char, :] = word_embeddings + correction
+                            refined[b, token_start:token_end, :] = word_embeddings + correction
 
-                        for pos in range(start_char, end_char):
+                        for pos in range(token_start, token_end):
                             gate_values[b, pos] = gate.item()
                             processed_tokens.add(pos)
 

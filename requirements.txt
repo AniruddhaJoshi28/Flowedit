@@ -7,6 +7,7 @@ torchaudio>=2.1.0
 
 # TTS Backbone
 f5-tts                     # Official F5-TTS package
+coqui-tts                  # Community fork of Coqui TTS (XTTS-v2 support, Python 3.13+)
 # Speech recognition & alignment
 openai-whisper>=20231117   # Whisper for forced alignment
 whisperx>=2.15.0          # Word-level timestamp extraction

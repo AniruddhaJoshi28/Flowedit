@@ -28,9 +28,14 @@ async def lifespan(app: FastAPI):
     global pipeline
     print("Loading FlowEdit pipeline models...")
     config = FlowEditConfig()
+    print(f"  Backbone type: {config.backbone.backbone_type.upper()}")
+    if config.backbone.backbone_type == "xtts":
+        print(f"  XTTS model dir: {config.backbone.xtts_model_dir}")
+        print(f"  XTTS checkpoint: {config.backbone.xtts_checkpoint}")
     pipeline = CorrectionLoop(config)
     pipeline.load_models(memory_path=MEMORY_PATH)
-    print("Models loaded successfully.")
+    backbone_cls = type(pipeline.backbone).__name__
+    print(f"Models loaded successfully. Active backbone: {backbone_cls}")
     yield
     # Shutdown logic
     print("Shutting down FlowEdit API...")
@@ -166,8 +171,9 @@ async def synthesize_text(
         # actually change the embeddings.  The hook in synthesize_from_embeddings
         # replaces context-aware embeddings with context-free ones, which
         # causes extra words / repetition in the output audio.
+        backbone_name = type(pipeline.backbone).__name__
         if diff_norm < 1e-4:
-            print("[Synthesize] No meaningful embedding changes → using direct F5-TTS synthesis (no hooks)")
+            print(f"[Synthesize] No meaningful embedding changes → using direct {backbone_name} synthesis (no hooks)")
             waveform, sr = pipeline.backbone.synthesize_direct(
                 text=text,
                 speaker_conditioning=speaker_conditioning,

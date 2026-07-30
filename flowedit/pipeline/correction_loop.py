@@ -28,7 +28,7 @@ from typing import Optional, Dict, List
 from pathlib import Path
 
 from flowedit.config import FlowEditConfig
-from flowedit.backbone.f5tts_wrapper import F5TTSBackbone
+from flowedit.backbone import create_backbone
 from flowedit.alignment.whisper_aligner import WhisperAligner, AlignmentResult
 from flowedit.optimizer.latent_optimizer import LatentOptimizer, OptimizationResult
 from flowedit.memory.hopfield_memory import HopfieldMemory
@@ -97,9 +97,10 @@ class CorrectionLoop:
 
         start_time = time.time()
 
-        # 1. Load F5-TTS backbone (frozen)
-        logger.info("[1/4] Loading F5-TTS backbone...")
-        self.backbone = F5TTSBackbone(self.config.backbone)
+        # 1. Load backbone (frozen) — XTTS or F5-TTS based on config
+        backbone_type = getattr(self.config.backbone, "backbone_type", "xtts")
+        logger.info(f"[1/4] Loading {backbone_type.upper()} backbone...")
+        self.backbone = create_backbone(self.config.backbone)
         self.backbone.load_model()
 
         # 2. Load Whisper aligner
@@ -131,7 +132,7 @@ class CorrectionLoop:
 
         logger.info("=" * 60)
         logger.info(f"FlowEdit pipeline ready in {elapsed:.1f}s")
-        logger.info(f"  Backbone: F5-TTS (dim={embed_dim})")
+        logger.info(f"  Backbone: {backbone_type.upper()} (dim={embed_dim})")
         logger.info(f"  Memory: {self.memory.size}/{self.config.memory.max_entries}")
         logger.info("=" * 60)
 
@@ -180,14 +181,15 @@ class CorrectionLoop:
 
             # --- MEMORY OPTIMIZATION (Offload backbone, load whisper) ---
             if self.backbone is not None:
-                if getattr(self.backbone, 'model', None) is not None:
+                if getattr(self.backbone, 'model', None) is not None and hasattr(self.backbone.model, 'to'):
                     self.backbone.model.to("cpu")
-                if getattr(self.backbone, 'vocoder', None) is not None:
+                if getattr(self.backbone, 'vocoder', None) is not None and hasattr(self.backbone.vocoder, 'to'):
                     self.backbone.vocoder.to("cpu")
                     
             whisper_device = "cuda" if torch.cuda.is_available() else "cpu"
             if self.aligner is not None and getattr(self.aligner, '_model', None) is not None:
-                self.aligner._model.to(whisper_device)
+                if hasattr(self.aligner._model, 'to'):
+                    self.aligner._model.to(whisper_device)
             torch.cuda.empty_cache()
             # -----------------------------------------------------------
 
@@ -233,13 +235,14 @@ class CorrectionLoop:
 
             # --- MEMORY OPTIMIZATION (Offload whisper, load backbone) ---
             if self.aligner is not None and getattr(self.aligner, '_model', None) is not None:
-                self.aligner._model.to("cpu")
+                if hasattr(self.aligner._model, 'to'):
+                    self.aligner._model.to("cpu")
                 
             backbone_device = getattr(self.backbone, 'device', "cuda" if torch.cuda.is_available() else "cpu")
             if self.backbone is not None:
-                if getattr(self.backbone, 'model', None) is not None:
+                if getattr(self.backbone, 'model', None) is not None and hasattr(self.backbone.model, 'to'):
                     self.backbone.model.to(backbone_device)
-                if getattr(self.backbone, 'vocoder', None) is not None:
+                if getattr(self.backbone, 'vocoder', None) is not None and hasattr(self.backbone.vocoder, 'to'):
                     self.backbone.vocoder.to(backbone_device)
             torch.cuda.empty_cache()
             # -----------------------------------------------------------

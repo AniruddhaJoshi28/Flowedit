@@ -7,6 +7,7 @@ Adapted for XTTS-2 backbone (autoregressive GPT, not flow-matching).
 
 from dataclasses import dataclass, field
 from typing import Optional
+import os
 import torch
 
 
@@ -65,7 +66,8 @@ class MemoryConfig:
     gate_threshold_init: float = 0.4
 
     # Perturbation scale factor to amplify learned phonetic corrections
-    perturbation_scale: float = 1.8
+    # (1.0 for XTTS autoregressive GPT to avoid phonetic distortion / stuttering)
+    perturbation_scale: float = 1.0
 
     # Context window for homograph disambiguation (paper: ±3 tokens)
     # Keys are Gaussian-weighted average of surrounding embeddings
@@ -123,21 +125,35 @@ class AudioConfig:
 
 @dataclass
 class BackboneConfig:
-    """XTTS-2 backbone configuration.
+    """Backbone configuration supporting XTTS-v2 and F5-TTS.
 
-    XTTS-2 is autoregressive (GPT-based), NOT flow-matching.
-    Key differences from F5-TTS in the paper:
-    - No ODE solver → no adjoint method for gradients
-    - Uses standard PyTorch autograd with gradient checkpointing
-    - Speaker conditioning via separate speaker embeddings
-    - Discrete latent codes via VQ-VAE → need straight-through estimator
+    XTTS-v2 is autoregressive (GPT-based), NOT flow-matching.
+    F5-TTS is a flow-matching Diffusion Transformer.
+
+    Set backbone_type to select which model to use:
+        - "xtts"  : Use local XTTS-v2 model from xtts_model_dir
+        - "f5tts" : Use F5-TTS via the f5-tts package
     """
 
-    # Model identifier for Coqui TTS
+    # Backbone selector: "xtts" or "f5tts"
+    backbone_type: str = "xtts"
+
+    # ── XTTS-specific settings ──────────────────────────────────────
+    # Path to directory containing XTTS model files (model.pth, config.json, etc.)
+    # Defaults to flowedit/Xtts/ relative to the package
+    xtts_model_dir: str = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "Xtts"
+    )
+
+    # Which checkpoint file to load (model.pth = fine-tuned, base_model.pth = base)
+    xtts_checkpoint: str = "model.pth"
+
+    # ── F5-TTS-specific settings ────────────────────────────────────
+    # Model identifier for Coqui TTS (used by F5-TTS wrapper)
     model_name: str = "tts_models/multilingual/multi-dataset/xtts_v2"
 
+    # ── Shared settings ─────────────────────────────────────────────
     # Enable gradient checkpointing for memory efficiency
-    # Critical for XTTS-2 since we can't use the adjoint method
     use_gradient_checkpointing: bool = True
 
     # Device placement
