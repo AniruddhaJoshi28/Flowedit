@@ -1,15 +1,16 @@
+from .base import TTSBackbone
 from .f5tts_wrapper import F5TTSBackbone
 from .xtts_wrapper import XTTSBackbone
 
 
-def create_backbone(config):
+def create_backbone(config) -> TTSBackbone:
     """Factory function to create the correct backbone based on config.
 
     Args:
         config: BackboneConfig instance with backbone_type field.
 
     Returns:
-        F5TTSBackbone or XTTSBackbone instance.
+        F5TTSBackbone or XTTSBackbone instance implementing TTSBackbone.
 
     Raises:
         ValueError: If backbone_type is not recognized.

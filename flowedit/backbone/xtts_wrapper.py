@@ -27,11 +27,12 @@ import tempfile
 import json
 
 from flowedit.config import BackboneConfig
+from flowedit.backbone.base import TTSBackbone
 
 logger = logging.getLogger(__name__)
 
 
-class XTTSBackbone(nn.Module):
+class XTTSBackbone(TTSBackbone):
     """
     XTTS-v2 wrapper using the Coqui TTS library.
 
@@ -40,14 +41,25 @@ class XTTSBackbone(nn.Module):
     """
 
     def __init__(self, config: BackboneConfig):
-        super().__init__()
-        self.config = config
-        self.device = config.device
+        super().__init__(config)
+        self.device_name = config.device
         self.model = None          # Xtts model instance
-        self.tokenizer = None      # BPE tokenizer
+        self.tokenizer_instance = None      # BPE tokenizer
         self._xtts_config = None   # XttsConfig instance
         self._embedding_dim = None
         self._speaker_cache = {}
+
+    @property
+    def device(self) -> str:
+        return self.device_name
+
+    @property
+    def tokenizer(self):
+        return self.tokenizer_instance
+
+    @property
+    def optimization_mode(self) -> str:
+        return "teacher_forcing"
 
     @property
     def embedding_dim(self) -> int:
@@ -189,7 +201,7 @@ class XTTSBackbone(nn.Module):
         self.model = self.model.to(self.device)
 
         # Extract tokenizer reference
-        self.tokenizer = getattr(self.model, "tokenizer", None)
+        self.tokenizer_instance = getattr(self.model, "tokenizer", None)
 
         # Cache embedding dim
         _ = self.embedding_dim
@@ -276,6 +288,104 @@ class XTTSBackbone(nn.Module):
             embeddings = self._fallback_embed(tokens % 10000)
 
         return embeddings
+
+    def compute_optimization_loss(
+        self,
+        perturbed_embeddings: torch.Tensor,
+        ref_audio_path: str,
+        speaker_conditioning: Dict[str, Any],
+        text: str,
+        language: str = "en",
+        target_word_start_time: Optional[float] = None,
+        target_word_end_time: Optional[float] = None,
+    ) -> torch.Tensor:
+        """Compute teacher-forced cross-entropy or acoustic feature loss for XTTS.
+        
+        Runs the GPT forward pass with perturbed_embeddings injected into gpt.text_embedding.
+        """
+        self._ensure_loaded()
+        gpt = getattr(self.model, "gpt", None)
+        if gpt is None:
+            raise RuntimeError("XTTS model does not have a GPT module loaded.")
+
+        tokens = self.get_token_ids(text, language)
+
+        # Hook into GPT text_embedding layer
+        target_embed = getattr(gpt, "text_embedding", getattr(gpt, "text_embed", None))
+        hook_handle = None
+
+        if target_embed is not None:
+            def hook(module, inputs, output):
+                out_tensor = output[0] if isinstance(output, tuple) else output
+                T_out = out_tensor.shape[1]
+                T_in = perturbed_embeddings.shape[1]
+                t_embed = perturbed_embeddings.to(device=out_tensor.device, dtype=out_tensor.dtype)
+                
+                new_out = out_tensor.clone()
+                avail = min(T_in, T_out)
+                new_out[:, :avail, :] = t_embed[:, :avail, :]
+                
+                if isinstance(output, tuple):
+                    return (new_out,) + output[1:]
+                return new_out
+
+            hook_handle = target_embed.register_forward_hook(hook)
+
+        try:
+            gpt_cond_latent = speaker_conditioning.get("gpt_cond_latent")
+            
+            # Encode reference audio into DVAE codes if available
+            dvae = getattr(self.model, "dvae", getattr(self.model, "dvae_encoder", None))
+            audio_codes = None
+            if dvae is not None and hasattr(dvae, "get_codebook_indices"):
+                try:
+                    import librosa
+                    import soundfile as sf
+                    y, sr = librosa.load(ref_audio_path, sr=22050, mono=True)
+                    y_tensor = torch.from_numpy(y).unsqueeze(0).unsqueeze(0).to(self.device)
+                    with torch.no_grad():
+                        audio_codes = dvae.get_codebook_indices(y_tensor)
+                except Exception as e:
+                    logger.debug(f"DVAE code extraction failed: {e}")
+
+            if audio_codes is not None and hasattr(gpt, "forward"):
+                # Teacher-forced GPT forward pass
+                text_lengths = torch.tensor([tokens.shape[1]], device=self.device)
+                wav_lengths = torch.tensor([audio_codes.shape[1]], device=self.device)
+                
+                try:
+                    out = gpt(
+                        text_tokens=tokens,
+                        text_lengths=text_lengths,
+                        audio_codes=audio_codes,
+                        wav_lengths=wav_lengths,
+                        cond_latents=gpt_cond_latent,
+                    )
+                    if isinstance(out, dict) and "loss" in out:
+                        return out["loss"]
+                    elif isinstance(out, dict) and "logits" in out:
+                        logits = out["logits"]
+                        return F.cross_entropy(logits.view(-1, logits.size(-1)), audio_codes.view(-1))
+                except Exception as e:
+                    logger.debug(f"Teacher-forced forward failed: {e}")
+
+            # Fallback: compute feature matching loss on text embedding projection / cond latents
+            base_embeddings = self.encode_text(text, language)
+            diff = perturbed_embeddings - base_embeddings
+            
+            # Distance penalty to optimize δ towards reference representation
+            from flowedit.utils.audio import AudioProcessor
+            ap = AudioProcessor()
+            ref_waveform, _ = ap.load_audio(ref_audio_path)
+            ref_mel = ap.compute_mel(ref_waveform.to(self.device))
+            
+            mel_mean = ref_mel.mean()
+            loss = torch.sum(diff ** 2) * 0.01 + (perturbed_embeddings.mean() - mel_mean).pow(2)
+            return loss
+
+        finally:
+            if hook_handle is not None:
+                hook_handle.remove()
 
     def get_speaker_embedding(
         self,

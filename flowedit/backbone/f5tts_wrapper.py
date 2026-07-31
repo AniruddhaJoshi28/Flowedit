@@ -14,25 +14,38 @@ import os
 import tempfile
 
 from flowedit.config import BackboneConfig
+from flowedit.backbone.base import TTSBackbone
 
 logger = logging.getLogger(__name__)
 
 
-class F5TTSBackbone(nn.Module):
+class F5TTSBackbone(TTSBackbone):
     """
     F5-TTS wrapper using the official high-level F5TTS API class.
     This ensures correct tokenizer, vocab, model, and vocoder wiring.
     """
 
     def __init__(self, config: BackboneConfig):
-        super().__init__()
-        self.config = config
-        self.device = config.device
+        super().__init__(config)
+        self.device_name = config.device
         self.model = None       # raw DiT model reference (for embedding hooks)
         self.vocoder = None     # vocoder reference
-        self.tokenizer = None   # vocab char map
+        self.tokenizer_instance = None   # vocab char map
         self.tts_api = None     # high-level F5TTS instance
         self._embedding_hook_handle = None
+
+    @property
+    def device(self) -> str:
+        return self.device_name
+
+    @property
+    def tokenizer(self):
+        return self.tokenizer_instance
+
+    @property
+    def optimization_mode(self) -> str:
+        return "adjoint_ode"
+
 
     @property
     def embedding_dim(self) -> int:
@@ -85,10 +98,9 @@ class F5TTSBackbone(nn.Module):
             # The aligner expects tokenizer.encode(text, lang=...) → list[int]
             vocab_map = getattr(self.tts_api, "vocab_char_map", None)
             if vocab_map and isinstance(vocab_map, dict):
-                self.tokenizer = self._make_char_tokenizer(vocab_map)
+                self.tokenizer_instance = self._make_char_tokenizer(vocab_map)
             else:
-                # Fallback: simple character-level tokenizer
-                self.tokenizer = self._make_char_tokenizer(None)
+                self.tokenizer_instance = self._make_char_tokenizer(None)
 
             logger.info("F5-TTS loaded successfully via high-level API.")
         except ImportError:
@@ -182,6 +194,37 @@ class F5TTSBackbone(nn.Module):
                 embeddings = self._fallback_embed(tokens % 10000)
                 
         return embeddings
+
+    def compute_optimization_loss(
+        self,
+        perturbed_embeddings: torch.Tensor,
+        ref_audio_path: str,
+        speaker_conditioning: Dict[str, Any],
+        text: str,
+        language: str = "en",
+        target_word_start_time: Optional[float] = None,
+        target_word_end_time: Optional[float] = None,
+    ) -> torch.Tensor:
+        """Synthesize from perturbed embeddings and return mel reconstruction loss."""
+        pred_out = self.synthesize_from_embeddings(
+            text_embeddings=perturbed_embeddings,
+            speaker_conditioning=speaker_conditioning,
+            text=text,
+            language=language,
+        )
+        pred_waveform = pred_out[0] if isinstance(pred_out, tuple) else pred_out
+        pred_waveform = pred_waveform.to(self.device)
+
+        from flowedit.utils.audio import AudioProcessor
+        from flowedit.utils.metrics import compute_mel_loss
+        
+        ap = AudioProcessor()
+        ref_waveform, _ = ap.load_audio(ref_audio_path)
+        ref_waveform = ref_waveform.to(self.device)
+        ref_mel = ap.compute_mel(ref_waveform)
+
+        pred_mel = ap.compute_mel(pred_waveform)
+        return compute_mel_loss(pred_mel, ref_mel)
 
     def get_speaker_embedding(self, audio_path: Optional[str] = None, language: str = "en", ref_text: Optional[str] = None) -> Dict[str, str]:
         """Store reference audio path for F5-TTS inference and transcribe once."""

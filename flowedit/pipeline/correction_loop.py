@@ -29,6 +29,7 @@ from pathlib import Path
 
 from flowedit.config import FlowEditConfig
 from flowedit.backbone import create_backbone
+from flowedit.backbone.base import TTSBackbone
 from flowedit.alignment.whisper_aligner import WhisperAligner, AlignmentResult
 from flowedit.optimizer.latent_optimizer import LatentOptimizer, OptimizationResult
 from flowedit.memory.hopfield_memory import HopfieldMemory
@@ -38,17 +39,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class CorrectionResult:
-    """Result of a complete correction operation.
-
-    Attributes:
-        success: Whether the correction completed successfully
-        word: The corrected word
-        alignment: Forced alignment result (Stage 1)
-        optimization: Optimization result (Stage 2)
-        memory_index: Index in Hopfield memory where correction is stored (Stage 3)
-        wall_clock_seconds: Total correction time
-        memory_size: Number of corrections now in memory
-    """
+    """Result of a complete correction operation."""
     success: bool
     word: str
     alignment: Optional[AlignmentResult]
@@ -60,48 +51,50 @@ class CorrectionResult:
 
 
 class CorrectionLoop:
-    """Orchestrates the full FlowEdit correction pipeline.
-
-    This is the main entry point for learning pronunciation corrections.
-    It coordinates all three stages and manages the lifecycle of
-    the backbone model, aligner, optimizer, and memory.
-    """
+    """Orchestrates the full FlowEdit correction pipeline."""
 
     def __init__(self, config: Optional[FlowEditConfig] = None):
-        """Initialize the correction loop.
-
-        Args:
-            config: Master FlowEdit configuration
-        """
         self.config = config or FlowEditConfig()
 
-        # Component instances (lazy-loaded via load_models())
-        self.backbone: Optional[F5TTSBackbone] = None
+        # Component instances
+        self.backbone: Optional[TTSBackbone] = None
+        self.backbones: Dict[str, TTSBackbone] = {}
         self.aligner: Optional[WhisperAligner] = None
         self.optimizer: Optional[LatentOptimizer] = None
         self.memory: Optional[HopfieldMemory] = None
 
         self._models_loaded = False
 
+    def get_backbone(self, backbone_type: str = "xtts") -> TTSBackbone:
+        """Get or lazily load the requested backbone instance (xtts or f5tts)."""
+        key = backbone_type.lower()
+        if key in self.backbones:
+            return self.backbones[key]
+
+        logger.info(f"Loading requested backbone: {key.upper()}...")
+        cfg = FlowEditConfig()
+        cfg.backbone.backbone_type = key
+        bb = create_backbone(cfg.backbone)
+        bb.load_model()
+        self.backbones[key] = bb
+
+        if self.backbone is None:
+            self.backbone = bb
+
+        return bb
+
     def load_models(self, memory_path: Optional[str] = None) -> None:
-        """Load all models and initialize components.
-
-        This is expensive (~30s) and should be called once at startup.
-
-        Args:
-            memory_path: Optional path to existing memory file to load
-        """
+        """Load default models and initialize components."""
         logger.info("=" * 60)
         logger.info("Loading FlowEdit correction pipeline...")
         logger.info("=" * 60)
 
         start_time = time.time()
 
-        # 1. Load backbone (frozen) — XTTS or F5-TTS based on config
-        backbone_type = getattr(self.config.backbone, "backbone_type", "xtts")
-        logger.info(f"[1/4] Loading {backbone_type.upper()} backbone...")
-        self.backbone = create_backbone(self.config.backbone)
-        self.backbone.load_model()
+        # 1. Load primary backbone
+        primary_type = getattr(self.config.backbone, "backbone_type", "xtts")
+        logger.info(f"[1/4] Loading default backbone ({primary_type.upper()})...")
+        self.backbone = self.get_backbone(primary_type)
 
         # 2. Load Whisper aligner
         logger.info("[2/4] Loading Whisper aligner...")
@@ -125,14 +118,14 @@ class CorrectionLoop:
                 self.memory.load(memory_path)
                 logger.info(f"Loaded existing memory: {self.memory.size} corrections")
             except ValueError as e:
-                logger.warning(f"Failed to load memory (likely dimension mismatch from older model): {e}. Starting fresh.")
+                logger.warning(f"Failed to load memory: {e}. Starting fresh.")
 
         elapsed = time.time() - start_time
         self._models_loaded = True
 
         logger.info("=" * 60)
         logger.info(f"FlowEdit pipeline ready in {elapsed:.1f}s")
-        logger.info(f"  Backbone: {backbone_type.upper()} (dim={embed_dim})")
+        logger.info(f"  Primary Backbone: {primary_type.upper()} (dim={embed_dim})")
         logger.info(f"  Memory: {self.memory.size}/{self.config.memory.max_entries}")
         logger.info("=" * 60)
 
@@ -143,6 +136,7 @@ class CorrectionLoop:
         ref_audio_path: str,
         speaker_wav: Optional[str] = None,
         language: str = "en",
+        backbone_type: str = "xtts",
     ) -> CorrectionResult:
         """Learn a pronunciation correction from reference audio.
 
@@ -165,11 +159,12 @@ class CorrectionLoop:
             CorrectionResult with all pipeline outputs
         """
         self._ensure_loaded()
+        bb = self.get_backbone(backbone_type)
 
         start_time = time.time()
 
         logger.info(f"\n{'='*60}")
-        logger.info(f"CORRECTION: '{target_word}' in \"{text}\"")
+        logger.info(f"CORRECTION: '{target_word}' in \"{text}\" (Backbone: {backbone_type.upper()})")
         logger.info(f"Reference: {ref_audio_path}")
         logger.info(f"{'='*60}")
 
@@ -179,34 +174,30 @@ class CorrectionLoop:
             # ════════════════════════════════════════════
             logger.info("\n▶ STAGE 1: Detection & Grounding (Whisper Alignment)")
 
-            # --- MEMORY OPTIMIZATION (Offload backbone, load whisper) ---
-            if self.backbone is not None:
-                if getattr(self.backbone, 'model', None) is not None and hasattr(self.backbone.model, 'to'):
-                    self.backbone.model.to("cpu")
-                if getattr(self.backbone, 'vocoder', None) is not None and hasattr(self.backbone.vocoder, 'to'):
-                    self.backbone.vocoder.to("cpu")
+            # Offload backbone to CPU while running Whisper aligner
+            if bb is not None and getattr(bb, 'model', None) is not None and hasattr(bb.model, 'to'):
+                bb.model.to("cpu")
                     
             whisper_device = "cuda" if torch.cuda.is_available() else "cpu"
             if self.aligner is not None and getattr(self.aligner, '_model', None) is not None:
                 if hasattr(self.aligner._model, 'to'):
                     self.aligner._model.to(whisper_device)
             torch.cuda.empty_cache()
-            # -----------------------------------------------------------
 
             alignment = self.aligner.align(
                 audio_path=ref_audio_path,
                 target_word=target_word,
-                full_text=target_word,  # Align against the word itself
+                full_text=target_word,
                 language=language,
-                ref_is_word_only=True,  # Crucial: Ref audio is only the target word
+                ref_is_word_only=True,
             )
 
-            # Map word boundaries to F5-TTS token indices
+            # Map word boundaries to token indices using requested backbone tokenizer
             alignment = self.aligner.map_to_token_indices(
                 alignment=alignment,
                 full_text=text,
                 target_word=target_word,
-                tokenizer=getattr(self.backbone, "tokenizer", None) or getattr(self.backbone.model, "tokenizer", None),
+                tokenizer=getattr(bb, "tokenizer", None) or getattr(bb.model, "tokenizer", None),
                 language=language,
             )
 
@@ -231,39 +222,28 @@ class CorrectionLoop:
             # ════════════════════════════════════════════
             # Stage 2: Latent Input Optimization
             # ════════════════════════════════════════════
-            logger.info("\n▶ STAGE 2: Latent Input Optimization (50 Adam steps)")
+            logger.info(f"\n▶ STAGE 2: Latent Input Optimization via {bb.optimization_mode}")
 
-            # --- MEMORY OPTIMIZATION (Offload whisper, load backbone) ---
             if self.aligner is not None and getattr(self.aligner, '_model', None) is not None:
                 if hasattr(self.aligner._model, 'to'):
                     self.aligner._model.to("cpu")
                 
-            backbone_device = getattr(self.backbone, 'device', "cuda" if torch.cuda.is_available() else "cpu")
-            if self.backbone is not None:
-                if getattr(self.backbone, 'model', None) is not None and hasattr(self.backbone.model, 'to'):
-                    self.backbone.model.to(backbone_device)
-                if getattr(self.backbone, 'vocoder', None) is not None and hasattr(self.backbone.vocoder, 'to'):
-                    self.backbone.vocoder.to(backbone_device)
+            backbone_device = getattr(bb, 'device', "cuda" if torch.cuda.is_available() else "cpu")
+            if bb is not None and getattr(bb, 'model', None) is not None and hasattr(bb.model, 'to'):
+                bb.model.to(backbone_device)
             torch.cuda.empty_cache()
-            # -----------------------------------------------------------
 
-            # Get speaker conditioning
             speaker_path = speaker_wav or ref_audio_path
-            
-            # If no explicit speaker_wav is provided, we use the reference audio.
-            # Since ref_is_word_only=True in this pipeline, the reference audio 
-            # contains exactly the target_word. We pass it explicitly so Whisper 
-            # doesn't mis-transcribe it!
             provided_ref_text = target_word if not speaker_wav else None
             
-            speaker_conditioning = self.backbone.get_speaker_embedding(
+            speaker_conditioning = bb.get_speaker_embedding(
                 speaker_path, 
                 language,
                 ref_text=provided_ref_text
             )
 
             optimization = self.optimizer.optimize(
-                backbone=self.backbone,
+                backbone=bb,
                 text=text,
                 ref_audio_path=ref_audio_path,
                 token_indices=alignment.token_indices,
@@ -286,7 +266,7 @@ class CorrectionLoop:
 
             # Compute key: pool(c_I) — average text embedding of target tokens
             with torch.no_grad():
-                base_embeddings = self.backbone.encode_text(text, language)
+                base_embeddings = bb.encode_text(text, language)
                 target_embeddings = base_embeddings[0, alignment.token_indices, :]
                 key = target_embeddings.mean(dim=0)
 

@@ -18,6 +18,8 @@ torch.backends.cudnn.enabled = False
 
 from flowedit.pipeline.correction_loop import CorrectionLoop
 
+from flowedit.api.xtts_routes import router as xtts_router
+
 # Global pipeline instance
 pipeline = None
 MEMORY_PATH = "./corrections.pt"
@@ -34,6 +36,7 @@ async def lifespan(app: FastAPI):
         print(f"  XTTS checkpoint: {config.backbone.xtts_checkpoint}")
     pipeline = CorrectionLoop(config)
     pipeline.load_models(memory_path=MEMORY_PATH)
+    app.state.pipeline = pipeline
     backbone_cls = type(pipeline.backbone).__name__
     print(f"Models loaded successfully. Active backbone: {backbone_cls}")
     yield
@@ -42,10 +45,12 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="FlowEdit API",
-    description="API for the FlowEdit Pronunciation Adaptation Pipeline",
+    description="API for the FlowEdit Pronunciation Adaptation Pipeline (with xtts-api-server support)",
     version="1.0.0",
     lifespan=lifespan,
 )
+
+app.include_router(xtts_router)
 
 # Enable CORS for Swagger UI / Frontend
 app.add_middleware(
@@ -73,11 +78,12 @@ async def correct_pronunciation(
     text: str = Form(..., description="Full text containing the target word"),
     target_word: str = Form(..., description="The word to correct pronunciation of"),
     language: str = Form("en", description="Language code"),
+    backbone_type: str = Form("xtts", description="Backbone model to use: 'xtts' or 'f5tts'"),
     ref_audio: UploadFile = File(..., description="Reference audio with correct pronunciation"),
     speaker_wav: UploadFile | None = None,
 ):
     """
-    Learn a pronunciation correction from reference audio.
+    Learn a pronunciation correction from reference audio using the specified model backbone.
     """
     global pipeline
     if not pipeline:
@@ -95,13 +101,14 @@ async def correct_pronunciation(
             temp_speaker_path = temp_speaker.name
 
     try:
-        # Run correction pipeline
+        # Run correction pipeline with requested backbone
         result = pipeline.correct(
             text=text,
             target_word=target_word,
             ref_audio_path=temp_ref_path,
             speaker_wav=temp_speaker_path,
             language=language,
+            backbone_type=backbone_type,
         )
 
         if not result.success:
@@ -113,6 +120,7 @@ async def correct_pronunciation(
         return JSONResponse({
             "success": True,
             "word": result.word,
+            "backbone": backbone_type,
             "wall_clock_seconds": result.wall_clock_seconds,
             "final_loss": result.optimization.final_loss if hasattr(result, "optimization") and hasattr(result.optimization, "final_loss") else None,
             "converged": result.optimization.converged if hasattr(result, "optimization") and hasattr(result.optimization, "converged") else None,
@@ -129,11 +137,12 @@ async def correct_pronunciation(
 async def synthesize_text(
     text: str = Form(..., description="Text to synthesize"),
     language: str = Form("en", description="Language code"),
+    backbone_type: str = Form("xtts", description="Backbone model to use: 'xtts' or 'f5tts'"),
     speaker_wav: UploadFile = File(..., description="Speaker reference audio for voice conditioning"),
-    ref_text: Optional[str] = Form(None, description="Optional transcription of the speaker audio. If empty, Whisper will auto-transcribe."),
+    ref_text: Optional[str] = Form(None, description="Optional transcription of the speaker audio."),
 ):
     """
-    Synthesize text, automatically applying learned corrections.
+    Synthesize text using requested backbone model (xtts or f5tts), automatically applying learned Hopfield corrections.
     """
     global pipeline
     if not pipeline:
@@ -146,43 +155,42 @@ async def synthesize_text(
     output_path = tempfile.mktemp(suffix=".wav")
 
     try:
+        # Get requested backbone
+        bb = pipeline.get_backbone(backbone_type)
+
         # Step 1: Get text embeddings
-        base_embeddings = pipeline.backbone.encode_text(text, language)
+        base_embeddings = bb.encode_text(text, language)
         
         # Step 2: Retrieve corrections and apply gating via the Hopfield Refiner
         from flowedit.refiner.hopfield_refiner import HopfieldRefiner
-        refiner = HopfieldRefiner(pipeline.memory, config=pipeline.config.memory).to(pipeline.backbone.device)
+        refiner = HopfieldRefiner(pipeline.memory, config=pipeline.config.memory).to(bb.device)
         corrected_embeddings, gate_values = refiner(base_embeddings, text=text)
         
         corrections_applied = (gate_values > 0.5).sum().item()
         max_gate = gate_values.max().item() if gate_values.numel() > 0 else 0.0
         diff_norm = torch.norm(corrected_embeddings - base_embeddings).item()
         
-        print(f"[Synthesize] Memory size: {pipeline.memory.size}, "
+        print(f"[Synthesize] Backbone: {backbone_type.upper()}, Memory size: {pipeline.memory.size}, "
               f"Corrections applied: {corrections_applied}, "
               f"Max gate: {max_gate:.4f}, "
               f"Embedding diff norm: {diff_norm:.4f}")
         
         # Step 3: Get speaker conditioning
-        speaker_conditioning = pipeline.backbone.get_speaker_embedding(temp_speaker_path, language, ref_text=ref_text)
+        speaker_conditioning = bb.get_speaker_embedding(temp_speaker_path, language, ref_text=ref_text)
         
         # Step 4: Synthesize
-        # Use direct synthesis (no embedding hooks) when corrections don't
-        # actually change the embeddings.  The hook in synthesize_from_embeddings
-        # replaces context-aware embeddings with context-free ones, which
-        # causes extra words / repetition in the output audio.
-        backbone_name = type(pipeline.backbone).__name__
+        backbone_name = type(bb).__name__
         if diff_norm < 1e-4:
-            print(f"[Synthesize] No meaningful embedding changes → using direct {backbone_name} synthesis (no hooks)")
-            waveform, sr = pipeline.backbone.synthesize_direct(
+            print(f"[Synthesize] No meaningful embedding changes → using direct {backbone_name} synthesis")
+            waveform, sr = bb.synthesize_direct(
                 text=text,
                 speaker_conditioning=speaker_conditioning,
                 language=language,
                 user_ref_text=ref_text,
             )
         else:
-            print(f"[Synthesize] Corrections active (diff={diff_norm:.4f}) → using hook-based synthesis")
-            waveform, sr = pipeline.backbone.synthesize_from_embeddings(
+            print(f"[Synthesize] Corrections active (diff={diff_norm:.4f}) → using hook-based synthesis on {backbone_name}")
+            waveform, sr = bb.synthesize_from_embeddings(
                 text_embeddings=corrected_embeddings.detach(),
                 speaker_conditioning=speaker_conditioning,
                 text=text,
@@ -196,7 +204,7 @@ async def synthesize_text(
         return FileResponse(
             path=output_path, 
             media_type="audio/wav", 
-            filename="synthesized.wav",
+            filename=f"synthesized_{backbone_type}.wav",
             background=None
         )
     except Exception as e:

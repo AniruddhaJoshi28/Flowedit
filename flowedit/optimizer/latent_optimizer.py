@@ -190,78 +190,28 @@ class LatentOptimizer:
             # Perturbed embeddings: c + δ
             perturbed_embeddings = base_embeddings.detach() + delta_masked
 
-            # Synthesize through backbone: g_θ(c + δ)
+            # Compute backbone-specific optimization loss (differentiable path)
             try:
-                pred_out = backbone.synthesize_from_embeddings(
-                    text_embeddings=perturbed_embeddings,
+                task_loss = backbone.compute_optimization_loss(
+                    perturbed_embeddings=perturbed_embeddings,
+                    ref_audio_path=ref_audio_path,
                     speaker_conditioning=speaker_conditioning,
                     text=text,
                     language=language,
+                    target_word_start_time=target_word_start_time,
+                    target_word_end_time=target_word_end_time,
                 )
-                pred_waveform = pred_out[0] if isinstance(pred_out, tuple) else pred_out
-                pred_waveform = pred_waveform.to(device)
             except Exception as e:
-                logger.warning(f"Synthesis failed at step {step}: {e}")
-                loss = self.config.lambda_reg * torch.sum(delta_masked ** 2)
-                loss.backward()
-                optimizer.step()
-                scheduler.step()
-                continue
-
-            # Extract target word segment from predicted waveform
-            # using proportional token mapping (since F5-TTS uses character tokens
-            # and roughly monotonic alignment)
-            seq_len = base_embeddings.shape[1]
-            start_ratio = token_indices[0] / seq_len
-            end_ratio = (token_indices[-1] + 1) / seq_len
-            
-            T_audio = pred_waveform.shape[-1]
-            start_idx = int(start_ratio * T_audio)
-            end_idx = int(end_ratio * T_audio)
-            
-            # Ensure extracted segment is at least win_length long for mel-spectrogram STFT
-            min_samples = self.audio_processor.config.win_length + 128
-            if (end_idx - start_idx) < min_samples:
-                center = (start_idx + end_idx) // 2
-                half_win = min_samples // 2
-                start_idx = max(0, center - half_win)
-                end_idx = min(T_audio, start_idx + min_samples)
-                
-            pred_target_waveform = pred_waveform[..., start_idx:end_idx]
-
-            # Compute mel-spectrogram of prediction segment
-            pred_mel = self.audio_processor.compute_mel(pred_target_waveform)
-
-            # Apply data augmentation to reference if enabled
-            if self.config.enable_augmentation and step > 0:
-                ref_mel_aug = self.audio_processor.augment_mel(
-                    ref_mel,
-                    time_stretch_range=self.config.augment_time_stretch_range,
-                    gain_db_range=self.config.augment_gain_db_range,
-                )
-            else:
-                ref_mel_aug = ref_mel
-
-            from flowedit.utils.metrics import compute_mel_loss, compute_f0_loss
-
-            # Primary loss: ||Mel(g_θ(c+δ)) - Mel(y_ref)||²
-            # Compare the target segment against the reference audio
-            mel_loss = compute_mel_loss(pred_mel, ref_mel_aug)
+                logger.warning(f"Optimization loss computation failed at step {step}: {e}")
+                task_loss = torch.tensor(0.0, device=device, requires_grad=True)
 
             # Regularization: ||δ||² (prevent catastrophic forgetting / excessive deviation)
             reg_loss = self.config.lambda_reg * torch.sum(delta_masked ** 2)
 
-            # Optional F0 loss for tonal languages
-            f0_loss = torch.tensor(0.0, device=device)
-            if self.config.use_f0_loss and self.config.f0_loss_alpha > 0:
-                f0_loss = self.config.f0_loss_alpha * compute_f0_loss(
-                    pred_target_waveform, ref_waveform
-                )
+            # Total loss: L = L_task + λ||δ||²
+            total_loss = task_loss + reg_loss
 
-            # Total loss: L = L_mel + λ||δ||² + α·L_F0
-            total_loss = mel_loss + reg_loss + f0_loss
-
-            # Backward pass (autograd through frozen GPT)
+            # Backward pass (autograd/adjoint through frozen backbone)
             total_loss.backward()
 
             # Gradient clipping: ||∇_δ||_∞ ≤ 1.0
@@ -278,7 +228,7 @@ class LatentOptimizer:
                 delta_norm = torch.norm(delta_masked).item()
                 logger.info(
                     f"Step {step:02d} | "
-                    f"Mel Loss: {mel_loss.item():.4f} | "
+                    f"Task Loss: {task_loss.item():.4f} | "
                     f"Reg Loss: {reg_loss.item():.4f} | "
                     f"Total Loss: {total_loss.item():.4f} | "
                     f"||δ||: {delta_norm:.4f} | "
