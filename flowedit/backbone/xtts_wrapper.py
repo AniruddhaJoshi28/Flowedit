@@ -153,14 +153,39 @@ class XTTSBackbone(nn.Module):
 
         # Initialize model
         self.model = Xtts.init_from_config(xtts_config)
-        self.model.load_checkpoint(
-            xtts_config,
-            checkpoint_dir=model_dir,
-            checkpoint_path=checkpoint_path,
-            vocab_path=vocab_path,
-            eval=True,
-            use_deepspeed=False,
-        )
+        try:
+            self.model.load_checkpoint(
+                xtts_config,
+                checkpoint_dir=model_dir,
+                checkpoint_path=checkpoint_path,
+                vocab_path=vocab_path,
+                eval=True,
+                use_deepspeed=False,
+                strict=False,
+            )
+        except KeyError as e:
+            if "model" in str(e) or "'model'" in str(e):
+                logger.warning("Checkpoint missing 'model' key. Wrapping state dict in a temporary file...")
+                raw_checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+                wrapped_checkpoint = {"model": raw_checkpoint.get("state_dict", raw_checkpoint)}
+                
+                fd, tmp_path = tempfile.mkstemp(suffix=".pth")
+                os.close(fd)
+                try:
+                    torch.save(wrapped_checkpoint, tmp_path)
+                    self.model.load_checkpoint(
+                        xtts_config,
+                        checkpoint_dir=model_dir,
+                        checkpoint_path=tmp_path,
+                        vocab_path=vocab_path,
+                        eval=True,
+                        use_deepspeed=False,
+                        strict=False,
+                    )
+                finally:
+                    os.remove(tmp_path)
+            else:
+                raise
         self.model = self.model.to(self.device)
 
         # Extract tokenizer reference
@@ -422,14 +447,12 @@ class XTTSBackbone(nn.Module):
                 language=language,
                 gpt_cond_latent=gpt_cond_latent,
                 speaker_embedding=speaker_emb,
-                temperature=self._get_config_value("temperature", 0.85),
-                length_penalty=self._get_config_value("length_penalty", 1.0),
-                repetition_penalty=self._get_config_value(
-                    "repetition_penalty", 2.0
-                ),
-                top_k=self._get_config_value("top_k", 50),
-                top_p=self._get_config_value("top_p", 0.85),
-                enable_text_splitting=True,
+                temperature=0.75,
+                length_penalty=1.0,
+                repetition_penalty=10.0,
+                top_k=50,
+                top_p=0.85,
+                enable_text_splitting=False,
             )
 
             waveform = out.get("wav", None)
@@ -483,14 +506,12 @@ class XTTSBackbone(nn.Module):
             language=language,
             gpt_cond_latent=gpt_cond_latent,
             speaker_embedding=speaker_emb,
-            temperature=self._get_config_value("temperature", 0.85),
-            length_penalty=self._get_config_value("length_penalty", 1.0),
-            repetition_penalty=self._get_config_value(
-                "repetition_penalty", 2.0
-            ),
-            top_k=self._get_config_value("top_k", 50),
-            top_p=self._get_config_value("top_p", 0.85),
-            enable_text_splitting=True,
+            temperature=0.75,
+            length_penalty=1.0,
+            repetition_penalty=10.0,
+            top_k=50,
+            top_p=0.85,
+            enable_text_splitting=False,
         )
 
         waveform = out.get("wav", None)
