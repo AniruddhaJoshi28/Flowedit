@@ -23,11 +23,11 @@ class OptimizationConfig:
     n_steps: int = 80
 
     # Learning rate schedule: cosine anneal from lr_start → lr_end
-    lr_start: float = 0.03
-    lr_end: float = 0.001
+    lr_start: float = 0.005
+    lr_end: float = 0.0005
 
-    # L2 regularization weight on δ (paper: λ=0.001, tuned: 0.0001 for stronger proper noun alignment)
-    lambda_reg: float = 0.0001
+    # L2 regularization weight on δ (paper: λ=0.001)
+    lambda_reg: float = 0.01
 
     # Gradient clipping max norm (paper: ‖∇_δ‖_∞ ≤ 1.0)
     grad_clip_max_norm: float = 1.0
@@ -140,12 +140,12 @@ class BackboneConfig:
 
     # ── XTTS-specific settings ──────────────────────────────────────
     # Path to directory containing XTTS model files (model.pth, config.json, etc.)
-    # Defaults to flowedit/Xtts/ relative to the package
+    # Defaults to local package Xtts directory if not overridden
     xtts_model_dir: str = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "Xtts"
     )
 
-    # Which checkpoint file to load (model.pth = fine-tuned, base_model.pth = base)
+    # Which checkpoint file to load (model.pth = fine-tuned / default, base_model.pth = base)
     xtts_checkpoint: str = "model.pth"
 
     # ── F5-TTS-specific settings ────────────────────────────────────

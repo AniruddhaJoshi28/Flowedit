@@ -178,23 +178,30 @@ async def synthesize_text(
         # Step 3: Get speaker conditioning
         speaker_conditioning = bb.get_speaker_embedding(temp_speaker_path, language, ref_text=ref_text)
         
-        # Step 4: Synthesize
+        # Step 4: Synthesize — use hook-based synthesis whenever corrections are active
         backbone_name = type(bb).__name__
-        if diff_norm < 1e-4:
-            print(f"[Synthesize] No meaningful embedding changes → using direct {backbone_name} synthesis")
-            waveform, sr = bb.synthesize_direct(
-                text=text,
-                speaker_conditioning=speaker_conditioning,
-                language=language,
-                user_ref_text=ref_text,
-            )
-        else:
-            print(f"[Synthesize] Corrections active (diff={diff_norm:.4f}) → using hook-based synthesis on {backbone_name}")
+        
+        # Debug: log memory delta norms
+        if pipeline.memory and not pipeline.memory.is_empty:
+            for i, (v, m) in enumerate(zip(pipeline.memory.values, pipeline.memory.metadata)):
+                v_norm = torch.norm(v).item()
+                print(f"  [Memory {i}] word='{m.get('word', '?')}', δ_norm={v_norm:.6f}")
+        
+        if corrections_applied > 0:
+            print(f"[Synthesize] Corrections active (applied={corrections_applied}, diff={diff_norm:.4f}) → using hook-based synthesis on {backbone_name}")
             waveform, sr = bb.synthesize_from_embeddings(
                 text_embeddings=corrected_embeddings.detach(),
                 speaker_conditioning=speaker_conditioning,
                 text=text,
                 language=language,
+            )
+        else:
+            print(f"[Synthesize] No corrections matched → using direct {backbone_name} synthesis")
+            waveform, sr = bb.synthesize_direct(
+                text=text,
+                speaker_conditioning=speaker_conditioning,
+                language=language,
+                user_ref_text=ref_text,
             )
         
         # Save waveform to output_path using soundfile

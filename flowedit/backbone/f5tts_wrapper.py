@@ -8,7 +8,7 @@ model loading, tokenizer/vocab resolution, vocoder setup, and inference.
 
 import torch
 import torch.nn as nn
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 import logging
 import os
 import tempfile
@@ -204,7 +204,7 @@ class F5TTSBackbone(TTSBackbone):
         language: str = "en",
         target_word_start_time: Optional[float] = None,
         target_word_end_time: Optional[float] = None,
-    ) -> torch.Tensor:
+    ) -> Dict[str, Any]:
         """Synthesize from perturbed embeddings and return mel reconstruction loss."""
         pred_out = self.synthesize_from_embeddings(
             text_embeddings=perturbed_embeddings,
@@ -224,7 +224,13 @@ class F5TTSBackbone(TTSBackbone):
         ref_mel = ap.compute_mel(ref_waveform)
 
         pred_mel = ap.compute_mel(pred_waveform)
-        return compute_mel_loss(pred_mel, ref_mel)
+        loss = compute_mel_loss(pred_mel, ref_mel)
+
+        return {
+            "loss": loss,
+            "mel_loss": loss.item(),
+            "embedding_norm": torch.norm(perturbed_embeddings).item()
+        }
 
     def get_speaker_embedding(self, audio_path: Optional[str] = None, language: str = "en", ref_text: Optional[str] = None) -> Dict[str, str]:
         """Store reference audio path for F5-TTS inference and transcribe once."""

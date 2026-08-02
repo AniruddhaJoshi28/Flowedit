@@ -20,7 +20,8 @@ Reference: Adapted for FlowEdit (arXiv:2606.20518) backbone interface.
 
 import torch
 import torch.nn as nn
-from typing import Dict, List, Optional, Tuple
+import torch.nn.functional as F
+from typing import Dict, List, Optional, Tuple, Any
 import logging
 import os
 import tempfile
@@ -158,6 +159,24 @@ class XTTSBackbone(TTSBackbone):
             )
             raise
 
+        # Verify Checkpoint Identity (Phase 0.5)
+        import hashlib
+        try:
+            with open(checkpoint_path, "rb") as f:
+                file_hash = hashlib.sha256()
+                while chunk := f.read(8192 * 1024):  # 8MB chunks
+                    file_hash.update(chunk)
+            sha256_hash = file_hash.hexdigest()
+        except Exception as e:
+            sha256_hash = f"Error computing hash: {e}"
+
+        logger.info("=" * 60)
+        logger.info("XTTS CHECKPOINT VERIFICATION (Phase 0.5)")
+        logger.info(f"  Path: {checkpoint_path}")
+        logger.info(f"  SHA256: {sha256_hash}")
+        logger.info(f"  Model Name: XTTS-v2")
+        logger.info("=" * 60)
+
         # Load XTTS config
         xtts_config = XttsConfig()
         xtts_config.load_json(config_path)
@@ -199,6 +218,38 @@ class XTTSBackbone(TTSBackbone):
             else:
                 raise
         self.model = self.model.to(self.device)
+
+        # Ensure DVAE is loaded (needed for compute_optimization_loss)
+        if not hasattr(self.model, "dvae") or self.model.dvae is None:
+            try:
+                from TTS.tts.layers.xtts.dvae import DiscreteVAE
+                dvae = DiscreteVAE(
+                    channels=80,
+                    normalization=None,
+                    positional_dims=1,
+                    num_tokens=1024,
+                    codebook_dim=512,
+                    hidden_dim=512,
+                    num_resnet_blocks=3,
+                    kernel_size=3,
+                    num_layers=2,
+                    use_transposed_convs=False,
+                )
+                dvae_path = os.path.join(model_dir, "dvae.pth")
+                if os.path.exists(dvae_path):
+                    dvae_checkpoint = torch.load(dvae_path, map_location="cpu", weights_only=False)
+                    if "model" in dvae_checkpoint:
+                        dvae.load_state_dict(dvae_checkpoint["model"], strict=False)
+                    else:
+                        dvae.load_state_dict(dvae_checkpoint, strict=False)
+                    dvae = dvae.to(self.device)
+                    dvae.eval()
+                    self.model.dvae = dvae
+                    logger.info("XTTS DVAE loaded successfully.")
+                else:
+                    logger.warning(f"XTTS DVAE checkpoint not found at {dvae_path}. Loss computation will fail if attempted.")
+            except Exception as e:
+                logger.error(f"Failed to load XTTS DVAE: {e}")
 
         # Extract tokenizer reference
         self.tokenizer_instance = getattr(self.model, "tokenizer", None)
@@ -298,94 +349,121 @@ class XTTSBackbone(TTSBackbone):
         language: str = "en",
         target_word_start_time: Optional[float] = None,
         target_word_end_time: Optional[float] = None,
-    ) -> torch.Tensor:
-        """Compute teacher-forced cross-entropy or acoustic feature loss for XTTS.
-        
-        Runs the GPT forward pass with perturbed_embeddings injected into gpt.text_embedding.
+    ) -> Dict[str, Any]:
+        """Compute differentiable teacher-forced CE loss for XTTS latent optimization.
+
+        Creates a direct gradient path: δ → perturbed_embeddings → CE loss over target audio tokens.
         """
         self._ensure_loaded()
         gpt = getattr(self.model, "gpt", None)
         if gpt is None:
             raise RuntimeError("XTTS model does not have a GPT module loaded.")
 
-        tokens = self.get_token_ids(text, language)
+        import torchaudio
+        device = self.device
 
-        # Hook into GPT text_embedding layer
-        target_embed = getattr(gpt, "text_embedding", getattr(gpt, "text_embed", None))
+        # 1. Prepare inputs (audio_codes, tokens, etc.)
+        tokens = self.get_token_ids(text, language)
+        text_lengths = torch.tensor([tokens.shape[1]], dtype=torch.long, device=device)
+
+        # 2. Extract reference audio features (teacher targets)
+        waveform, sr = torchaudio.load(ref_audio_path)
+        waveform = waveform.to(device)
+        if sr != 22050:
+            import torchaudio.transforms as T
+            resampler = T.Resample(sr, 22050).to(device)
+            waveform = resampler(waveform)
+
+        if not hasattr(self.model, 'mel_transform'):
+            self.model.mel_transform = torchaudio.transforms.MelSpectrogram(
+                sample_rate=22050, n_fft=1024, win_length=1024, hop_length=256, f_min=0, f_max=8000, n_mels=80
+            ).to(device)
+
+        mel = self.model.mel_transform(waveform)
+        if mel.dim() == 2:
+            mel = mel.unsqueeze(0)
+        mel = torch.log(torch.clamp(mel, min=1e-5))
+
+        with torch.no_grad():
+            audio_codes = self.model.dvae.get_codebook_indices(mel)
+        audio_lengths = torch.tensor([audio_codes.shape[1]], dtype=torch.long, device=device)
+
+        gpt_cond_latent = speaker_conditioning.get("gpt_cond_latent")
+        if gpt_cond_latent is None:
+            raise RuntimeError("Missing gpt_cond_latent in speaker_conditioning.")
+
+        # 3. Hook the embedding layer to inject perturbed_embeddings
+        target_embed_layer = getattr(gpt, "text_embedding", getattr(gpt, "text_embed", None))
+        if target_embed_layer is None:
+            raise RuntimeError("Cannot find text_embedding layer in GPT")
+
         hook_handle = None
 
-        if target_embed is not None:
-            def hook(module, inputs, output):
-                out_tensor = output[0] if isinstance(output, tuple) else output
-                T_out = out_tensor.shape[1]
-                T_in = perturbed_embeddings.shape[1]
-                t_embed = perturbed_embeddings.to(device=out_tensor.device, dtype=out_tensor.dtype)
-                
-                new_out = out_tensor.clone()
-                avail = min(T_in, T_out)
-                new_out[:, :avail, :] = t_embed[:, :avail, :]
-                
-                if isinstance(output, tuple):
-                    return (new_out,) + output[1:]
-                return new_out
+        def embedding_hook(module, inputs, output):
+            out_tensor = output[0] if isinstance(output, tuple) else output
+            new_out = out_tensor.clone()
+            t_embed = perturbed_embeddings.to(
+                device=out_tensor.device, dtype=out_tensor.dtype
+            )
 
-            hook_handle = target_embed.register_forward_hook(hook)
+            input_ids = inputs[0]  # Expected shape [batch, T_seq]
+            L_corr = t_embed.shape[1]
+            T_seq = out_tensor.shape[1]
+
+            start_pos = -1
+            if input_ids is not None and input_ids.dim() >= 2 and tokens.shape[1] <= input_ids.shape[1]:
+                # Search for the exact token subsequence
+                my_seq = tokens[0].to(input_ids.device)
+                for i in range(input_ids.shape[1] - my_seq.shape[0] + 1):
+                    if torch.all(input_ids[0, i:i+my_seq.shape[0]] == my_seq):
+                        start_pos = i
+                        break
+
+            if start_pos == -1:
+                start_pos = max(0, T_seq - L_corr)
+
+            avail = min(L_corr, T_seq - start_pos)
+            new_out[:, start_pos : start_pos + avail, :] = t_embed[
+                :, :avail, :
+            ]
+
+            if isinstance(output, tuple):
+                return (new_out,) + output[1:]
+            return new_out
+
+        hook_handle = target_embed_layer.register_forward_hook(embedding_hook)
 
         try:
-            gpt_cond_latent = speaker_conditioning.get("gpt_cond_latent")
-            
-            # Encode reference audio into DVAE codes if available
-            dvae = getattr(self.model, "dvae", getattr(self.model, "dvae_encoder", None))
-            audio_codes = None
-            if dvae is not None and hasattr(dvae, "get_codebook_indices"):
-                try:
-                    import librosa
-                    import soundfile as sf
-                    y, sr = librosa.load(ref_audio_path, sr=22050, mono=True)
-                    y_tensor = torch.from_numpy(y).unsqueeze(0).unsqueeze(0).to(self.device)
-                    with torch.no_grad():
-                        audio_codes = dvae.get_codebook_indices(y_tensor)
-                except Exception as e:
-                    logger.debug(f"DVAE code extraction failed: {e}")
+            # 4. Forward pass through GPT to compute loss
+            res = gpt.forward(
+                text_inputs=tokens,
+                text_lengths=text_lengths,
+                audio_codes=audio_codes,
+                wav_lengths=audio_lengths,
+                cond_mels=mel,
+                cond_latents=gpt_cond_latent,
+            )
 
-            if audio_codes is not None and hasattr(gpt, "forward"):
-                # Teacher-forced GPT forward pass
-                text_lengths = torch.tensor([tokens.shape[1]], device=self.device)
-                wav_lengths = torch.tensor([audio_codes.shape[1]], device=self.device)
-                
-                try:
-                    out = gpt(
-                        text_tokens=tokens,
-                        text_lengths=text_lengths,
-                        audio_codes=audio_codes,
-                        wav_lengths=wav_lengths,
-                        cond_latents=gpt_cond_latent,
-                    )
-                    if isinstance(out, dict) and "loss" in out:
-                        return out["loss"]
-                    elif isinstance(out, dict) and "logits" in out:
-                        logits = out["logits"]
-                        return F.cross_entropy(logits.view(-1, logits.size(-1)), audio_codes.view(-1))
-                except Exception as e:
-                    logger.debug(f"Teacher-forced forward failed: {e}")
+            if isinstance(res, tuple):
+                loss_text = res[0]
+                loss_mel = res[1]
+                loss = loss_text + loss_mel
+            elif isinstance(res, dict):
+                loss = res.get("loss", sum(res.values()))
+                loss_text = res.get("loss_text", loss)
+            else:
+                loss = res
+                loss_text = loss
 
-            # Fallback: compute feature matching loss on text embedding projection / cond latents
-            base_embeddings = self.encode_text(text, language)
-            diff = perturbed_embeddings - base_embeddings
-            
-            # Distance penalty to optimize δ towards reference representation
-            from flowedit.utils.audio import AudioProcessor
-            ap = AudioProcessor()
-            ref_waveform, _ = ap.load_audio(ref_audio_path)
-            ref_mel = ap.compute_mel(ref_waveform.to(self.device))
-            
-            mel_mean = ref_mel.mean()
-            loss = torch.sum(diff ** 2) * 0.01 + (perturbed_embeddings.mean() - mel_mean).pow(2)
-            return loss
-
+            return {
+                "loss": loss,
+                "ce_loss": loss_text.item() if hasattr(loss_text, "item") else float(loss_text),
+                "embedding_norm": torch.norm(perturbed_embeddings).item(),
+            }
         finally:
             if hook_handle is not None:
                 hook_handle.remove()
+
 
     def get_speaker_embedding(
         self,
@@ -520,26 +598,41 @@ class XTTSBackbone(TTSBackbone):
                 gpt, "text_embedding", getattr(gpt, "text_embed", None)
             )
             if target_embed is not None:
+                # Precompute the token sequence we are injecting
+                my_tokens = self.get_token_ids(text, language)
 
                 def hook(module, inputs, output):
                     out_tensor = (
                         output[0] if isinstance(output, tuple) else output
                     )
-                    T_seq = out_tensor.shape[1]
-                    L_corr = text_embeddings.shape[1]
-
-                    start_pos = max(0, T_seq - L_corr)
+                    new_out = out_tensor.clone()
                     t_embed = text_embeddings.to(
                         device=out_tensor.device, dtype=out_tensor.dtype
                     )
 
-                    new_out = out_tensor.clone()
+                    input_ids = inputs[0]  # Expected shape [batch, T_seq]
+                    L_corr = t_embed.shape[1]
+                    T_seq = out_tensor.shape[1]
+
+                    start_pos = -1
+                    if input_ids is not None and input_ids.dim() >= 2 and my_tokens.shape[1] <= input_ids.shape[1]:
+                        # Search for the exact token subsequence
+                        my_seq = my_tokens[0].to(input_ids.device)
+                        for i in range(input_ids.shape[1] - my_seq.shape[0] + 1):
+                            if torch.all(input_ids[0, i:i+my_seq.shape[0]] == my_seq):
+                                start_pos = i
+                                break
+
+                    if start_pos == -1:
+                        print("[XTTS Hook] Exact token sequence not found in inputs. Falling back to right-align.")
+                        start_pos = max(0, T_seq - L_corr)
+
                     avail = min(L_corr, T_seq - start_pos)
                     new_out[:, start_pos : start_pos + avail, :] = t_embed[
                         :, :avail, :
                     ]
 
-                    logger.info(
+                    print(
                         f"[XTTS Hook] T_seq: {T_seq}, Corr len: {L_corr}, "
                         f"start_pos: {start_pos}, avail: {avail}"
                     )
@@ -549,6 +642,9 @@ class XTTSBackbone(TTSBackbone):
                     return new_out
 
                 hook_handle = target_embed.register_forward_hook(hook)
+                print(f"[XTTS] Successfully registered hook on {target_embed.__class__.__name__}")
+            else:
+                print("[XTTS ERROR] Could not find text_embedding in GPT!")
 
         try:
             # Run XTTS inference

@@ -94,13 +94,21 @@ class TTSBackbone(nn.Module, ABC):
         language: str = "en",
         target_word_start_time: Optional[float] = None,
         target_word_end_time: Optional[float] = None,
-    ) -> torch.Tensor:
+    ) -> Dict[str, Any]:
         """Compute backbone-specific loss for optimizing perturbation δ.
         
         - F5-TTS: Mel-spectrogram L2 reconstruction loss (Eq. 3 in paper)
         - XTTS: Cross-entropy loss on next-token logits via teacher forcing
         
         The optimizer calls ONLY this method without any model-specific branches.
+        
+        Returns:
+            Dict containing at least:
+                - "loss": A scalar torch.Tensor containing the total loss to backpropagate.
+                - "ce_loss" or "mel_loss": The primary loss term.
+                - "grad_norm": Gradient norm (if available).
+                - "delta_norm": Norm of the perturbation.
+                - "logit_shift": Any other relevant diagnostics.
         """
         pass
 

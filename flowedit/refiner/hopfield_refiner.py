@@ -79,6 +79,7 @@ class HopfieldRefiner(nn.Module):
         self,
         embeddings: torch.Tensor,
         text: Optional[str] = None,
+        token_locator: Optional[callable] = None,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """Refine text embeddings by retrieving and applying stored corrections.
 
@@ -90,6 +91,9 @@ class HopfieldRefiner(nn.Module):
         Args:
             embeddings: Text embeddings from encoder [batch, seq_len, dim]
             text: The original text string (required to align word boundaries)
+            token_locator: Optional callback `lambda prefix_str: int` that returns 
+                           the number of tokens for a given string prefix. Used for 
+                           exact backbone-agnostic token boundary mapping.
 
         Returns:
             Tuple of:
@@ -137,8 +141,24 @@ class HopfieldRefiner(nn.Module):
                         continue
 
                     end_char = start_char + len(word)
-                    token_start = max(0, int((start_char / text_len) * seq_len))
-                    token_end = min(seq_len, max(token_start + 1, int(math.ceil((end_char / text_len) * seq_len))))
+                    
+                    if token_locator is not None:
+                        try:
+                            # Exact token boundary mapping using backbone's tokenizer
+                            token_start = token_locator(text[:start_char])
+                            token_end = token_locator(text[:end_char])
+                            
+                            # Expand by ±1 to absorb tokenizer boundary variations
+                            token_start = max(0, token_start - 1)
+                            token_end = min(seq_len, token_end + 1)
+                        except Exception as e:
+                            logger.warning(f"Tokenizer mapping failed: {e}. Falling back to character ratio.")
+                            token_locator = None
+                            
+                    if token_locator is None:
+                        # Fallback to character ratio heuristic
+                        token_start = max(0, int((start_char / text_len) * seq_len))
+                        token_end = min(seq_len, max(token_start + 1, int(math.ceil((end_char / text_len) * seq_len))))
 
                     if token_start >= token_end:
                         continue

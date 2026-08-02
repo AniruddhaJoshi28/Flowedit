@@ -143,7 +143,16 @@ class FlowEditInference:
         # Step 2: Refine via HopfieldRefiner → ĉ
         # This is where corrections are applied (or passed through)
         with torch.no_grad():
-            refined_embeddings, gate_values = self.refiner(text_embeddings, text=text)
+            def token_locator(prefix_str):
+                # Returns the number of tokens in the prefix string
+                tokens = self.backbone.get_token_ids(prefix_str, language)
+                return tokens.shape[1]
+                
+            refined_embeddings, gate_values = self.refiner(
+                text_embeddings, 
+                text=text,
+                token_locator=token_locator,
+            )
 
         # Count active corrections
         corrections_applied = (gate_values > 0.5).sum().item()

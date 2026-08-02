@@ -261,7 +261,8 @@ class HopfieldMemory:
             )
 
         K = torch.stack(self.keys).to(device=queries.device, dtype=queries.dtype)  # [M, d]
-        V = torch.stack(self.values).to(device=queries.device, dtype=queries.dtype)  # [M, d]
+        pooled_values = [v.mean(dim=0) if v.dim() > 1 else v for v in self.values]
+        V = torch.stack(pooled_values).to(device=queries.device, dtype=queries.dtype)  # [M, d]
 
         Q = F.normalize(queries, dim=-1)  # [seq_len, d]
 

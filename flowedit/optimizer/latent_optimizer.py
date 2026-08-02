@@ -192,7 +192,7 @@ class LatentOptimizer:
 
             # Compute backbone-specific optimization loss (differentiable path)
             try:
-                task_loss = backbone.compute_optimization_loss(
+                loss_dict = backbone.compute_optimization_loss(
                     perturbed_embeddings=perturbed_embeddings,
                     ref_audio_path=ref_audio_path,
                     speaker_conditioning=speaker_conditioning,
@@ -201,9 +201,28 @@ class LatentOptimizer:
                     target_word_start_time=target_word_start_time,
                     target_word_end_time=target_word_end_time,
                 )
+                task_loss = loss_dict["loss"]
             except Exception as e:
                 logger.warning(f"Optimization loss computation failed at step {step}: {e}")
                 task_loss = torch.tensor(0.0, device=device, requires_grad=True)
+                loss_dict = {"loss": task_loss}
+
+            # ── Diagnostic checks ──
+            if step == 0:
+                logger.info(
+                    f"  [DIAG] task_loss.requires_grad={task_loss.requires_grad}, "
+                    f"task_loss={task_loss.item():.6f}"
+                )
+                if not task_loss.requires_grad:
+                    logger.error(
+                        "  [DIAG] ⚠ task_loss has NO gradient! "
+                        "The optimization will not produce meaningful δ values."
+                    )
+                if abs(task_loss.item()) < 1e-8:
+                    logger.warning(
+                        "  [DIAG] ⚠ task_loss is ~0.0 — "
+                        "likely hitting the dummy fallback loss path."
+                    )
 
             # Regularization: ||δ||² (prevent catastrophic forgetting / excessive deviation)
             reg_loss = self.config.lambda_reg * torch.sum(delta_masked ** 2)
@@ -214,6 +233,20 @@ class LatentOptimizer:
             # Backward pass (autograd/adjoint through frozen backbone)
             total_loss.backward()
 
+            # ── Gradient diagnostic (first step only) ──
+            if step == 0 and delta.grad is not None:
+                delta_grad_norm = delta.grad.norm().item()
+                delta_grad_max = delta.grad.abs().max().item()
+                logger.info(
+                    f"  [DIAG] δ grad norm={delta_grad_norm:.6f}, "
+                    f"δ grad max={delta_grad_max:.6f}"
+                )
+                if delta_grad_norm < 1e-8:
+                    logger.error(
+                        "  [DIAG] ⚠ δ gradient is near-zero! "
+                        "No meaningful perturbation will be learned."
+                    )
+
             # Gradient clipping: ||∇_δ||_∞ ≤ 1.0
             grad_norm = torch.nn.utils.clip_grad_norm_(
                 [delta], self.config.grad_clip_max_norm
@@ -223,9 +256,9 @@ class LatentOptimizer:
             optimizer.step()
             scheduler.step()
             
-            # Log progress every 10 steps
             if step % 10 == 0 or step == self.config.n_steps - 1:
                 delta_norm = torch.norm(delta_masked).item()
+                diag_str = " | ".join(f"{k}: {v:.4f}" for k, v in loss_dict.items() if k != "loss" and isinstance(v, (int, float)))
                 logger.info(
                     f"Step {step:02d} | "
                     f"Task Loss: {task_loss.item():.4f} | "
@@ -233,7 +266,8 @@ class LatentOptimizer:
                     f"Total Loss: {total_loss.item():.4f} | "
                     f"||δ||: {delta_norm:.4f} | "
                     f"||∇δ||: {grad_norm.item() if isinstance(grad_norm, torch.Tensor) else grad_norm:.4f} | "
-                    f"LR: {scheduler.get_last_lr()[0]:.6f}"
+                    f"LR: {scheduler.get_last_lr()[0]:.6f} | "
+                    f"{diag_str}"
                 )
 
             # Re-apply mask after gradient step (ensure constraint)
@@ -249,14 +283,14 @@ class LatentOptimizer:
             # Progress bar update
             progress.set_postfix({
                 "loss": f"{loss_val:.4f}",
-                "mel": f"{mel_loss.item():.4f}",
+                "task": f"{task_loss.item():.4f}",
                 "reg": f"{reg_loss.item():.4f}",
                 "∇": f"{grad_val:.4f}",
                 "lr": f"{scheduler.get_last_lr()[0]:.5f}",
             })
 
             if progress_callback:
-                progress_callback(step, loss_val, grad_val)
+                progress_callback(step, loss_val, grad_val, perturbed_embeddings)
 
         # Step 6: Extract optimized δ* sequence
         with torch.no_grad():
