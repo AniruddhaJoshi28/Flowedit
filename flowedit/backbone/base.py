@@ -10,9 +10,31 @@ remains 100% identical and model-agnostic.
 """
 
 from abc import ABC, abstractmethod
+from enum import Enum
 import torch
 import torch.nn as nn
 from typing import Dict, List, Optional, Tuple, Any
+
+
+
+from dataclasses import dataclass
+
+class OptimizationMode(str, Enum):
+    """Supported backbone optimization modes."""
+    FLOW_MATCHING = "flow_matching"
+    AUTOREGRESSIVE = "autoregressive"
+    DIFFUSION = "diffusion"
+    OTHER = "other"
+
+
+@dataclass
+class BackboneCapabilities:
+    """Explicit capabilities descriptor for a TTS backbone."""
+    differentiable_embeddings: bool = True
+    differentiable_decoder: bool = True
+    teacher_forcing: bool = False
+    supports_embedding_hook: bool = True
+    supports_gradient_checkpointing: bool = True
 
 
 class TTSBackbone(nn.Module, ABC):
@@ -21,6 +43,12 @@ class TTSBackbone(nn.Module, ABC):
     def __init__(self, config: Any):
         super().__init__()
         self.config = config
+
+    @property
+    def capabilities(self) -> BackboneCapabilities:
+        """Return explicit BackboneCapabilities descriptor."""
+        return BackboneCapabilities()
+
 
     @property
     @abstractmethod
@@ -42,13 +70,8 @@ class TTSBackbone(nn.Module, ABC):
 
     @property
     @abstractmethod
-    def optimization_mode(self) -> str:
-        """Return the optimization mode used by this backbone for delta learning.
-        
-        Supported modes:
-            - 'adjoint_ode': Continuous flow-matching adjoint ODE solver (F5-TTS)
-            - 'teacher_forcing': Teacher-forced autoregressive cross-entropy loss (XTTS-v2)
-        """
+    def optimization_mode(self) -> OptimizationMode:
+        """Return the OptimizationMode enum for this backbone."""
         pass
 
     @property
@@ -62,9 +85,23 @@ class TTSBackbone(nn.Module, ABC):
         pass
 
     @abstractmethod
-    def get_token_ids(self, text: str, language: str = "en") -> torch.Tensor:
-        """Tokenize text string into token IDs [1, S]."""
+    def tokenize(self, text: str, language: str = "en") -> Dict[str, Any]:
+        """Tokenize text string into token dictionary containing 'token_ids' and metadata."""
         pass
+
+    @abstractmethod
+    def detokenize(self, token_ids: torch.Tensor) -> str:
+        """Convert token IDs back into text representation."""
+        pass
+
+    def get_token_ids(self, text: str, language: str = "en") -> torch.Tensor:
+        """Backward-compatible helper: Tokenize text string into token IDs [1, S]."""
+        res = self.tokenize(text, language=language)
+        if isinstance(res, dict) and "token_ids" in res:
+            return res["token_ids"]
+        if isinstance(res, torch.Tensor):
+            return res
+        return torch.tensor(res, dtype=torch.long)
 
     @abstractmethod
     def encode_text(self, text: str, language: str = "en") -> torch.Tensor:
@@ -76,6 +113,7 @@ class TTSBackbone(nn.Module, ABC):
 
     @abstractmethod
     def get_speaker_embedding(
+
         self,
         audio_path: Optional[str] = None,
         language: str = "en",
@@ -95,20 +133,13 @@ class TTSBackbone(nn.Module, ABC):
         target_word_start_time: Optional[float] = None,
         target_word_end_time: Optional[float] = None,
     ) -> Dict[str, Any]:
-        """Compute backbone-specific loss for optimizing perturbation δ.
-        
-        - F5-TTS: Mel-spectrogram L2 reconstruction loss (Eq. 3 in paper)
-        - XTTS: Cross-entropy loss on next-token logits via teacher forcing
-        
-        The optimizer calls ONLY this method without any model-specific branches.
+        """Compute backbone-specific differentiable loss for optimizing perturbation δ.
         
         Returns:
             Dict containing at least:
                 - "loss": A scalar torch.Tensor containing the total loss to backpropagate.
                 - "ce_loss" or "mel_loss": The primary loss term.
-                - "grad_norm": Gradient norm (if available).
                 - "delta_norm": Norm of the perturbation.
-                - "logit_shift": Any other relevant diagnostics.
         """
         pass
 
@@ -127,8 +158,20 @@ class TTSBackbone(nn.Module, ABC):
         """
         pass
 
+    def decode_embeddings(
+        self,
+        text_embeddings: torch.Tensor,
+        speaker_conditioning: Dict[str, Any],
+        text: str,
+        language: str = "en",
+    ) -> Tuple[torch.Tensor, int]:
+        """Alias for synthesize_from_embeddings."""
+        return self.synthesize_from_embeddings(
+            text_embeddings, speaker_conditioning, text, language=language
+        )
+
     @abstractmethod
-    def synthesize_direct(
+    def synthesize(
         self,
         text: str,
         speaker_conditioning: Dict[str, Any],
@@ -141,3 +184,16 @@ class TTSBackbone(nn.Module, ABC):
             Tuple of (waveform tensor [1, T], sample_rate int)
         """
         pass
+
+    def synthesize_direct(
+        self,
+        text: str,
+        speaker_conditioning: Dict[str, Any],
+        language: str = "en",
+        user_ref_text: Optional[str] = None,
+    ) -> Tuple[torch.Tensor, int]:
+        """Backward-compatible alias for synthesize()."""
+        return self.synthesize(
+            text, speaker_conditioning, language=language, user_ref_text=user_ref_text
+        )
+

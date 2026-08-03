@@ -34,12 +34,13 @@ class OptimizationConfig:
 
     # Data augmentation on reference mel during optimization
     augment_time_stretch_range: tuple = (0.9, 1.1)
-    # F0 pitch guidance loss (paper Section 4.5: reduces error rate significantly)
+    # F0 pitch guidance loss (paper Section 4.5: optional extension)
     f0_loss_alpha: float = 0.3
-    use_f0_loss: bool = True
+    use_f0_loss: bool = False
 
     augment_gain_db_range: tuple = (-3.0, 3.0)
     enable_augmentation: bool = True
+
 
 
 @dataclass
@@ -125,43 +126,39 @@ class AudioConfig:
 
 @dataclass
 class BackboneConfig:
-    """Backbone configuration supporting XTTS-v2 and F5-TTS.
-
-    XTTS-v2 is autoregressive (GPT-based), NOT flow-matching.
-    F5-TTS is a flow-matching Diffusion Transformer.
+    """Backbone configuration supporting XTTS-v2, F5-TTS, and CosyVoice (2/3).
 
     Set backbone_type to select which model to use:
-        - "xtts"  : Use local XTTS-v2 model from xtts_model_dir
-        - "f5tts" : Use F5-TTS via the f5-tts package
+        - "xtts"      : Use local XTTS-v2 model from xtts_model_dir
+        - "f5tts"     : Use F5-TTS via f5-tts package
+        - "cosyvoice" : Use CosyVoice / CosyVoice 2 / CosyVoice 3
     """
 
-    # Backbone selector: "xtts" or "f5tts"
-    backbone_type: str = "xtts"
+    # Backbone selector: "xtts", "f5tts", or "cosyvoice"
+    backbone_type: str = "cosyvoice"
 
     # ── XTTS-specific settings ──────────────────────────────────────
-    # Path to directory containing XTTS model files (model.pth, config.json, etc.)
-    # Defaults to local package Xtts directory if not overridden
     xtts_model_dir: str = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "Xtts"
     )
-
-    # Which checkpoint file to load (model.pth = fine-tuned / default, base_model.pth = base)
     xtts_checkpoint: str = "model.pth"
 
     # ── F5-TTS-specific settings ────────────────────────────────────
-    # Model identifier for Coqui TTS (used by F5-TTS wrapper)
     model_name: str = "tts_models/multilingual/multi-dataset/xtts_v2"
 
+    # ── CosyVoice-specific settings ──────────────────────────────────
+    cosyvoice_model_version: str = "2"   # "2", "3", "300M", "0.5B"
+    cosyvoice_model_dir: str = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "CosyVoice"
+    )
+    cosyvoice_mode: str = "zero_shot"    # "zero_shot", "cross_lingual", "instruct"
+
     # ── Shared settings ─────────────────────────────────────────────
-    # Enable gradient checkpointing for memory efficiency
     use_gradient_checkpointing: bool = True
-
-    # Device placement
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
-
-    # Precision: float16 for inference, float32 for optimization
     optimization_dtype: str = "float32"
     inference_dtype: str = "float16"
+
 
 
 @dataclass

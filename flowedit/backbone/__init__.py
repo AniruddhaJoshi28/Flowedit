@@ -1,6 +1,7 @@
-from .base import TTSBackbone
+from .base import TTSBackbone, OptimizationMode
 from .f5tts_wrapper import F5TTSBackbone
 from .xtts_wrapper import XTTSBackbone
+from .cosyvoice_wrapper import CosyVoiceBackbone
 
 
 def create_backbone(config) -> TTSBackbone:
@@ -10,7 +11,7 @@ def create_backbone(config) -> TTSBackbone:
         config: BackboneConfig instance with backbone_type field.
 
     Returns:
-        F5TTSBackbone or XTTSBackbone instance implementing TTSBackbone.
+        F5TTSBackbone, XTTSBackbone, or CosyVoiceBackbone instance implementing TTSBackbone.
 
     Raises:
         ValueError: If backbone_type is not recognized.
@@ -21,8 +22,11 @@ def create_backbone(config) -> TTSBackbone:
         return XTTSBackbone(config)
     elif backbone_type in ("f5tts", "f5-tts", "f5"):
         return F5TTSBackbone(config)
+    elif backbone_type in ("cosyvoice", "cosyvoice2", "cosyvoice3", "cosy_voice"):
+        return CosyVoiceBackbone(config)
     else:
         raise ValueError(
             f"Unknown backbone_type: '{backbone_type}'. "
-            f"Supported: 'xtts', 'f5tts'"
+            f"Supported: 'xtts', 'f5tts', 'cosyvoice'"
         )
+

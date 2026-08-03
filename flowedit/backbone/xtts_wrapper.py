@@ -28,17 +28,15 @@ import tempfile
 import json
 
 from flowedit.config import BackboneConfig
-from flowedit.backbone.base import TTSBackbone
+from flowedit.backbone.base import TTSBackbone, OptimizationMode
 
 logger = logging.getLogger(__name__)
 
 
 class XTTSBackbone(TTSBackbone):
     """
-    XTTS-v2 wrapper using the Coqui TTS library.
-
-    Provides the same interface as F5TTSBackbone so the FlowEdit pipeline
-    can use either backbone interchangeably via the factory function.
+    XTTS-v2 wrapper supporting local loading from flowedit/Xtts.
+    Interacts with the FlowEdit pipeline purely through the TTSBackbone interface.
     """
 
     def __init__(self, config: BackboneConfig):
@@ -59,8 +57,33 @@ class XTTSBackbone(TTSBackbone):
         return self.tokenizer_instance
 
     @property
-    def optimization_mode(self) -> str:
-        return "teacher_forcing"
+    def optimization_mode(self) -> OptimizationMode:
+        return OptimizationMode.AUTOREGRESSIVE
+
+    def tokenize(self, text: str, language: str = "en") -> Dict[str, Any]:
+        """Tokenize text using XTTS BPE tokenizer."""
+        tokens = self.get_token_ids(text, language=language)
+        return {"token_ids": tokens, "text": text}
+
+    def detokenize(self, token_ids: torch.Tensor) -> str:
+        """Decode BPE token IDs back into text."""
+        if isinstance(token_ids, torch.Tensor):
+            ids = token_ids.squeeze().tolist()
+        else:
+            ids = list(token_ids)
+        if self.tokenizer_instance and hasattr(self.tokenizer_instance, "decode"):
+            return self.tokenizer_instance.decode(ids)
+        return str(ids)
+
+    def synthesize(
+        self,
+        text: str,
+        speaker_conditioning: Dict[str, Any],
+        language: str = "en",
+        user_ref_text: Optional[str] = None,
+    ) -> Tuple[torch.Tensor, int]:
+        """Direct synthesis without embedding hooks."""
+        return self.synthesize_direct(text, speaker_conditioning, language=language, user_ref_text=user_ref_text)
 
     @property
     def embedding_dim(self) -> int:

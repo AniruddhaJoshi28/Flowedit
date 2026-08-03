@@ -14,7 +14,7 @@ import os
 import tempfile
 
 from flowedit.config import BackboneConfig
-from flowedit.backbone.base import TTSBackbone
+from flowedit.backbone.base import TTSBackbone, OptimizationMode
 
 logger = logging.getLogger(__name__)
 
@@ -43,8 +43,36 @@ class F5TTSBackbone(TTSBackbone):
         return self.tokenizer_instance
 
     @property
-    def optimization_mode(self) -> str:
-        return "adjoint_ode"
+    def optimization_mode(self) -> OptimizationMode:
+        return OptimizationMode.FLOW_MATCHING
+
+    def tokenize(self, text: str, language: str = "en") -> Dict[str, Any]:
+        """Tokenize text into character token IDs."""
+        if self.tokenizer_instance and hasattr(self.tokenizer_instance, "encode"):
+            ids = self.tokenizer_instance.encode(text, lang=language)
+            return {"token_ids": torch.tensor(ids, dtype=torch.long), "raw_tokens": list(text)}
+        return {"token_ids": torch.tensor([ord(c) for c in text], dtype=torch.long), "raw_tokens": list(text)}
+
+    def detokenize(self, token_ids: torch.Tensor) -> str:
+        """Decode character token IDs back to text."""
+        if isinstance(token_ids, torch.Tensor):
+            ids = token_ids.squeeze().tolist()
+        else:
+            ids = list(token_ids)
+        if self.tokenizer_instance and hasattr(self.tokenizer_instance, "decode"):
+            return self.tokenizer_instance.decode(ids)
+        return "".join([chr(i) if 0 <= i < 0x10FFFF else "" for i in ids])
+
+    def synthesize(
+        self,
+        text: str,
+        speaker_conditioning: Dict[str, Any],
+        language: str = "en",
+        user_ref_text: Optional[str] = None,
+    ) -> Tuple[torch.Tensor, int]:
+        """Direct synthesis without hooks."""
+        return self.synthesize_direct(text, speaker_conditioning, language=language, user_ref_text=user_ref_text)
+
 
 
     @property
