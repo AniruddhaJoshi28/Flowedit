@@ -197,7 +197,7 @@ class HopfieldRefiner(nn.Module):
 
             # Path 2: Token-level continuous embedding Hopfield retrieval (Paper Eq. 6 & 7)
             # Evaluates all tokens (or tokens not already handled by Path 1)
-            scale = getattr(self.config, "perturbation_scale", 1.8)
+            scale = getattr(self.config, "perturbation_scale", 1.0)
             for j in range(seq_len):
                 if j in processed_tokens:
                     continue

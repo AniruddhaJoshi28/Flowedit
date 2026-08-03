@@ -163,8 +163,16 @@ class CorrectionLoop:
 
         start_time = time.time()
 
+        # Apply Indic phonetic normalizer (e.g. Mrunmayee -> Mroonmayee to prevent BPE 'Mr.' abbreviation distortion)
+        from flowedit.utils.indic_phonetics import normalize_indic_phonetics
+        text = normalize_indic_phonetics(text)
+        
+        # Isolate target_word if a multi-word string was passed (e.g. "Mrunmayee Sakharwade" -> "Mrunmayee")
+        target_words_list = target_word.strip().split()
+        primary_target_word = target_words_list[0] if target_words_list else target_word
+
         logger.info(f"\n{'='*60}")
-        logger.info(f"CORRECTION: '{target_word}' in \"{text}\" (Backbone: {backbone_type.upper()})")
+        logger.info(f"CORRECTION: '{primary_target_word}' (full target: '{target_word}') in \"{text}\" (Backbone: {backbone_type.upper()})")
         logger.info(f"Reference: {ref_audio_path}")
         logger.info(f"{'='*60}")
 
@@ -186,8 +194,8 @@ class CorrectionLoop:
 
             alignment = self.aligner.align(
                 audio_path=ref_audio_path,
-                target_word=target_word,
-                full_text=target_word,
+                target_word=primary_target_word,
+                full_text=primary_target_word,
                 language=language,
                 ref_is_word_only=True,
             )
@@ -196,13 +204,13 @@ class CorrectionLoop:
             alignment = self.aligner.map_to_token_indices(
                 alignment=alignment,
                 full_text=text,
-                target_word=target_word,
+                target_word=primary_target_word,
                 tokenizer=getattr(bb, "tokenizer", None) or getattr(bb.model, "tokenizer", None),
                 language=language,
             )
 
             logger.info(
-                f"  ✓ Aligned '{target_word}' → tokens {alignment.token_indices} "
+                f"  ✓ Aligned '{primary_target_word}' → tokens {alignment.token_indices} "
                 f"({alignment.start_time:.2f}s - {alignment.end_time:.2f}s, "
                 f"conf={alignment.confidence:.2f})"
             )

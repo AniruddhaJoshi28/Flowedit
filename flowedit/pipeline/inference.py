@@ -135,6 +135,10 @@ class FlowEditInference:
 
         start_time = time.time()
 
+        # Apply Indic phonetic normalizer (e.g. Mrunmayee -> Mroonmayee)
+        from flowedit.utils.indic_phonetics import normalize_indic_phonetics
+        text = normalize_indic_phonetics(text)
+
         # Step 1: Encode text → c
         with torch.no_grad():
             text_embeddings = self.backbone.encode_text(text, language)

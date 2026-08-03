@@ -411,16 +411,31 @@ class XTTSBackbone(TTSBackbone):
             T_seq = out_tensor.shape[1]
 
             start_pos = -1
-            if input_ids is not None and input_ids.dim() >= 2 and tokens.shape[1] <= input_ids.shape[1]:
-                # Search for the exact token subsequence
-                my_seq = tokens[0].to(input_ids.device)
-                for i in range(input_ids.shape[1] - my_seq.shape[0] + 1):
-                    if torch.all(input_ids[0, i:i+my_seq.shape[0]] == my_seq):
-                        start_pos = i
-                        break
+            if input_ids is not None and input_ids.dim() >= 2:
+                seq = tokens[0].to(input_ids.device)
+                # Strip special tokens (BOS/EOS) if present at boundaries
+                if len(seq) > 2 and hasattr(self.tokenizer, "bos_token_id") and seq[0] == getattr(self.tokenizer, "bos_token_id", None):
+                    seq = seq[1:]
+                
+                # Find longest matching token subsequence
+                best_start, best_len = -1, 0
+                for i in range(input_ids.shape[1]):
+                    match_len = 0
+                    for j in range(min(len(seq), input_ids.shape[1] - i)):
+                        if input_ids[0, i + j] == seq[j]:
+                            match_len += 1
+                        else:
+                            break
+                    if match_len > best_len:
+                        best_len = match_len
+                        best_start = i
+
+                if best_start != -1 and best_len >= min(2, len(seq)):
+                    start_pos = best_start
 
             if start_pos == -1:
-                start_pos = max(0, T_seq - L_corr)
+                # If BOS token is present at start (index 0), target word starts after BOS (index 1)
+                start_pos = 1 if T_seq > L_corr else 0
 
             avail = min(L_corr, T_seq - start_pos)
             new_out[:, start_pos : start_pos + avail, :] = t_embed[
@@ -615,17 +630,28 @@ class XTTSBackbone(TTSBackbone):
                     T_seq = out_tensor.shape[1]
 
                     start_pos = -1
-                    if input_ids is not None and input_ids.dim() >= 2 and my_tokens.shape[1] <= input_ids.shape[1]:
-                        # Search for the exact token subsequence
-                        my_seq = my_tokens[0].to(input_ids.device)
-                        for i in range(input_ids.shape[1] - my_seq.shape[0] + 1):
-                            if torch.all(input_ids[0, i:i+my_seq.shape[0]] == my_seq):
-                                start_pos = i
-                                break
+                    if input_ids is not None and input_ids.dim() >= 2:
+                        seq = my_tokens[0].to(input_ids.device)
+                        if len(seq) > 2 and hasattr(self.tokenizer, "bos_token_id") and seq[0] == getattr(self.tokenizer, "bos_token_id", None):
+                            seq = seq[1:]
+
+                        best_start, best_len = -1, 0
+                        for i in range(input_ids.shape[1]):
+                            match_len = 0
+                            for j in range(min(len(seq), input_ids.shape[1] - i)):
+                                if input_ids[0, i + j] == seq[j]:
+                                    match_len += 1
+                                else:
+                                    break
+                            if match_len > best_len:
+                                best_len = match_len
+                                best_start = i
+
+                        if best_start != -1 and best_len >= min(2, len(seq)):
+                            start_pos = best_start
 
                     if start_pos == -1:
-                        print("[XTTS Hook] Exact token sequence not found in inputs. Falling back to right-align.")
-                        start_pos = max(0, T_seq - L_corr)
+                        start_pos = 1 if T_seq > L_corr else 0
 
                     avail = min(L_corr, T_seq - start_pos)
                     new_out[:, start_pos : start_pos + avail, :] = t_embed[

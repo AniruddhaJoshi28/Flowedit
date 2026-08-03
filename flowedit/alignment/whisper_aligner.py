@@ -262,34 +262,44 @@ class WhisperAligner:
         if isinstance(all_token_ids[0], list):
             all_token_ids = all_token_ids[0]
 
-        # Find the character position of the target word in the full text
-        target_lower = target_word.lower()
-        text_lower = full_text.lower()
-        char_start = text_lower.find(target_lower)
+        # Normalize both target_word and full_text with Indic phonetics helper so string matching succeeds
+        from flowedit.utils.indic_phonetics import normalize_indic_phonetics
+        target_norm = normalize_indic_phonetics(target_word).lower()
+        text_norm = normalize_indic_phonetics(full_text).lower()
+
+        # Primary search: normalized exact string match
+        char_start = text_norm.find(target_norm)
 
         if char_start == -1:
-            # Try partial match
-            for i in range(len(text_lower)):
-                if text_lower[i:].startswith(target_lower[:3]):
+            # Secondary search: clean alphanumeric matching
+            target_clean = self._normalize_word(target_word)
+            text_clean = self._normalize_word(full_text)
+            char_start = text_clean.find(target_clean)
+
+        if char_start == -1:
+            # Tertiary search: partial prefix match
+            for i in range(len(text_norm)):
+                if text_norm[i:].startswith(target_norm[:3]):
                     char_start = i
                     break
 
         if char_start == -1:
             logger.warning(
-                f"Could not find '{target_word}' in text '{full_text}'. "
-                f"Using middle tokens as fallback."
+                f"Could not find '{target_word}' (norm: '{target_norm}') in text '{full_text}'. "
+                f"Bounding target token span."
             )
-            mid = len(all_token_ids) // 2
-            span = max(1, len(target_word) // 3)
+            total_tokens = len(all_token_ids)
+            target_ratio = max(0.1, len(target_word) / max(1, len(full_text)))
+            num_target_tokens = max(2, int(total_tokens * target_ratio))
+            mid = total_tokens // 2
             token_indices = list(range(
-                max(0, mid - span),
-                min(len(all_token_ids), mid + span)
+                max(0, mid - num_target_tokens // 2),
+                min(total_tokens, mid + (num_target_tokens + 1) // 2)
             ))
         else:
-            char_end = char_start + len(target_word)
+            char_end = char_start + len(target_norm)
 
             # Map character positions to token positions
-            # Decode each token to find which ones cover the target span
             token_indices = self._chars_to_token_indices(
                 all_token_ids, tokenizer, full_text,
                 char_start, char_end, language
