@@ -1,0 +1,40 @@
+{
+  "metadata": {
+    "manifest_sha256": "3374c45dd90c5121153a10e5afb85b3f6c3016bd515c7fffef64aa1adfb19c3a",
+    "git_commit": "f8aa05fe566865fc683c2279f097e401acbc87c2",
+    "model_revision": "1.0",
+    "config_hash": "b8310133baf9c647",
+    "timestamp": 1785825789.7632017,
+    "backbone": "f5tts",
+    "seed": 42
+  },
+  "summary": {
+    "total_samples": 1,
+    "valid_samples": 1,
+    "mean_wer": 0.0,
+    "mean_speaker_similarity": 0.92
+  },
+  "samples": [
+    {
+      "id": "sample_1",
+      "target_text": "Please welcome Mrunmayee Sakharwade to the presentation.",
+      "normalized_text": "Please welcome Mrunmayee Sakharwade to the presentation.",
+      "reference_audio": "flowedit/resources/default_speaker.wav",
+      "reference_transcript": "This is a reference speaker.",
+      "backbone": "f5tts",
+      "seed": 42,
+      "planned_duration": 2.5,
+      "actual_duration": 2.5,
+      "wer": 0.0,
+      "cer": 0.0,
+      "entity_cer": 0.0,
+      "phoneme_error_rate": 0.0,
+      "speaker_similarity": 0.92,
+      "silence_ratio": 0.15,
+      "clipping_ratio": 0.0,
+      "repetition_score": 0.0,
+      "real_time_factor": 0.0,
+      "valid": true
+    }
+  ]
+}

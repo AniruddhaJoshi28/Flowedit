@@ -14,9 +14,12 @@ import os
 import tempfile
 
 from flowedit.config import BackboneConfig
-from flowedit.backbone.base import TTSBackbone, OptimizationMode
+from flowedit.backbone.base import TTSBackbone, OptimizationMode, BackboneCapabilities
+from flowedit.audio.prompt_validator import validate_reference_audio, ReferenceAudioError
+from flowedit.text.duration_planner import DurationPlanner
 
 logger = logging.getLogger(__name__)
+
 
 
 class F5TTSBackbone(TTSBackbone):
@@ -43,8 +46,23 @@ class F5TTSBackbone(TTSBackbone):
         return self.tokenizer_instance
 
     @property
+    def capabilities(self) -> BackboneCapabilities:
+        """Return F5-TTS explicit capability contract."""
+        return BackboneCapabilities(
+            supports_zero_shot=True,
+            supports_cross_lingual=True,
+            supports_explicit_duration=True,
+            supports_speed_control=True,
+            supports_phonemes=False,
+            supports_differentiable_synthesis=True,
+            supports_conditioning_edit=True,
+            native_sample_rate=24000,
+        )
+
+    @property
     def optimization_mode(self) -> OptimizationMode:
         return OptimizationMode.FLOW_MATCHING
+
 
     def tokenize(self, text: str, language: str = "en") -> Dict[str, Any]:
         """Tokenize text into character token IDs."""
@@ -260,74 +278,52 @@ class F5TTSBackbone(TTSBackbone):
             "embedding_norm": torch.norm(perturbed_embeddings).item()
         }
 
-    def get_speaker_embedding(self, audio_path: Optional[str] = None, language: str = "en", ref_text: Optional[str] = None) -> Dict[str, str]:
-        """Store reference audio path for F5-TTS inference and transcribe once."""
+    def get_speaker_embedding(self, audio_path: Optional[str] = None, language: str = "en", ref_text: Optional[str] = None) -> Dict[str, Any]:
+        """Store reference audio path for F5-TTS inference and transcribe if ref_text is missing."""
         self._ensure_loaded()
         
+        # Enforce strict reference audio validation — NO SILENT DEMO FALLBACK
+        prepared_audio = validate_reference_audio(audio_path, target_sample_rate=24000)
+
         if not hasattr(self, "_speaker_cache"):
             self._speaker_cache = {}
 
-        cache_key = f"{audio_path}_{language}_{ref_text}"
+        cache_key = f"{prepared_audio.checksum}_{language}_{ref_text}"
         if cache_key in self._speaker_cache:
             return self._speaker_cache[cache_key]
         
-        import os
-        import tempfile
-        import librosa
         import soundfile as sf
-        import numpy as np
         
-        # Fallback to f5_tts built-in example audio or default speaker audio if not provided or missing
-        if not audio_path or not os.path.exists(audio_path):
-            try:
-                import f5_tts.api
-                base_dir = os.path.dirname(f5_tts.api.__file__)
-                pkg_wav = os.path.join(base_dir, "infer", "examples", "basic", "basic_ref_en.wav")
-                if os.path.exists(pkg_wav):
-                    audio_path = pkg_wav
-            except Exception:
-                pass
-
-        if not audio_path or not os.path.exists(audio_path):
-            default_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources", "default_speaker.wav")
-            if os.path.exists(default_path):
-                audio_path = default_path
-            else:
-                logger.warning(f"Audio path '{audio_path}' not found and default speaker wav missing.")
-
         # Create a persistent temp file for the processed 24kHz audio
         processed_fd, processed_path = tempfile.mkstemp(suffix=".wav")
         os.close(processed_fd)
         
-        try:
-            y, _ = librosa.load(audio_path, sr=24000, mono=True)
-            sf.write(processed_path, y, 24000)
-            audio_duration = max(0.5, len(y) / 24000.0)
-            
-            if not ref_text:
+        sf.write(processed_path, prepared_audio.waveform.squeeze(0).cpu().numpy(), 24000)
+        
+        prompt_text = ref_text
+        if not prompt_text:
+            try:
                 import whisper
                 _whisper = whisper.load_model("base", device=str(self.device))
-                y_16k, _ = librosa.load(audio_path, sr=16000, mono=True)
-                ref_result = _whisper.transcribe(y_16k.astype("float32"), language=language)
-                ref_text = ref_result.get("text", "").strip()
-                
-                # Only apply fallback for long audio if transcription completely failed
-                if not ref_text and audio_duration > 2.0:
-                    ref_text = "Some call me Nature, others call me Mother Nature."
-                elif not ref_text:
-                    ref_text = "."
-        except Exception as e:
-            logger.warning(f"Failed to process speaker audio: {e}")
-            if not ref_text:
-                ref_text = "."
+                ref_result = _whisper.transcribe(prepared_audio.source_path, language=language)
+                prompt_text = ref_result.get("text", "").strip()
+            except Exception as e:
+                logger.warning(f"Auto transcription failed for {audio_path}: {e}")
+                prompt_text = "."
+
+        if not prompt_text:
+            prompt_text = "."
                 
         res = {
-            "audio_path": audio_path or "", 
+            "audio_path": prepared_audio.source_path, 
             "processed_audio_path": processed_path,
-            "text": ref_text
+            "text": prompt_text,
+            "duration_seconds": prepared_audio.duration_seconds,
+            "checksum": prepared_audio.checksum,
         }
         self._speaker_cache[cache_key] = res
         return res
+
 
     def synthesize_from_embeddings(
         self,
@@ -455,27 +451,25 @@ class F5TTSBackbone(TTSBackbone):
             if not ref_text:
                 ref_text = "."
 
-            # ── Dynamic overlap stripping ──────────────────────────────────
-            # F5-TTS concatenates ref_text + gen_text internally; overlapping
-            # words confuse boundary detection.  Strip matching words.
-            ref_words_list = ref_text.split()
-            gen_word_set = set(text.lower().split())
-            filtered = [w for w in ref_words_list if w.lower() not in gen_word_set]
-            ref_text = " ".join(filtered).strip()
-            if not ref_text:
-                ref_text = "."
+            ref_duration = speaker_conditioning.get("duration_seconds")
+            planner = DurationPlanner()
+            planned = planner.plan_duration(
+                target_text=text,
+                ref_audio_duration=ref_duration,
+                ref_text=ref_text,
+                language=language,
+            )
 
-            logger.info(f"ref_text   {ref_text}")
-            logger.info(f"gen_text   {text}")
+            logger.info(f"F5-TTS Synthesis: ref_text='{ref_text}', gen_text='{text}', dynamic_speed={planned.dynamic_speed_factor:.3f}")
 
-            # Run UNWRAPPED inference (allows gradients!)
+            # Run UNWRAPPED inference (allows gradients!) with dynamic speed
             with torch.set_grad_enabled(True):
                 try:
                     unwrapped_infer(
                         ref_file=temp_ref,
                         ref_text=ref_text,
                         gen_text=text,
-                        speed=1.0,
+                        speed=planned.dynamic_speed_factor,
                         nfe_step=32,
                         cfg_strength=2.0,
                         target_rms=0.1,
@@ -486,11 +480,12 @@ class F5TTSBackbone(TTSBackbone):
                         ref_file=temp_ref,
                         ref_text=ref_text,
                         gen_text=text,
-                        speed=1.0,
+                        speed=planned.dynamic_speed_factor,
                         nfe_step=32,
                         cfg_strength=2.0,
                         target_rms=0.1,
                     )
+
 
             # Retrieve and concatenate all batch waveforms
             if grabbed_waveforms:
@@ -590,25 +585,28 @@ class F5TTSBackbone(TTSBackbone):
             if user_ref_text:
                 ref_text = user_ref_text.strip()
             else:
-                whisper_text = speaker_conditioning.get("text", "").strip()
-                if whisper_text:
-                    gen_word_set = set(text.lower().split())
-                    filtered = [w for w in whisper_text.split()
-                                if w.lower() not in gen_word_set]
-                    ref_text = " ".join(filtered).strip()
-                if not ref_text:
-                    ref_text = "."
+                ref_text = speaker_conditioning.get("text", ".").strip()
+            if not ref_text:
+                ref_text = "."
 
-            logger.info(f"[Direct] ref_text: {ref_text}")
-            logger.info(f"[Direct] gen_text: {text}")
+            ref_duration = speaker_conditioning.get("duration_seconds")
+            planner = DurationPlanner()
+            planned = planner.plan_duration(
+                target_text=text,
+                ref_audio_duration=ref_duration,
+                ref_text=ref_text,
+                language=language,
+            )
 
-            # Call F5-TTS inference directly (no embedding hooks)
+            logger.info(f"[Direct] ref_text='{ref_text}', gen_text='{text}', dynamic_speed={planned.dynamic_speed_factor:.3f}")
+
+            # Call F5-TTS inference directly with dynamic speed
             try:
                 self.tts_api.infer(
                     ref_file=temp_ref,
                     ref_text=ref_text,
                     gen_text=text,
-                    speed=1.0,
+                    speed=planned.dynamic_speed_factor,
                     nfe_step=32,
                     cfg_strength=2.0,
                     target_rms=0.1,
@@ -619,11 +617,12 @@ class F5TTSBackbone(TTSBackbone):
                     ref_file=temp_ref,
                     ref_text=ref_text,
                     gen_text=text,
-                    speed=1.0,
+                    speed=planned.dynamic_speed_factor,
                     nfe_step=32,
                     cfg_strength=2.0,
                     target_rms=0.1,
                 )
+
 
             if grabbed_waveforms:
                 # Concatenate all batch outputs along the time axis

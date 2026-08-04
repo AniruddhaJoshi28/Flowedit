@@ -77,10 +77,12 @@ def test_backbone_speaker_embedding(sample_wav):
     assert os.path.exists(spk_info["processed_audio_path"])
     assert "text" in spk_info
 
-    # Test with None (fallback)
-    spk_info_fallback = backbone.get_speaker_embedding(None)
-    assert os.path.exists(spk_info_fallback["processed_audio_path"])
+    from flowedit.audio.prompt_validator import ReferenceAudioError
+    # Test with None -> must raise ReferenceAudioError (no silent fallback)
+    with pytest.raises(ReferenceAudioError):
+        backbone.get_speaker_embedding(None)
 
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+

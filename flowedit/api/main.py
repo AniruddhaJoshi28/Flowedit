@@ -13,7 +13,9 @@ import traceback
 from fastapi import Request
 
 from flowedit.config import FlowEditConfig
+from flowedit.audio.prompt_validator import ReferenceAudioError
 # Workaround for CUDNN_STATUS_SUBLIBRARY_VERSION_MISMATCH on Linux servers
+
 torch.backends.cudnn.enabled = False
 
 from flowedit.pipeline.correction_loop import CorrectionLoop
@@ -65,6 +67,16 @@ app.add_middleware(
 def read_root():
     return {"message": "FlowEdit API is running. Visit /docs for Swagger UI."}
 
+@app.exception_handler(ReferenceAudioError)
+async def reference_audio_exception_handler(request: Request, exc: ReferenceAudioError):
+    return JSONResponse(
+        status_code=422,
+        content={
+            "code": getattr(exc, "code", "REFERENCE_AUDIO_INVALID"),
+            "message": str(exc),
+        }
+    )
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     tb = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
@@ -73,12 +85,13 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"detail": str(exc), "traceback": tb}
     )
 
+
 @app.post("/api/correct")
 async def correct_pronunciation(
     text: str = Form(..., description="Full text containing the target word"),
     target_word: str = Form(..., description="The word to correct pronunciation of"),
     language: str = Form("en", description="Language code"),
-    backbone_type: str = Form("xtts", description="Backbone model to use: 'xtts' or 'f5tts'"),
+    backbone_type: str = Form("cosyvoice", description="Backbone model to use: 'xtts', 'f5tts', or 'cosyvoice'"),
     ref_audio: UploadFile = File(..., description="Reference audio with correct pronunciation"),
     speaker_wav: UploadFile | None = None,
 ):
@@ -137,12 +150,12 @@ async def correct_pronunciation(
 async def synthesize_text(
     text: str = Form(..., description="Text to synthesize"),
     language: str = Form("en", description="Language code"),
-    backbone_type: str = Form("xtts", description="Backbone model to use: 'xtts' or 'f5tts'"),
+    backbone_type: str = Form("cosyvoice", description="Backbone model to use: 'xtts', 'f5tts', or 'cosyvoice'"),
     speaker_wav: UploadFile = File(..., description="Speaker reference audio for voice conditioning"),
     ref_text: Optional[str] = Form(None, description="Optional transcription of the speaker audio."),
 ):
     """
-    Synthesize text using requested backbone model (xtts or f5tts), automatically applying learned Hopfield corrections.
+    Synthesize text using requested backbone model (xtts, f5tts, or cosyvoice), automatically applying learned Hopfield corrections.
     """
     global pipeline
     if not pipeline:
@@ -225,8 +238,9 @@ async def synthesize_text(
         if os.path.exists(temp_speaker_path):
             os.remove(temp_speaker_path)
 
-@app.post("/api/synthesize_raw")
+@app.post("/api/synthesize_raw", deprecated=True)
 async def synthesize_raw(
+
     text: str = Form(..., description="Text to synthesize"),
     language: str = Form("en", description="Language code"),
     speaker_wav: UploadFile = File(..., description="Speaker reference audio"),

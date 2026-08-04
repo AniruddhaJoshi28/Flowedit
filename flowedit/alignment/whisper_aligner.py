@@ -73,12 +73,17 @@ class WhisperAligner:
         device = "cuda" if torch.cuda.is_available() else "cpu"
         compute_type = "float16" if device == "cuda" else "int8"
         
-        self._model = whisperx.load_model(
-            self.config.whisper_model, 
-            device=device, 
-            compute_type=compute_type
-        )
-        logger.info("Whisper model loaded successfully")
+        try:
+            self._model = whisperx.load_model(
+                self.config.whisper_model, 
+                device=device, 
+                compute_type=compute_type
+            )
+            logger.info("Whisper model loaded successfully")
+        except Exception as e:
+            logger.warning(f"Failed to load Whisper model from HuggingFace ({e}). Whisper alignment will operate in fallback mode.")
+            self._model = None
+
 
     def align(
         self,

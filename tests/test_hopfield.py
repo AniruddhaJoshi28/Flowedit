@@ -170,6 +170,24 @@ class TestHopfieldMemory:
         assert self.memory.size == 0
         assert self.memory.is_empty
 
+    def test_backbone_isolation(self):
+        """Corrections stored for F5-TTS should NOT be retrieved for CosyVoice."""
+        key = F.normalize(torch.randn(self.dim), dim=0)
+        value = torch.randn(self.dim)
+        
+        self.memory.write(key, value, word="test")
+        self.memory.metadata[-1]["backbone"] = "f5tts"
+        self.memory.metadata[-1]["model_version"] = "1.0"
+
+        # Query specifying cosyvoice backbone -> should return zero / no match
+        retrieved, sim = self.memory.retrieve(key, backbone="cosyvoice", model_version="2")
+        assert sim.item() == -1.0
+
+        # Query specifying f5tts backbone -> should retrieve matching correction
+        retrieved_f5, sim_f5 = self.memory.retrieve(key, backbone="f5tts", model_version="1.0")
+        assert sim_f5.item() > 0.9
+
+
 
 class TestHopfieldRefiner:
     """Tests for the gated retrieval refiner."""

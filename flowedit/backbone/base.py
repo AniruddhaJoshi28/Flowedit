@@ -27,14 +27,18 @@ class OptimizationMode(str, Enum):
     OTHER = "other"
 
 
-@dataclass
+@dataclass(frozen=True)
 class BackboneCapabilities:
-    """Explicit capabilities descriptor for a TTS backbone."""
-    differentiable_embeddings: bool = True
-    differentiable_decoder: bool = True
-    teacher_forcing: bool = False
-    supports_embedding_hook: bool = True
-    supports_gradient_checkpointing: bool = True
+    """Explicit capability contract for a TTS backbone."""
+    supports_zero_shot: bool = True
+    supports_cross_lingual: bool = True
+    supports_explicit_duration: bool = False
+    supports_speed_control: bool = True
+    supports_phonemes: bool = False
+    supports_differentiable_synthesis: bool = True
+    supports_conditioning_edit: bool = True
+    native_sample_rate: int = 24000
+
 
 
 class TTSBackbone(nn.Module, ABC):

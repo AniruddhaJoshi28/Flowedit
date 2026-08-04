@@ -18,15 +18,43 @@ This module provides:
 
 import torch
 import torch.nn.functional as F
-import json
 import logging
 import time
-from typing import Optional, Tuple, List, Dict
 from pathlib import Path
+from typing import Optional, Tuple, List, Dict
+from dataclasses import dataclass, field, asdict
+from datetime import datetime
+
 
 from flowedit.config import MemoryConfig
 
 logger = logging.getLogger(__name__)
+
+
+
+@dataclass
+class PronunciationCorrection:
+    """Rich schema-versioned metadata for stored pronunciation corrections."""
+    canonical_text: str
+    normalized_text: str
+    language: str = "en"
+    native_script: Optional[str] = None
+    phonemes: Tuple[str, ...] = ()
+    syllables: Tuple[str, ...] = ()
+    left_context: Optional[str] = None
+    right_context: Optional[str] = None
+    backbone: str = "f5tts"
+    model_version: str = "1.0"
+    speaker_id: Optional[str] = None
+    correction_type: str = "phonetic_alias"
+    confidence: float = 1.0
+    verified_audio_path: Optional[str] = None
+    created_at: float = field(default_factory=time.time)
+    preprocessing_version: str = "v1.0"
+    correction_strategy_version: str = "v1.0"
+    text_processor_version: str = "v1.0"
+    embedding_schema_version: str = "v1.0"
+
 
 
 class HopfieldMemory:
@@ -185,21 +213,11 @@ class HopfieldMemory:
     def retrieve(
         self,
         query: torch.Tensor,
+        backbone: Optional[str] = None,
+        model_version: Optional[str] = None,
+        embedding_schema_version: Optional[str] = None,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Retrieve corrections via Modern Hopfield update.
-
-        Paper Eq. 6:
-            Mem(Q) = softmax(β·Q·Kᵀ)·V,  β = 1/√d
-
-        Args:
-            query: Query vector [batch, dim] or [dim]
-                   (typically the text embedding of a token at inference)
-
-        Returns:
-            Tuple of:
-            - retrieved_value: Weighted sum of stored values [batch, dim]
-            - similarity_scores: Max cosine similarity per query [batch]
-        """
+        """Retrieve corrections via Modern Hopfield update with backbone & version isolation."""
         if self.is_empty:
             if query.dim() == 1:
                 return torch.zeros(self.dim, device=query.device), torch.tensor(-1.0)
@@ -208,35 +226,58 @@ class HopfieldMemory:
                 torch.full((query.shape[0],), -1.0, device=query.device),
             )
 
-        # Stack keys into matrix
-        K = torch.stack(self.keys).to(device=query.device, dtype=query.dtype)  # [M, d]
+        # Filter indices by backbone, model_version, and embedding_schema_version
+        valid_indices = []
+        for i, meta in enumerate(self.metadata):
+            match = True
+            if backbone and meta.get("backbone") != backbone:
+                match = False
+            if model_version and meta.get("model_version") != model_version:
+                match = False
+            if embedding_schema_version and meta.get("embedding_schema_version") != embedding_schema_version:
+                match = False
+            if match:
+                valid_indices.append(i)
+
+        if not valid_indices:
+            if query.dim() == 1:
+                return torch.zeros(self.dim, device=query.device), torch.tensor(-1.0)
+            return (
+                torch.zeros(query.shape[0], self.dim, device=query.device),
+                torch.full((query.shape[0],), -1.0, device=query.device),
+            )
+
+        # Stack filtered keys into matrix
+        filtered_keys = [self.keys[i] for i in valid_indices]
+        filtered_values = [self.values[i] for i in valid_indices]
+
+        K = torch.stack(filtered_keys).to(device=query.device, dtype=query.dtype)  # [M_filtered, d]
 
         # Ensure query shape
         if query.dim() == 1:
             query = query.unsqueeze(0)  # [1, d]
 
-        # L2-normalize query (paper: "Queries and keys are L2-normalized")
+        # L2-normalize query
         Q = F.normalize(query, dim=-1)
 
         # Unscaled cosine similarities
         cosine_sims = Q @ K.T
         
-        # Max similarity scores (used by the gate in HopfieldRefiner)
+        # Max similarity scores
         max_similarities = cosine_sims.max(dim=-1).values  # [batch]
         max_indices = cosine_sims.argmax(dim=-1) # [batch]
 
-        # Compute attention weights: softmax(β·Q·Kᵀ)
+        # Compute attention weights
         logits = self.beta * cosine_sims
-        weights = F.softmax(logits, dim=-1)  # [batch, M]
+        weights = F.softmax(logits, dim=-1)
 
-        # Since self.values is a list of [N_i, d] sequences, we cannot stack and multiply.
-        # For sequence-level values, we use 1-hot nearest neighbor retrieval.
-        # (Assuming batch size 1 for simplicity, as TTS is typically batch=1)
-        best_idx = max_indices[0].item()
-        retrieved_sequence = self.values[best_idx].to(device=query.device)
+        best_filtered_idx = max_indices[0].item()
+        retrieved_sequence = filtered_values[best_filtered_idx].to(device=query.device)
 
-        # Update access times for LRU
-        self._update_access_times(weights)
+        # Update access times
+        actual_memory_idx = valid_indices[best_filtered_idx]
+        self.access_times[actual_memory_idx] = time.time()
+
 
         return retrieved_sequence, max_similarities.squeeze(0)
 

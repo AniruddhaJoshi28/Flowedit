@@ -36,8 +36,36 @@ from flowedit.utils.metrics import compute_mel_loss, compute_f0_loss
 logger = logging.getLogger(__name__)
 
 
+TRUST_REGION_RATIO = {
+    "f5_conditioning": 0.03,
+    "xtts_gpt_conditioning": 0.02,
+    "cosyvoice_adapter_hidden": 0.01,
+}
+
+
+def project_delta(
+    delta: torch.Tensor,
+    base: torch.Tensor,
+    ratio: float = 0.03,
+    eps: float = 1e-8,
+) -> torch.Tensor:
+    """Relative trust-region projection function.
+
+    Clamps perturbation delta so its L2 norm does not exceed ratio * base_norm.
+    """
+    delta_norm = delta.norm(dim=-1, keepdim=True).clamp_min(eps)
+    base_norm = base.norm(dim=-1, keepdim=True).clamp_min(eps)
+    max_norm = ratio * base_norm
+    scale = torch.minimum(
+        torch.ones_like(delta_norm),
+        max_norm / delta_norm,
+    )
+    return delta * scale
+
+
 @dataclass
 class OptimizationResult:
+
     """Result of latent input optimization.
 
     Attributes:
@@ -230,6 +258,10 @@ class LatentOptimizer:
             # Total loss: L = L_task + λ||δ||²
             total_loss = task_loss + reg_loss
 
+            # Numerical safety check
+            if not torch.isfinite(total_loss):
+                raise FloatingPointError(f"Optimization loss became non-finite (NaN or Inf) at step {step}.")
+
             # Backward pass (autograd/adjoint through frozen backbone)
             total_loss.backward()
 
@@ -255,9 +287,19 @@ class LatentOptimizer:
             # Step optimizer
             optimizer.step()
             scheduler.step()
+
+            # Trust-region projection step (relative projection per strategy)
+            with torch.no_grad():
+                strat_key = getattr(backbone, "backbone_name", "f5_conditioning")
+                ratio = TRUST_REGION_RATIO.get(strat_key, 0.03)
+                delta.copy_(project_delta(delta, base_embeddings, ratio=ratio))
+                delta.data *= mask
+
+                if not torch.isfinite(delta).all():
+                    raise FloatingPointError(f"Perturbation delta became non-finite (NaN or Inf) at step {step}.")
             
             if step % 10 == 0 or step == self.config.n_steps - 1:
-                delta_norm = torch.norm(delta_masked).item()
+                delta_norm = torch.norm(delta * mask).item()
                 diag_str = " | ".join(f"{k}: {v:.4f}" for k, v in loss_dict.items() if k != "loss" and isinstance(v, (int, float)))
                 logger.info(
                     f"Step {step:02d} | "
@@ -270,15 +312,12 @@ class LatentOptimizer:
                     f"{diag_str}"
                 )
 
-            # Re-apply mask after gradient step (ensure constraint)
-            with torch.no_grad():
-                delta.data *= mask
-
             # Track metrics
             loss_val = total_loss.item()
             grad_val = grad_norm.item() if isinstance(grad_norm, torch.Tensor) else grad_norm
             loss_history.append(loss_val)
             grad_norm_history.append(grad_val)
+
 
             # Progress bar update
             progress.set_postfix({
