@@ -7,6 +7,7 @@ torchaudio>=2.1.0
 
 # TTS Backbone
 f5-tts                     # Official F5-TTS package
+torchdiffeq>=0.2.3         # Adjoint Sensitivity Method ODE solvers
 coqui-tts                  # Community fork of Coqui TTS (XTTS-v2 support, Python 3.13+)
 # Speech recognition & alignment
 openai-whisper>=20231117   # Whisper for forced alignment
@@ -20,6 +21,7 @@ scipy>=1.11.0
 # Utilities
 numpy>=1.24.0
 tqdm>=4.65.0
+pandas>=2.0.0
 pyyaml>=6.0
 
 # Testing

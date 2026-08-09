@@ -331,92 +331,37 @@ class F5TTSBackbone(TTSBackbone):
         speaker_conditioning: Dict[str, str],
         text: str,
         language: str = "en",
+        solver_method: str = "euler"
     ) -> Tuple[torch.Tensor, int]:
         """Differentiable synthesis using custom ODE solver and Adjoint method.
         
-        Bypasses the non-differentiable `tts_api.infer` and directly runs the 
-        Diffusion Transformer (DiT) with `torchdiffeq.odeint_adjoint`.
+        Bypasses the non-differentiable `tts_api.infer` integration loop by dynamically
+        patching the DiT forward pass to run `torchdiffeq.odeint_adjoint` internally,
+        while letting the official API handle masking, tokenization, and vocoding.
         """
         self._ensure_loaded()
-        logger.info("Synthesizing using Differentiable ODE solver (Adjoint Sensitivity)...")
+        logger.info(f"Synthesizing using Differentiable ODE solver (Adjoint Sensitivity with {solver_method})...")
 
-        # We need the full accuracy of the native F5-TTS inference loop (which handles padding, cond, alignment)
-        # BUT we need gradients to flow back to text_embeddings!
-        # The native loop uses @torch.inference_mode(), so we dynamically unwrap the key methods.
-
-        # We need the full accuracy of the native F5-TTS inference loop (which handles padding, cond, alignment)
-        # BUT we need gradients to flow back to text_embeddings!
-        # The native loop uses @torch.inference_mode(), so we dynamically unwrap the key methods.
         import types
+        import inspect
+        try:
+            from torchdiffeq import odeint_adjoint
+        except ImportError:
+            raise ImportError("torchdiffeq is required for the Adjoint Sensitivity Method. Run: pip install torchdiffeq")
 
         model_obj = getattr(self.tts_api, "ema_model", getattr(self.tts_api, "model", None))
-        orig_sample = model_obj.sample
-        if hasattr(orig_sample, '__wrapped__'):
-            model_obj.sample = types.MethodType(orig_sample.__wrapped__, model_obj)
-            
-        if hasattr(self.tts_api.infer, '__wrapped__'):
-            unwrapped_infer = types.MethodType(self.tts_api.infer.__wrapped__, self.tts_api)
-        else:
-            unwrapped_infer = self.tts_api.infer
-
-        # No need to calculate ref_tokens_len, we will inject at the trailing tokens of the sequence.
-
-        # 1. Register hook on the FULL TextEmbedding module (AFTER Conv1D upsampling)
-        #
-        # CRITICAL: encode_text() returns dit_model.text_embed(tokens, seq_lengths)
-        # which is the FULL output of TextEmbedding = nn.Embedding → Conv1D → [B, T_mel, 512]
-        #
-        # We MUST hook dit_model.text_embed (the full module), NOT dit_model.text_embed.text_embed
-        # (the inner nn.Embedding). If we hook the inner nn.Embedding, Conv1D will double-process
-        # our already-processed embeddings, garbling the phonetic corrections completely.
-        dit_model = getattr(self.model, "transformer", self.model)
-        hook_handle = None
+        dit_model = getattr(model_obj, "transformer", model_obj)
+        orig_forward = dit_model.forward
         
-        # Target the FULL text_embed module (includes Conv1D upsampling)
-        target_embed_module = getattr(dit_model, "text_embed", None)
-
-        if target_embed_module is not None:
-            def hook(module, inputs, output):
-                out_tensor = output[0] if isinstance(output, tuple) else output
-                T_mel = out_tensor.shape[1]  # mel-frame length after Conv1D
-                L_gen = text_embeddings.shape[1]  # our corrected embeddings length
-                
-                # Our corrected embeddings from encode_text() are in the SAME space as 
-                # this output (both are post-Conv1D). We inject them at the trailing
-                # positions corresponding to gen_text.
-                start_pos = max(0, T_mel - L_gen)
-                t_embed = text_embeddings.to(device=out_tensor.device, dtype=out_tensor.dtype)
-                
-                new_out_tensor = out_tensor.clone()
-                avail = min(L_gen, T_mel - start_pos)
-                new_out_tensor[:, start_pos:start_pos + avail, :] = t_embed[:, :avail, :]
-                
-                logger.info(
-                    f"[Hook] Full TextEmbedding Hook -> T_mel: {T_mel}, "
-                    f"Gen embed len: {L_gen} (start_pos={start_pos}, avail={avail}), "
-                    f"Corrected emb norm: {torch.norm(t_embed).item():.4f}, "
-                    f"Original emb norm: {torch.norm(out_tensor).item():.4f}"
-                )
-                
-                if isinstance(output, tuple):
-                    return (new_out_tensor,) + output[1:]
-                return new_out_tensor
-
-            hook_handle = target_embed_module.register_forward_hook(hook)
-
-        # 2. Register hook or monkey-patch Vocoder to grab waveform TENSORS from ALL batches
-        # F5-TTS splits long text into multiple batches; we must collect them all.
+        # We need the vocoder to return the waveforms, so hook it.
         grabbed_waveforms = []
         vocoder_hook_handle = None
         orig_decode = None
         vocoder_obj = getattr(self.tts_api, "vocoder", getattr(self, "vocoder", None))
         if vocoder_obj is not None:
-            # Standard forward hook if vocoder.__call__ / forward is invoked (e.g. BigVGAN)
             def vocoder_hook(module, inputs, output):
                 grabbed_waveforms.append(output)
             vocoder_hook_handle = vocoder_obj.register_forward_hook(vocoder_hook)
-
-            # Monkey-patch decode method if it exists, since Vocos uses .decode() directly (bypassing forward/__call__)
             if hasattr(vocoder_obj, "decode"):
                 orig_decode = vocoder_obj.decode
                 def wrapped_decode(*args, **kwargs):
@@ -425,14 +370,69 @@ class F5TTSBackbone(TTSBackbone):
                     return output
                 vocoder_obj.decode = wrapped_decode
 
-        # Prepare audio
+        # --- The ODE Interceptor ---
+        # We intercept the VERY FIRST call to the transformer inside F5-TTS's solver loop.
+        class ODEFV(nn.Module):
+            def __init__(self, original_forward, captured_args, captured_kwargs, t_arg_name):
+                super().__init__()
+                self.original_forward = original_forward
+                self.captured_args = captured_args
+                self.captured_kwargs = captured_kwargs
+                self.t_arg_name = t_arg_name
+                self.sig = inspect.signature(original_forward)
+                
+            def forward(self, t, x):
+                t_batch = t.expand(x.shape[0]).to(x.device, dtype=x.dtype)
+                bound = self.sig.bind(x, *self.captured_args, **self.captured_kwargs)
+                bound.apply_defaults()
+                bound.arguments[self.t_arg_name] = t_batch
+                return self.original_forward(*bound.args, **bound.kwargs)
+
+        class ODEWrapper(nn.Module):
+            def __init__(self, original_forward, steps=32, method="euler"):
+                super().__init__()
+                self.original_forward = original_forward
+                self.steps = steps
+                self.method = method
+                self.intercepted = False
+                
+            def forward(self, x, *args, **kwargs):
+                if self.intercepted:
+                    # After our one big leap, if F5-TTS somehow calls again, just pass it through
+                    return self.original_forward(x, *args, **kwargs)
+                
+                self.intercepted = True
+                
+                # Dynamically find the time argument
+                sig = inspect.signature(self.original_forward)
+                t_arg_name = None
+                for name in sig.parameters.keys():
+                    if name in ['t', 'time', 'timestep']:
+                        t_arg_name = name
+                        break
+                if t_arg_name is None:
+                    raise RuntimeError("Could not identify the time argument in DiT signature.")
+                
+                # Run the full integration loop using adjoint method
+                odefunc = ODEFV(self.original_forward, args, kwargs, t_arg_name)
+                t_eval = torch.linspace(0, 1, self.steps + 1, device=x.device, dtype=x.dtype)
+                
+                # odeint_adjoint returns trajectory. We take the final state.
+                final_x = odeint_adjoint(odefunc, x, t_eval, method=self.method)[-1]
+                
+                # Return the delta, so when the outer F5-TTS Euler step does x0 + v * 1.0,
+                # it results exactly in final_x.
+                return final_x - x
+
+        wrapper = ODEWrapper(orig_forward, steps=32, method=solver_method)
+        dit_model.forward = wrapper.forward
+
+        # Prepare audio & text
         import soundfile as sf
         import torchaudio
 
-        # Use the pre-processed 24kHz audio
         temp_ref = speaker_conditioning.get("processed_audio_path")
         if not temp_ref or not os.path.exists(temp_ref):
-            # Fallback if processed_audio_path is missing
             temp_ref = speaker_conditioning.get("audio_path", "")
 
         _orig_load = torchaudio.load
@@ -445,6 +445,26 @@ class F5TTSBackbone(TTSBackbone):
                 tensor = tensor.T
             return tensor, sample_rate
         torchaudio.load = _sf_load
+
+        # The Text Embedding Hook MUST stay, because FlowEdit directly edits the embeddings!
+        target_embed_module = getattr(dit_model, "text_embed", None)
+        hook_handle = None
+        if target_embed_module is not None:
+            def hook(module, inputs, output):
+                out_tensor = output[0] if isinstance(output, tuple) else output
+                T_mel = out_tensor.shape[1]
+                L_gen = text_embeddings.shape[1]
+                start_pos = max(0, T_mel - L_gen)
+                t_embed = text_embeddings.to(device=out_tensor.device, dtype=out_tensor.dtype)
+                
+                new_out_tensor = out_tensor.clone()
+                avail = min(L_gen, T_mel - start_pos)
+                new_out_tensor[:, start_pos:start_pos + avail, :] = t_embed[:, :avail, :]
+                
+                if isinstance(output, tuple):
+                    return (new_out_tensor,) + output[1:]
+                return new_out_tensor
+            hook_handle = target_embed_module.register_forward_hook(hook)
 
         try:
             ref_text = speaker_conditioning.get("text", ".").strip()
@@ -460,38 +480,34 @@ class F5TTSBackbone(TTSBackbone):
                 language=language,
             )
 
-            logger.info(f"F5-TTS Synthesis: ref_text='{ref_text}', gen_text='{text}', dynamic_speed={planned.dynamic_speed_factor:.3f}")
-
-            # Run UNWRAPPED inference (allows gradients!) with dynamic speed
+            # We DO NOT unwrap `infer`. We call it directly so it handles masking and tokenization.
+            # We MUST set nfe_step=1 so that the outer solver takes exactly 1 step (dt=1.0)
+            # from 0 to 1, effectively becoming a pass-through for our Adjoint solver.
             with torch.set_grad_enabled(True):
                 try:
-                    unwrapped_infer(
+                    self.tts_api.infer(
                         ref_file=temp_ref,
                         ref_text=ref_text,
                         gen_text=text,
                         speed=planned.dynamic_speed_factor,
-                        nfe_step=32,
+                        nfe_step=1,  # CRITICAL: Forces 1 outer step.
                         cfg_strength=2.0,
                         target_rms=0.1,
                         remove_ref=True,
                     )
                 except TypeError:
-                    unwrapped_infer(
+                    self.tts_api.infer(
                         ref_file=temp_ref,
                         ref_text=ref_text,
                         gen_text=text,
                         speed=planned.dynamic_speed_factor,
-                        nfe_step=32,
+                        nfe_step=1,  # CRITICAL: Forces 1 outer step.
                         cfg_strength=2.0,
                         target_rms=0.1,
                     )
 
-
-            # Retrieve and concatenate all batch waveforms
             if grabbed_waveforms:
                 waveform = torch.cat(grabbed_waveforms, dim=-1)
-                logger.info(f"Captured {len(grabbed_waveforms)} batch(es), "
-                            f"total waveform length: {waveform.shape[-1]} samples")
             else:
                 raise RuntimeError("Failed to intercept vocoder output tensor.")
 
@@ -504,7 +520,7 @@ class F5TTSBackbone(TTSBackbone):
                 vocoder_hook_handle.remove()
             if orig_decode is not None and vocoder_obj is not None:
                 vocoder_obj.decode = orig_decode
-            model_obj.sample = orig_sample
+            dit_model.forward = orig_forward
             torchaudio.load = _orig_load
         
 

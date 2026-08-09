@@ -22,7 +22,7 @@ from typing import Optional, Dict, Tuple
 from pathlib import Path
 
 from flowedit.config import FlowEditConfig
-from flowedit.backbone import create_backbone, F5TTSBackbone, XTTSBackbone
+from flowedit.backbone import create_backbone, F5TTSBackbone
 from flowedit.memory.hopfield_memory import HopfieldMemory
 from flowedit.refiner.hopfield_refiner import HopfieldRefiner
 from flowedit.utils.audio import AudioProcessor

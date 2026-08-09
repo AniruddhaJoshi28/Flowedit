@@ -20,8 +20,6 @@ torch.backends.cudnn.enabled = False
 
 from flowedit.pipeline.correction_loop import CorrectionLoop
 
-from flowedit.api.xtts_routes import router as xtts_router
-
 # Global pipeline instance
 pipeline = None
 MEMORY_PATH = "./corrections.pt"
@@ -32,7 +30,10 @@ async def lifespan(app: FastAPI):
     global pipeline
     print("Loading FlowEdit pipeline models...")
     config = FlowEditConfig()
+    backbone_env = os.environ.get("FLOWEDIT_BACKBONE", "f5tts")
+    config.backbone.backbone_type = backbone_env.lower()
     print(f"  Backbone type: {config.backbone.backbone_type.upper()}")
+
     if config.backbone.backbone_type == "xtts":
         print(f"  XTTS model dir: {config.backbone.xtts_model_dir}")
         print(f"  XTTS checkpoint: {config.backbone.xtts_checkpoint}")
@@ -47,12 +48,10 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="FlowEdit API",
-    description="API for the FlowEdit Pronunciation Adaptation Pipeline (with xtts-api-server support)",
+    description="API for the FlowEdit Pronunciation Adaptation Pipeline",
     version="1.0.0",
     lifespan=lifespan,
 )
-
-app.include_router(xtts_router)
 
 # Enable CORS for Swagger UI / Frontend
 app.add_middleware(
@@ -91,12 +90,11 @@ async def correct_pronunciation(
     text: str = Form(..., description="Full text containing the target word"),
     target_word: str = Form(..., description="The word to correct pronunciation of"),
     language: str = Form("en", description="Language code"),
-    backbone_type: str = Form("cosyvoice", description="Backbone model to use: 'xtts', 'f5tts', or 'cosyvoice'"),
     ref_audio: UploadFile = File(..., description="Reference audio with correct pronunciation"),
     speaker_wav: UploadFile | None = None,
 ):
     """
-    Learn a pronunciation correction from reference audio using the specified model backbone.
+    Learn a pronunciation correction from reference audio using the F5-TTS model backbone.
     """
     global pipeline
     if not pipeline:
@@ -121,7 +119,6 @@ async def correct_pronunciation(
             ref_audio_path=temp_ref_path,
             speaker_wav=temp_speaker_path,
             language=language,
-            backbone_type=backbone_type,
         )
 
         if not result.success:
@@ -133,7 +130,7 @@ async def correct_pronunciation(
         return JSONResponse({
             "success": True,
             "word": result.word,
-            "backbone": backbone_type,
+            "backbone": "f5tts",
             "wall_clock_seconds": result.wall_clock_seconds,
             "final_loss": result.optimization.final_loss if hasattr(result, "optimization") and hasattr(result.optimization, "final_loss") else None,
             "converged": result.optimization.converged if hasattr(result, "optimization") and hasattr(result.optimization, "converged") else None,
@@ -150,12 +147,11 @@ async def correct_pronunciation(
 async def synthesize_text(
     text: str = Form(..., description="Text to synthesize"),
     language: str = Form("en", description="Language code"),
-    backbone_type: str = Form("cosyvoice", description="Backbone model to use: 'xtts', 'f5tts', or 'cosyvoice'"),
     speaker_wav: UploadFile = File(..., description="Speaker reference audio for voice conditioning"),
     ref_text: Optional[str] = Form(None, description="Optional transcription of the speaker audio."),
 ):
     """
-    Synthesize text using requested backbone model (xtts, f5tts, or cosyvoice), automatically applying learned Hopfield corrections.
+    Synthesize text using the F5-TTS backbone model, automatically applying learned Hopfield corrections.
     """
     global pipeline
     if not pipeline:
@@ -169,7 +165,7 @@ async def synthesize_text(
 
     try:
         # Get requested backbone
-        bb = pipeline.get_backbone(backbone_type)
+        bb = pipeline.get_backbone()
 
         # Step 1: Get text embeddings
         base_embeddings = bb.encode_text(text, language)
@@ -224,7 +220,7 @@ async def synthesize_text(
         return FileResponse(
             path=output_path, 
             media_type="audio/wav", 
-            filename=f"synthesized_{backbone_type}.wav",
+            filename=f"synthesized_f5tts.wav",
             background=None
         )
     except Exception as e:
@@ -235,102 +231,6 @@ async def synthesize_text(
         raise HTTPException(status_code=500, detail=f"{str(e)}\n\nTraceback:\n{tb}")
     finally:
         # Cleanup speaker temp file
-        if os.path.exists(temp_speaker_path):
-            os.remove(temp_speaker_path)
-
-@app.post("/api/synthesize_raw", deprecated=True)
-async def synthesize_raw(
-
-    text: str = Form(..., description="Text to synthesize"),
-    language: str = Form("en", description="Language code"),
-    speaker_wav: UploadFile = File(..., description="Speaker reference audio"),
-    temperature: float = Form(0.75, description="Sampling temperature"),
-    repetition_penalty: float = Form(10.0, description="Repetition penalty"),
-    top_k: int = Form(50, description="Top-k sampling"),
-    top_p: float = Form(0.85, description="Top-p sampling"),
-    gpt_cond_len: int = Form(12, description="GPT conditioning length (seconds of ref audio to use)"),
-):
-    """
-    RAW XTTS synthesis — bypasses FlowEdit entirely.
-    
-    Calls the Coqui XTTS model.inference() directly with no hooks,
-    no HopfieldRefiner, no embedding manipulation. Use this to verify
-    that the fine-tuned model itself produces correct pronunciation.
-    """
-    global pipeline
-    if not pipeline or not pipeline.backbone:
-        raise HTTPException(status_code=503, detail="Pipeline not loaded yet.")
-
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_speaker:
-        shutil.copyfileobj(speaker_wav.file, temp_speaker)
-        temp_speaker_path = temp_speaker.name
-
-    output_path = tempfile.mktemp(suffix=".wav")
-
-    try:
-        import librosa
-        import soundfile as sf
-        import numpy as np
-
-        # Preprocess speaker audio to 22050 Hz (XTTS input rate)
-        processed_fd, processed_path = tempfile.mkstemp(suffix=".wav")
-        os.close(processed_fd)
-        y, sr = librosa.load(temp_speaker_path, sr=22050, mono=True)
-        sf.write(processed_path, y, 22050, subtype='PCM_16')
-
-        # Get speaker conditioning directly from the Coqui model
-        model = pipeline.backbone.model
-        gpt_cond_latent, speaker_embedding = model.get_conditioning_latents(
-            audio_path=[processed_path],
-            gpt_cond_len=gpt_cond_len,
-            gpt_cond_chunk_len=4,
-            max_ref_length=30,
-        )
-
-        print(f"[RAW] text={text!r}, lang={language}, temp={temperature}, "
-              f"rep_pen={repetition_penalty}, top_k={top_k}, top_p={top_p}, "
-              f"gpt_cond_len={gpt_cond_len}")
-        print(f"[RAW] gpt_cond_latent shape: {gpt_cond_latent.shape}")
-        print(f"[RAW] speaker_embedding shape: {speaker_embedding.shape}")
-
-        # Direct XTTS inference — NO FlowEdit hooks
-        out = model.inference(
-            text=text,
-            language=language,
-            gpt_cond_latent=gpt_cond_latent,
-            speaker_embedding=speaker_embedding,
-            temperature=temperature,
-            length_penalty=1.0,
-            repetition_penalty=repetition_penalty,
-            top_k=top_k,
-            top_p=top_p,
-            enable_text_splitting=False,
-        )
-
-        wav = out["wav"]
-        if isinstance(wav, torch.Tensor):
-            wav_np = wav.squeeze().cpu().numpy()
-        else:
-            wav_np = np.array(wav)
-
-        sf.write(output_path, wav_np, 24000)
-        os.remove(processed_path)
-
-        print(f"[RAW] Generated {len(wav_np)/24000:.2f}s of audio")
-
-        return FileResponse(
-            path=output_path,
-            media_type="audio/wav",
-            filename="synthesized_raw.wav",
-            background=None,
-        )
-    except Exception as e:
-        if os.path.exists(output_path):
-            os.remove(output_path)
-        import traceback
-        tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
-        raise HTTPException(status_code=500, detail=f"{str(e)}\n\nTraceback:\n{tb}")
-    finally:
         if os.path.exists(temp_speaker_path):
             os.remove(temp_speaker_path)
 

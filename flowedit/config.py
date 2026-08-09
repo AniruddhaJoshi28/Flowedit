@@ -126,32 +126,17 @@ class AudioConfig:
 
 @dataclass
 class BackboneConfig:
-    """Backbone configuration supporting XTTS-v2, F5-TTS, and CosyVoice (2/3).
+    """Backbone configuration supporting F5-TTS.
 
     Set backbone_type to select which model to use:
-        - "xtts"      : Use local XTTS-v2 model from xtts_model_dir
         - "f5tts"     : Use F5-TTS via f5-tts package
-        - "cosyvoice" : Use CosyVoice / CosyVoice 2 / CosyVoice 3
     """
 
-    # Backbone selector: "xtts", "f5tts", or "cosyvoice"
-    backbone_type: str = "cosyvoice"
-
-    # ── XTTS-specific settings ──────────────────────────────────────
-    xtts_model_dir: str = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "Xtts"
-    )
-    xtts_checkpoint: str = "model.pth"
+    # Backbone selector: "f5tts"
+    backbone_type: str = "f5tts"
 
     # ── F5-TTS-specific settings ────────────────────────────────────
-    model_name: str = "tts_models/multilingual/multi-dataset/xtts_v2"
-
-    # ── CosyVoice-specific settings ──────────────────────────────────
-    cosyvoice_model_version: str = "2"   # "2", "3", "300M", "0.5B"
-    cosyvoice_model_dir: str = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "CosyVoice"
-    )
-    cosyvoice_mode: str = "zero_shot"    # "zero_shot", "cross_lingual", "instruct"
+    model_name: str = "tts_models/multilingual/multi-dataset/xtts_v2" # Note: keeping this property as it was under F5-TTS in original, might be mislabeled but preserving value.
 
     # ── Shared settings ─────────────────────────────────────────────
     use_gradient_checkpointing: bool = True

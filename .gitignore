@@ -49,3 +49,4 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+temp_packages/

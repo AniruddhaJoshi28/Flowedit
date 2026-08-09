@@ -65,9 +65,9 @@ class CorrectionLoop:
 
         self._models_loaded = False
 
-    def get_backbone(self, backbone_type: str = "xtts") -> TTSBackbone:
-        """Get or lazily load the requested backbone instance (xtts or f5tts)."""
-        key = backbone_type.lower()
+    def get_backbone(self) -> TTSBackbone:
+        """Get or lazily load the F5-TTS backbone instance."""
+        key = "f5tts"
         if key in self.backbones:
             return self.backbones[key]
 
@@ -92,9 +92,9 @@ class CorrectionLoop:
         start_time = time.time()
 
         # 1. Load primary backbone
-        primary_type = getattr(self.config.backbone, "backbone_type", "xtts")
+        primary_type = "f5tts"
         logger.info(f"[1/4] Loading default backbone ({primary_type.upper()})...")
-        self.backbone = self.get_backbone(primary_type)
+        self.backbone = self.get_backbone()
 
         # 2. Load Whisper aligner
         logger.info("[2/4] Loading Whisper aligner...")
@@ -136,7 +136,6 @@ class CorrectionLoop:
         ref_audio_path: str,
         speaker_wav: Optional[str] = None,
         language: str = "en",
-        backbone_type: str = "xtts",
     ) -> CorrectionResult:
         """Learn a pronunciation correction from reference audio.
 
@@ -159,7 +158,7 @@ class CorrectionLoop:
             CorrectionResult with all pipeline outputs
         """
         self._ensure_loaded()
-        bb = self.get_backbone(backbone_type)
+        bb = self.get_backbone()
 
         start_time = time.time()
 
@@ -172,7 +171,7 @@ class CorrectionLoop:
         primary_target_word = target_words_list[0] if target_words_list else target_word
 
         logger.info(f"\n{'='*60}")
-        logger.info(f"CORRECTION: '{primary_target_word}' (full target: '{target_word}') in \"{text}\" (Backbone: {backbone_type.upper()})")
+        logger.info(f"CORRECTION: '{primary_target_word}' (full target: '{target_word}') in \"{text}\" (Backbone: F5TTS)")
         logger.info(f"Reference: {ref_audio_path}")
         logger.info(f"{'='*60}")
 
