@@ -32,6 +32,8 @@ async def lifespan(app: FastAPI):
     config = FlowEditConfig()
     backbone_env = os.environ.get("FLOWEDIT_BACKBONE", "f5tts")
     config.backbone.backbone_type = backbone_env.lower()
+    config.backbone.f5tts_ckpt_file = os.environ.get("FLOWEDIT_F5TTS_CKPT", "")
+    config.backbone.f5tts_vocab_file = os.environ.get("FLOWEDIT_F5TTS_VOCAB", "")
     print(f"  Backbone type: {config.backbone.backbone_type.upper()}")
 
     if config.backbone.backbone_type == "xtts":
@@ -100,16 +102,25 @@ async def correct_pronunciation(
     if not pipeline:
         raise HTTPException(status_code=503, detail="Pipeline not loaded yet.")
 
-    # Save uploaded files to temporary files
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_ref:
-        shutil.copyfileobj(ref_audio.file, temp_ref)
         temp_ref_path = temp_ref.name
+        
+    await ref_audio.seek(0)
+    with open(temp_ref_path, "wb") as f:
+        f.write(await ref_audio.read())
+        
+    temp_ref_path = convert_to_wav(temp_ref_path)
 
     temp_speaker_path = None
     if speaker_wav:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_speaker:
-            shutil.copyfileobj(speaker_wav.file, temp_speaker)
             temp_speaker_path = temp_speaker.name
+            
+        await speaker_wav.seek(0)
+        with open(temp_speaker_path, "wb") as f:
+            f.write(await speaker_wav.read())
+            
+        temp_speaker_path = convert_to_wav(temp_speaker_path)
 
     try:
         # Run correction pipeline with requested backbone
@@ -143,6 +154,24 @@ async def correct_pronunciation(
         if temp_speaker_path and os.path.exists(temp_speaker_path):
             os.remove(temp_speaker_path)
 
+import subprocess
+
+def convert_to_wav(input_path: str) -> str:
+    """Uses system ffmpeg to ensure any uploaded audio file is a strict 24kHz Mono WAV."""
+    output_path = input_path + "_converted.wav"
+    try:
+        subprocess.run([
+            "ffmpeg", "-y", "-i", input_path,
+            "-acodec", "pcm_s16le", "-ar", "24000", "-ac", "1",
+            output_path
+        ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        os.remove(input_path)
+        return output_path
+    except Exception:
+        if os.path.exists(output_path):
+            os.remove(output_path)
+        return input_path
+
 @app.post("/api/synthesize")
 async def synthesize_text(
     text: str = Form(..., description="Text to synthesize"),
@@ -158,8 +187,14 @@ async def synthesize_text(
         raise HTTPException(status_code=503, detail="Pipeline not loaded yet.")
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_speaker:
-        shutil.copyfileobj(speaker_wav.file, temp_speaker)
         temp_speaker_path = temp_speaker.name
+        
+    await speaker_wav.seek(0)
+    with open(temp_speaker_path, "wb") as f:
+        f.write(await speaker_wav.read())
+        
+    # Auto-convert uploaded file to strict WAV format
+    temp_speaker_path = convert_to_wav(temp_speaker_path)
 
     output_path = tempfile.mktemp(suffix=".wav")
 
@@ -179,7 +214,7 @@ async def synthesize_text(
         max_gate = gate_values.max().item() if gate_values.numel() > 0 else 0.0
         diff_norm = torch.norm(corrected_embeddings - base_embeddings).item()
         
-        print(f"[Synthesize] Backbone: {backbone_type.upper()}, Memory size: {pipeline.memory.size}, "
+        print(f"[Synthesize] Backbone: {pipeline.config.backbone.backbone_type.upper()}, Memory size: {pipeline.memory.size}, "
               f"Corrections applied: {corrections_applied}, "
               f"Max gate: {max_gate:.4f}, "
               f"Embedding diff norm: {diff_norm:.4f}")
@@ -196,7 +231,7 @@ async def synthesize_text(
                 v_norm = torch.norm(v).item()
                 print(f"  [Memory {i}] word='{m.get('word', '?')}', δ_norm={v_norm:.6f}")
         
-        if corrections_applied > 0:
+        if corrections_applied > 0 and diff_norm > 1e-4:
             print(f"[Synthesize] Corrections active (applied={corrections_applied}, diff={diff_norm:.4f}) → using hook-based synthesis on {backbone_name}")
             waveform, sr = bb.synthesize_from_embeddings(
                 text_embeddings=corrected_embeddings.detach(),
@@ -205,7 +240,8 @@ async def synthesize_text(
                 language=language,
             )
         else:
-            print(f"[Synthesize] No corrections matched → using direct {backbone_name} synthesis")
+            reason = "no corrections matched" if corrections_applied == 0 else f"diff_norm too small ({diff_norm:.6f})"
+            print(f"[Synthesize] {reason} → using direct {backbone_name} synthesis")
             waveform, sr = bb.synthesize_direct(
                 text=text,
                 speaker_conditioning=speaker_conditioning,

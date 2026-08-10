@@ -72,9 +72,8 @@ class CorrectionLoop:
             return self.backbones[key]
 
         logger.info(f"Loading requested backbone: {key.upper()}...")
-        cfg = FlowEditConfig()
-        cfg.backbone.backbone_type = key
-        bb = create_backbone(cfg.backbone)
+        self.config.backbone.backbone_type = key
+        bb = create_backbone(self.config.backbone)
         bb.load_model()
         self.backbones[key] = bb
 

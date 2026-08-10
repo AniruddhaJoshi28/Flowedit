@@ -136,7 +136,8 @@ class BackboneConfig:
     backbone_type: str = "f5tts"
 
     # ── F5-TTS-specific settings ────────────────────────────────────
-    model_name: str = "tts_models/multilingual/multi-dataset/xtts_v2" # Note: keeping this property as it was under F5-TTS in original, might be mislabeled but preserving value.
+    f5tts_ckpt_file: str = ""
+    f5tts_vocab_file: str = ""
 
     # ── Shared settings ─────────────────────────────────────────────
     use_gradient_checkpointing: bool = True

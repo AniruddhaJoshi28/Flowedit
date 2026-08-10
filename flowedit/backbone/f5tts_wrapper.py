@@ -110,13 +110,15 @@ class F5TTSBackbone(TTSBackbone):
         try:
             from f5_tts.api import F5TTS
 
-            # Try different constructor signatures for different f5-tts versions
+            ckpt_file = getattr(self.config, 'f5tts_ckpt_file', "")
+            vocab_file = getattr(self.config, 'f5tts_vocab_file', "")
+            logger.info(f"Initializing F5TTS with ckpt_file='{ckpt_file}' and vocab_file='{vocab_file}'")
             try:
                 # Newer versions (v0.3+)
                 self.tts_api = F5TTS(
                     model_type="F5-TTS",
-                    ckpt_file="",
-                    vocab_file="",
+                    ckpt_file=ckpt_file,
+                    vocab_file=vocab_file,
                     ode_method="euler",
                     use_ema=True,
                     vocoder_name="vocos",
@@ -126,15 +128,15 @@ class F5TTSBackbone(TTSBackbone):
                 try:
                     # Older versions without model_type/device
                     self.tts_api = F5TTS(
-                        ckpt_file="",
-                        vocab_file="",
+                        ckpt_file=ckpt_file,
+                        vocab_file=vocab_file,
                         ode_method="euler",
                         use_ema=True,
                         vocoder_name="vocos",
                     )
                 except TypeError:
                     # Minimal fallback
-                    self.tts_api = F5TTS()
+                    self.tts_api = F5TTS(ckpt_file=ckpt_file, vocab_file=vocab_file)
 
             # Store internal references for Hopfield Memory embedding access
             self.model = getattr(self.tts_api, "ema_model", getattr(self.tts_api, "model", None))
@@ -347,7 +349,7 @@ class F5TTSBackbone(TTSBackbone):
         try:
             from torchdiffeq import odeint_adjoint
         except ImportError:
-            raise ImportError("torchdiffeq is required for the Adjoint Sensitivity Method. Run: pip install torchdiffeq")
+            raise ImportError("torchdiffeq is required for the ODE solver. Run: pip install torchdiffeq")
 
         model_obj = getattr(self.tts_api, "ema_model", getattr(self.tts_api, "model", None))
         dit_model = getattr(model_obj, "transformer", model_obj)
@@ -364,12 +366,32 @@ class F5TTSBackbone(TTSBackbone):
             vocoder_hook_handle = vocoder_obj.register_forward_hook(vocoder_hook)
             if hasattr(vocoder_obj, "decode"):
                 orig_decode = vocoder_obj.decode
+                
+                # Unwrap the decode method to bypass @torch.inference_mode()
+                target_decode = orig_decode
+                if hasattr(orig_decode, "__func__"):
+                    func = orig_decode.__func__
+                    if hasattr(func, "__wrapped__"):
+                        target_decode = func.__wrapped__.__get__(vocoder_obj, vocoder_obj.__class__)
+                elif hasattr(orig_decode, "__wrapped__"):
+                    target_decode = orig_decode.__wrapped__
+                    
                 def wrapped_decode(*args, **kwargs):
-                    output = orig_decode(*args, **kwargs)
-                    grabbed_waveforms.append(output)
+                    if len(args) > 0:
+                        features_input = args[0]
+                    else:
+                        features_input = kwargs["features_input"]
+                        
+                    wrapper_self._saved_vocoder_input_shape = (1, 100, L_gen) # approximation
+                    
+                    # We just run target_decode so F5-TTS doesn't crash, but we will ignore its output
+                    with torch.no_grad():
+                        output = target_decode(*args, **kwargs)
                     return output
                 vocoder_obj.decode = wrapped_decode
 
+        wrapper_self = self
+        
         # --- The ODE Interceptor ---
         # We intercept the VERY FIRST call to the transformer inside F5-TTS's solver loop.
         class ODEFV(nn.Module):
@@ -397,11 +419,6 @@ class F5TTSBackbone(TTSBackbone):
                 self.intercepted = False
                 
             def forward(self, x, *args, **kwargs):
-                if self.intercepted:
-                    # After our one big leap, if F5-TTS somehow calls again, just pass it through
-                    return self.original_forward(x, *args, **kwargs)
-                
-                self.intercepted = True
                 
                 # Dynamically find the time argument
                 sig = inspect.signature(self.original_forward)
@@ -412,13 +429,51 @@ class F5TTSBackbone(TTSBackbone):
                         break
                 if t_arg_name is None:
                     raise RuntimeError("Could not identify the time argument in DiT signature.")
-                
-                # Run the full integration loop using adjoint method
-                odefunc = ODEFV(self.original_forward, args, kwargs, t_arg_name)
-                t_eval = torch.linspace(0, 1, self.steps + 1, device=x.device, dtype=x.dtype)
-                
-                # odeint_adjoint returns trajectory. We take the final state.
-                final_x = odeint_adjoint(odefunc, x, t_eval, method=self.method)[-1]
+                if self.intercepted:
+                    return self.original_forward(x, *args, **kwargs)
+                self.intercepted = True
+
+                with torch.set_grad_enabled(True):
+                    # Clone x because it might be an inference tensor passed from F5-TTS
+                    if isinstance(x, torch.Tensor):
+                        x = x.clone()
+                        
+                    # Also clone any tensors in args and kwargs to strip inference property
+                    cloned_args = []
+                    for arg in args:
+                        if isinstance(arg, torch.Tensor):
+                            cloned_args.append(arg.clone())
+                        else:
+                            cloned_args.append(arg)
+                    cloned_args = tuple(cloned_args)
+                    
+                    cloned_kwargs = {}
+                    for k, v in kwargs.items():
+                        if isinstance(v, torch.Tensor):
+                            cloned_kwargs[k] = v.clone()
+                        else:
+                            cloned_kwargs[k] = v
+                            
+                    # We only intercept the first ODE step.
+                    t_eval = torch.linspace(0, 1, self.steps, device=x.device, dtype=x.dtype)
+                    
+                    # Run the full integration loop using adjoint method
+                    odefunc = ODEFV(self.original_forward, cloned_args, cloned_kwargs, t_arg_name)
+                    
+                    # odeint_adjoint returns trajectory. We take the final state.
+                    # Explicitly pass text_embeddings so the adjoint pass computes gradients for it
+                    final_x = odeint_adjoint(
+                        odefunc, 
+                        x, 
+                        t_eval, 
+                        method=self.method,
+                        adjoint_params=(text_embeddings,)
+                    )[-1]
+                    
+                    logger.warning(f"[DIAG] odeint_adjoint final_x requires_grad: {final_x.requires_grad}")
+                    
+                    # Save final_x so we can manually decode it later outside F5-TTS infer's inference_mode!
+                    wrapper_self._saved_final_x = final_x
                 
                 # Return the delta, so when the outer F5-TTS Euler step does x0 + v * 1.0,
                 # it results exactly in final_x.
@@ -451,19 +506,22 @@ class F5TTSBackbone(TTSBackbone):
         hook_handle = None
         if target_embed_module is not None:
             def hook(module, inputs, output):
-                out_tensor = output[0] if isinstance(output, tuple) else output
-                T_mel = out_tensor.shape[1]
-                L_gen = text_embeddings.shape[1]
-                start_pos = max(0, T_mel - L_gen)
-                t_embed = text_embeddings.to(device=out_tensor.device, dtype=out_tensor.dtype)
-                
-                new_out_tensor = out_tensor.clone()
-                avail = min(L_gen, T_mel - start_pos)
-                new_out_tensor[:, start_pos:start_pos + avail, :] = t_embed[:, :avail, :]
-                
-                if isinstance(output, tuple):
-                    return (new_out_tensor,) + output[1:]
-                return new_out_tensor
+                with torch.set_grad_enabled(True):
+                    # output shape: [1, seq_len, 768] (or whatever)
+                    out_tensor = output.clone()
+                    t_embed = text_embeddings.to(device=out_tensor.device, dtype=out_tensor.dtype)
+                    
+                    B = out_tensor.shape[0]
+                    T_mel = out_tensor.shape[1]
+                    L_gen = text_embeddings.shape[1]
+                    start_pos = max(0, T_mel - L_gen)
+                    avail = min(L_gen, T_mel - start_pos)
+                    # Expand embeddings to match batch size (handles CFG doubling gracefully)
+                    out_tensor[:, start_pos:start_pos + avail, :] = t_embed.expand(B, -1, -1)[:, :avail, :]
+                    
+                    if isinstance(output, tuple):
+                        return (out_tensor,) + output[1:]
+                    return out_tensor
             hook_handle = target_embed_module.register_forward_hook(hook)
 
         try:
@@ -484,32 +542,68 @@ class F5TTSBackbone(TTSBackbone):
             # We MUST set nfe_step=1 so that the outer solver takes exactly 1 step (dt=1.0)
             # from 0 to 1, effectively becoming a pass-through for our Adjoint solver.
             with torch.set_grad_enabled(True):
+                # CRITICAL: Unwrap `infer` to bypass `@torch.inference_mode()` if present
+                infer_method = self.tts_api.infer
+                if hasattr(infer_method, "__func__"):
+                    func = infer_method.__func__
+                    if hasattr(func, "__wrapped__"):
+                        infer_method = func.__wrapped__.__get__(self.tts_api, self.tts_api.__class__)
+                elif hasattr(infer_method, "__wrapped__"):
+                    infer_method = infer_method.__wrapped__
+
+                # CRITICAL: cfg_strength=0 disables CFG batch-doubling.
+                # CFG doubles the batch [cond, uncond] internally, which breaks
+                # the adjoint ODE solver that expects a fixed batch size.
+                # CFG only affects generation quality, NOT gradient computation.
                 try:
-                    self.tts_api.infer(
+                    infer_method(
                         ref_file=temp_ref,
                         ref_text=ref_text,
                         gen_text=text,
                         speed=planned.dynamic_speed_factor,
                         nfe_step=1,  # CRITICAL: Forces 1 outer step.
-                        cfg_strength=2.0,
+                        cfg_strength=0.0,  # Disable CFG to avoid batch doubling
                         target_rms=0.1,
-                        remove_ref=True,
                     )
                 except TypeError:
-                    self.tts_api.infer(
+                    infer_method(
                         ref_file=temp_ref,
                         ref_text=ref_text,
                         gen_text=text,
                         speed=planned.dynamic_speed_factor,
                         nfe_step=1,  # CRITICAL: Forces 1 outer step.
-                        cfg_strength=2.0,
+                        cfg_strength=0.0,  # Disable CFG to avoid batch doubling
                         target_rms=0.1,
                     )
 
-            if grabbed_waveforms:
-                waveform = torch.cat(grabbed_waveforms, dim=-1)
+            # The manual vocoding bypass!
+            # Because `infer_method` might run under `torch.inference_mode()`, all tensors returned
+            # from it will have dropped gradients.
+            # But we saved `final_x` directly from `odeint_adjoint` where gradients are intact!
+            if not hasattr(wrapper_self, "_saved_final_x"):
+                raise RuntimeError("Failed to intercept final_x from ODE solver.")
+                
+            final_x = wrapper_self._saved_final_x # [B, T_total, 100]
+            L_gen = wrapper_self._saved_vocoder_input_shape[-1]
+            
+            # Transpose to vocoder format [B, 100, T_total]
+            pred_mel = final_x.transpose(1, 2)
+            
+            # Strip the reference audio part, keeping only the generated length
+            pred_mel_stripped = pred_mel[:, :, -L_gen:]
+            
+            # Decode manually using the Vocos module components to bypass ANY hidden inference_mode decorators!
+            # Vocos.decode essentially does: backbone -> head for mel inputs
+            x_vocos = pred_mel_stripped.float()
+            
+            if hasattr(vocoder_obj, "backbone") and hasattr(vocoder_obj, "head"):
+                x_vocos = vocoder_obj.backbone(x_vocos)
+                waveform = vocoder_obj.head(x_vocos)
             else:
-                raise RuntimeError("Failed to intercept vocoder output tensor.")
+                # Fallback to the unwrapped target_decode
+                waveform = target_decode(pred_mel_stripped.float())
+                
+            logger.warning(f"[DIAG] Final manual waveform requires_grad: {waveform.requires_grad}")
 
             return waveform, 24000
 

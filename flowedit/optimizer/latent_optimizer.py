@@ -230,8 +230,11 @@ class LatentOptimizer:
                     target_word_end_time=target_word_end_time,
                 )
                 task_loss = loss_dict["loss"]
+                logger.warning(f"[DIAG] task_loss requires_grad: {task_loss.requires_grad}")
             except Exception as e:
+                import traceback
                 logger.warning(f"Optimization loss computation failed at step {step}: {e}")
+                logger.warning(traceback.format_exc())
                 task_loss = torch.tensor(0.0, device=device, requires_grad=True)
                 loss_dict = {"loss": task_loss}
 
@@ -269,7 +272,7 @@ class LatentOptimizer:
             if step == 0 and delta.grad is not None:
                 delta_grad_norm = delta.grad.norm().item()
                 delta_grad_max = delta.grad.abs().max().item()
-                logger.info(
+                logger.warning(
                     f"  [DIAG] δ grad norm={delta_grad_norm:.6f}, "
                     f"δ grad max={delta_grad_max:.6f}"
                 )
