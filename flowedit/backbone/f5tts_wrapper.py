@@ -355,6 +355,18 @@ class F5TTSBackbone(TTSBackbone):
         dit_model = getattr(model_obj, "transformer", model_obj)
         orig_forward = dit_model.forward
         
+        # Unwrap `model_obj.sample` to bypass `@torch.inference_mode()` if present
+        orig_sample = getattr(model_obj, "sample", None)
+        if orig_sample is not None:
+            target_sample = orig_sample
+            if hasattr(target_sample, "__func__"):
+                func = target_sample.__func__
+                if hasattr(func, "__wrapped__"):
+                    target_sample = func.__wrapped__.__get__(model_obj, model_obj.__class__)
+            elif hasattr(target_sample, "__wrapped__"):
+                target_sample = target_sample.__wrapped__
+            model_obj.sample = target_sample
+        
         # We need the vocoder to return the waveforms, so hook it.
         grabbed_waveforms = []
         vocoder_hook_handle = None
@@ -380,9 +392,15 @@ class F5TTSBackbone(TTSBackbone):
                     if len(args) > 0:
                         features_input = args[0]
                     else:
-                        features_input = kwargs["features_input"]
+                        features_input = kwargs.get("features_input", kwargs.get("features", None))
                         
-                    wrapper_self._saved_vocoder_input_shape = (1, 100, L_gen) # approximation
+                    # Extract L_gen from the actual vocoder input tensor shape
+                    if features_input is not None and isinstance(features_input, torch.Tensor):
+                        # features_input shape is typically [B, n_mels, T_gen]
+                        actual_L_gen = features_input.shape[-1]
+                    else:
+                        actual_L_gen = 0
+                    wrapper_self._saved_vocoder_input_shape = (1, 100, actual_L_gen)
                     
                     # We just run target_decode so F5-TTS doesn't crash, but we will ignore its output
                     with torch.no_grad():
@@ -402,13 +420,42 @@ class F5TTSBackbone(TTSBackbone):
                 self.captured_kwargs = captured_kwargs
                 self.t_arg_name = t_arg_name
                 self.sig = inspect.signature(original_forward)
+                # Detect the model's parameter dtype (typically float16 for F5-TTS)
+                self._model_dtype = None
+                if hasattr(original_forward, '__self__'):
+                    for p in original_forward.__self__.parameters():
+                        self._model_dtype = p.dtype
+                        break
                 
             def forward(self, t, x):
-                t_batch = t.expand(x.shape[0]).to(x.device, dtype=x.dtype)
-                bound = self.sig.bind(x, *self.captured_args, **self.captured_kwargs)
+                # During the adjoint backward pass, x and t may be float32 while
+                # model weights are float16. Cast to match the model's dtype.
+                # IMPORTANT: Only cast floating-point tensors. Integer tensors (e.g.
+                # token IDs for nn.Embedding) must stay as Long/Int.
+                model_dtype = self._model_dtype or x.dtype
+                x_cast = x.to(dtype=model_dtype)
+                t_batch = t.expand(x.shape[0]).to(x.device, dtype=model_dtype)
+                
+                # Also cast any floating-point tensor args/kwargs to match
+                cast_args = []
+                for arg in self.captured_args:
+                    if isinstance(arg, torch.Tensor) and arg.is_floating_point():
+                        cast_args.append(arg.to(dtype=model_dtype))
+                    else:
+                        cast_args.append(arg)
+                cast_kwargs = {}
+                for k, v in self.captured_kwargs.items():
+                    if isinstance(v, torch.Tensor) and v.is_floating_point():
+                        cast_kwargs[k] = v.to(dtype=model_dtype)
+                    else:
+                        cast_kwargs[k] = v
+                
+                bound = self.sig.bind(x_cast, *cast_args, **cast_kwargs)
                 bound.apply_defaults()
                 bound.arguments[self.t_arg_name] = t_batch
-                return self.original_forward(*bound.args, **bound.kwargs)
+                result = self.original_forward(*bound.args, **bound.kwargs)
+                # Cast output back to the ODE solver's expected dtype (x.dtype)
+                return result.to(dtype=x.dtype)
 
         class ODEWrapper(nn.Module):
             def __init__(self, original_forward, steps=32, method="euler"):
@@ -433,43 +480,50 @@ class F5TTSBackbone(TTSBackbone):
                     return self.original_forward(x, *args, **kwargs)
                 self.intercepted = True
 
-                with torch.set_grad_enabled(True):
-                    # Clone x because it might be an inference tensor passed from F5-TTS
-                    if isinstance(x, torch.Tensor):
-                        x = x.clone()
+                # We spawn a new thread to run the ODE solver.
+                # PyTorch's inference_mode is thread-local. Since f5_tts puts us inside an
+                # unescapable inference_mode context, any tensor created here will be an 
+                # inference tensor and cause odeint_adjoint to crash. By running in a new thread,
+                # we start with a clean context, allowing us to strip the inference property.
+                import concurrent.futures
+
+                def _run_ode_solver():
+                    with torch.set_grad_enabled(True):
+                        # Clone x to strip its inference property
+                        x_norm = x.clone() if isinstance(x, torch.Tensor) else x
                         
-                    # Also clone any tensors in args and kwargs to strip inference property
-                    cloned_args = []
-                    for arg in args:
-                        if isinstance(arg, torch.Tensor):
-                            cloned_args.append(arg.clone())
-                        else:
-                            cloned_args.append(arg)
-                    cloned_args = tuple(cloned_args)
+                        cloned_args = []
+                        for arg in args:
+                            if isinstance(arg, torch.Tensor):
+                                cloned_args.append(arg.clone())
+                            else:
+                                cloned_args.append(arg)
+                        cloned_args = tuple(cloned_args)
+                        
+                        cloned_kwargs = {}
+                        for k, v in kwargs.items():
+                            if isinstance(v, torch.Tensor):
+                                cloned_kwargs[k] = v.clone()
+                            else:
+                                cloned_kwargs[k] = v
+                                
+                        t_eval = torch.linspace(0, 1, self.steps, device=x_norm.device, dtype=x_norm.dtype)
+                        odefunc = ODEFV(self.original_forward, cloned_args, cloned_kwargs, t_arg_name)
+                        
+                        res = odeint_adjoint(
+                            odefunc, 
+                            x_norm, 
+                            t_eval, 
+                            method=self.method,
+                            adjoint_params=(text_embeddings,)
+                        )[-1]
+                        return res
+                        
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(_run_ode_solver)
+                    final_x = future.result()
                     
-                    cloned_kwargs = {}
-                    for k, v in kwargs.items():
-                        if isinstance(v, torch.Tensor):
-                            cloned_kwargs[k] = v.clone()
-                        else:
-                            cloned_kwargs[k] = v
-                            
-                    # We only intercept the first ODE step.
-                    t_eval = torch.linspace(0, 1, self.steps, device=x.device, dtype=x.dtype)
-                    
-                    # Run the full integration loop using adjoint method
-                    odefunc = ODEFV(self.original_forward, cloned_args, cloned_kwargs, t_arg_name)
-                    
-                    # odeint_adjoint returns trajectory. We take the final state.
-                    # Explicitly pass text_embeddings so the adjoint pass computes gradients for it
-                    final_x = odeint_adjoint(
-                        odefunc, 
-                        x, 
-                        t_eval, 
-                        method=self.method,
-                        adjoint_params=(text_embeddings,)
-                    )[-1]
-                    
+                with torch.set_grad_enabled(True):
                     logger.warning(f"[DIAG] odeint_adjoint final_x requires_grad: {final_x.requires_grad}")
                     
                     # Save final_x so we can manually decode it later outside F5-TTS infer's inference_mode!
@@ -584,24 +638,31 @@ class F5TTSBackbone(TTSBackbone):
                 raise RuntimeError("Failed to intercept final_x from ODE solver.")
                 
             final_x = wrapper_self._saved_final_x # [B, T_total, 100]
-            L_gen = wrapper_self._saved_vocoder_input_shape[-1]
             
             # Transpose to vocoder format [B, 100, T_total]
             pred_mel = final_x.transpose(1, 2)
             
-            # Strip the reference audio part, keeping only the generated length
-            pred_mel_stripped = pred_mel[:, :, -L_gen:]
-            
             # Decode manually using the Vocos module components to bypass ANY hidden inference_mode decorators!
             # Vocos.decode essentially does: backbone -> head for mel inputs
-            x_vocos = pred_mel_stripped.float()
+            x_vocos = pred_mel.float()
             
             if hasattr(vocoder_obj, "backbone") and hasattr(vocoder_obj, "head"):
                 x_vocos = vocoder_obj.backbone(x_vocos)
                 waveform = vocoder_obj.head(x_vocos)
             else:
                 # Fallback to the unwrapped target_decode
-                waveform = target_decode(pred_mel_stripped.float())
+                waveform = target_decode(pred_mel.float())
+
+            # Strip the reference audio part from the generated waveform
+            try:
+                import soundfile as sf
+                ref_data, ref_sr = sf.read(str(temp_ref))
+                ref_audio_len = int(len(ref_data) * (24000 / ref_sr))
+            except Exception:
+                ref_audio_len = 0
+                
+            if ref_audio_len > 0 and waveform.shape[-1] > ref_audio_len:
+                waveform = waveform[..., ref_audio_len:]
                 
             logger.warning(f"[DIAG] Final manual waveform requires_grad: {waveform.requires_grad}")
 
@@ -614,6 +675,8 @@ class F5TTSBackbone(TTSBackbone):
                 vocoder_hook_handle.remove()
             if orig_decode is not None and vocoder_obj is not None:
                 vocoder_obj.decode = orig_decode
+            if orig_sample is not None:
+                model_obj.sample = orig_sample
             dit_model.forward = orig_forward
             torchaudio.load = _orig_load
         
@@ -737,8 +800,20 @@ class F5TTSBackbone(TTSBackbone):
             if grabbed_waveforms:
                 # Concatenate all batch outputs along the time axis
                 waveform = torch.cat(grabbed_waveforms, dim=-1)
+                
+                # Strip the reference audio part from the generated waveform
+                try:
+                    import soundfile as sf
+                    ref_data, ref_sr = sf.read(str(temp_ref))
+                    ref_audio_len = int(len(ref_data) * (24000 / ref_sr))
+                except Exception:
+                    ref_audio_len = 0
+                    
+                if ref_audio_len > 0 and waveform.shape[-1] > ref_audio_len:
+                    waveform = waveform[..., ref_audio_len:]
+                    
                 logger.info(f"[Direct] Captured {len(grabbed_waveforms)} batch(es), "
-                            f"total waveform length: {waveform.shape[-1]} samples")
+                            f"total waveform length (after stripping ref): {waveform.shape[-1]} samples")
             else:
                 raise RuntimeError("Failed to intercept vocoder output tensor.")
 

@@ -213,11 +213,19 @@ class HopfieldMemory:
     def retrieve(
         self,
         query: torch.Tensor,
+        context_embeddings: Optional[torch.Tensor] = None,
+        target_index_in_context: Optional[int] = None,
         backbone: Optional[str] = None,
         model_version: Optional[str] = None,
         embedding_schema_version: Optional[str] = None,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """Retrieve corrections via Modern Hopfield update with backbone & version isolation."""
+        
+        # Apply context conditioning to the query if provided
+        if context_embeddings is not None:
+            query = self._apply_context_conditioning(
+                query, context_embeddings, target_index_in_context
+            )
         if self.is_empty:
             if query.dim() == 1:
                 return torch.zeros(self.dim, device=query.device), torch.tensor(-1.0)

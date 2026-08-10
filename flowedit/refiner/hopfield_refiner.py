@@ -166,7 +166,22 @@ class HopfieldRefiner(nn.Module):
                     # Extract target word embeddings
                     word_embeddings = embeddings[b, token_start:token_end, :]  # [N, d]
                     query = word_embeddings.mean(dim=0)  # [d]
-                    retrieved_sequence, max_sim = self.memory.retrieve(query)
+                    
+                    # Extract context embeddings for homograph disambiguation
+                    ctx_window = getattr(self.config, "context_window", 3)
+                    ctx_start = max(0, token_start - ctx_window)
+                    ctx_end = min(seq_len, token_end + ctx_window)
+                    context_embeddings = embeddings[b, ctx_start:ctx_end, :]
+                    
+                    # Target index in context (mean index)
+                    target_mean_idx = (token_start + token_end - 1) // 2
+                    target_index_in_context = target_mean_idx - ctx_start
+                    
+                    retrieved_sequence, max_sim = self.memory.retrieve(
+                        query,
+                        context_embeddings=context_embeddings,
+                        target_index_in_context=target_index_in_context
+                    )
                     gate = torch.sigmoid(10.0 * (max_sim - self.tau))
 
                     if gate.item() > 0.5:
@@ -202,7 +217,19 @@ class HopfieldRefiner(nn.Module):
                 if j in processed_tokens:
                     continue
                 token_emb = embeddings[b, j, :]
-                retrieved_val, max_sim = self.memory.retrieve(token_emb)
+                
+                # Extract context embeddings for homograph disambiguation
+                ctx_window = getattr(self.config, "context_window", 3)
+                ctx_start = max(0, j - ctx_window)
+                ctx_end = min(seq_len, j + ctx_window + 1)
+                context_embeddings = embeddings[b, ctx_start:ctx_end, :]
+                target_index_in_context = j - ctx_start
+                
+                retrieved_val, max_sim = self.memory.retrieve(
+                    token_emb,
+                    context_embeddings=context_embeddings,
+                    target_index_in_context=target_index_in_context
+                )
                 gate = torch.sigmoid(10.0 * (max_sim - self.tau))
 
                 if gate.item() > 0.5:
