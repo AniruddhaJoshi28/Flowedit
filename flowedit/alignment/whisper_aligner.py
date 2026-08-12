@@ -128,8 +128,17 @@ class WhisperAligner:
         # Load audio using whisperx
         audio = whisperx.load_audio(audio_path)
         
-        # 1. Transcribe with Whisper
-        result = self._model.transcribe(audio, language=language)
+        # 1. Transcribe with Whisper (or use full_text directly for forced alignment)
+        if full_text:
+            # Bypass free transcription to guarantee target_word matches perfectly
+            import librosa
+            duration = librosa.get_duration(path=audio_path)
+            result = {
+                "segments": [{"text": full_text, "start": 0.0, "end": duration}],
+                "language": language or "en"
+            }
+        else:
+            result = self._model.transcribe(audio, language=language)
         
         # 2. Align with Wav2Vec2
         align_language = result.get("language", language or "en")
@@ -220,6 +229,13 @@ class WhisperAligner:
             )
 
         word_info = match
+        if word_info.get("start", 0.0) >= word_info.get("end", 0.0):
+            raise ValueError(
+                f"Invalid word boundaries detected for '{target_word}': "
+                f"start={word_info.get('start')}s, end={word_info.get('end')}s. "
+                "Whisperx failed to resolve valid timestamps."
+            )
+
         full_transcript = " ".join(w["word"] for w in words)
 
         logger.info(
@@ -381,22 +397,41 @@ class WhisperAligner:
 
         Handles cases where Whisper transcribes the word differently
         (e.g., "Siobhan" might be transcribed as "Shavon").
+        Also handles when Whisper splits one word into multiple (e.g., "Mrunmayee" -> "Munroon May").
         """
         target_clean = self._normalize_word(target)
 
         best_match = None
         best_score = 0.0
 
-        for word_info in words:
-            word_clean = self._normalize_word(word_info["word"])
-
-            # Check prefix/suffix match
-            if (word_clean.startswith(target_clean[:3]) or
-                    target_clean.startswith(word_clean[:3])):
-                score = self._similarity_score(word_clean, target_clean)
+        # Check single words and combinations of up to 3 adjacent words
+        for window_size in range(1, min(4, len(words) + 1)):
+            for i in range(len(words) - window_size + 1):
+                window = words[i:i + window_size]
+                combined_word = "".join(w["word"] for w in window)
+                combined_clean = self._normalize_word(combined_word)
+                
+                score = self._similarity_score(combined_clean, target_clean)
+                
+                # Boost score slightly if phonetic normalizations match
+                try:
+                    from flowedit.utils.indic_phonetics import normalize_indic_phonetics
+                    phonetic_combined = self._normalize_word(normalize_indic_phonetics(combined_word))
+                    phonetic_target = self._normalize_word(normalize_indic_phonetics(target))
+                    phonetic_score = self._similarity_score(phonetic_combined, phonetic_target)
+                    score = max(score, phonetic_score)
+                except ImportError:
+                    pass
+                
                 if score > best_score and score > 0.4:
                     best_score = score
-                    best_match = word_info
+                    # Create a merged word_info dictionary spanning the window
+                    best_match = {
+                        "word": " ".join(w["word"] for w in window),
+                        "start": window[0]["start"],
+                        "end": window[-1]["end"],
+                        "confidence": sum(w.get("confidence", 0.0) for w in window) / len(window)
+                    }
 
         if best_match:
             logger.info(

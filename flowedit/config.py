@@ -64,7 +64,7 @@ class MemoryConfig:
     hopfield_beta: Optional[float] = None
 
     # Learned gate threshold τ initialization
-    gate_threshold_init: float = 0.4
+    gate_threshold_init: float = 0.5
 
     # Perturbation scale factor to amplify learned phonetic corrections
     # (1.0 for XTTS autoregressive GPT to avoid phonetic distortion / stuttering)
@@ -138,6 +138,7 @@ class BackboneConfig:
     # ── F5-TTS-specific settings ────────────────────────────────────
     f5tts_ckpt_file: str = ""
     f5tts_vocab_file: str = ""
+    vocoder_local_path: str = ""
 
     # ── Shared settings ─────────────────────────────────────────────
     use_gradient_checkpointing: bool = True

@@ -34,6 +34,11 @@ async def lifespan(app: FastAPI):
     config.backbone.backbone_type = backbone_env.lower()
     config.backbone.f5tts_ckpt_file = os.environ.get("FLOWEDIT_F5TTS_CKPT", "")
     config.backbone.f5tts_vocab_file = os.environ.get("FLOWEDIT_F5TTS_VOCAB", "")
+    config.backbone.vocoder_local_path = os.environ.get("FLOWEDIT_VOCODER_DIR", "")
+    whisper_model_env = os.environ.get("FLOWEDIT_WHISPER_MODEL", "")
+    if whisper_model_env:
+        config.alignment.whisper_model = whisper_model_env
+    print(f"  Whisper model path: {config.alignment.whisper_model}")
     print(f"  Backbone type: {config.backbone.backbone_type.upper()}")
 
     if config.backbone.backbone_type == "xtts":
@@ -101,6 +106,9 @@ async def correct_pronunciation(
     global pipeline
     if not pipeline:
         raise HTTPException(status_code=503, detail="Pipeline not loaded yet.")
+
+    text = text.strip()
+    target_word = target_word.strip()
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_ref:
         temp_ref_path = temp_ref.name
@@ -186,6 +194,10 @@ async def synthesize_text(
     if not pipeline:
         raise HTTPException(status_code=503, detail="Pipeline not loaded yet.")
 
+    text = text.strip()
+    if ref_text is not None:
+        ref_text = ref_text.strip()
+
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_speaker:
         temp_speaker_path = temp_speaker.name
         
@@ -232,12 +244,13 @@ async def synthesize_text(
                 print(f"  [Memory {i}] word='{m.get('word', '?')}', δ_norm={v_norm:.6f}")
         
         if corrections_applied > 0 and diff_norm > 1e-4:
-            print(f"[Synthesize] Corrections active (applied={corrections_applied}, diff={diff_norm:.4f}) → using hook-based synthesis on {backbone_name}")
-            waveform, sr = bb.synthesize_from_embeddings(
-                text_embeddings=corrected_embeddings.detach(),
-                speaker_conditioning=speaker_conditioning,
+            print(f"[Synthesize] Corrections active (applied={corrections_applied}, diff={diff_norm:.4f}) → using hook-based NORMAL inference on {backbone_name}")
+            waveform, sr = bb.synthesize_direct(
                 text=text,
+                speaker_conditioning=speaker_conditioning,
                 language=language,
+                user_ref_text=ref_text,
+                text_embeddings=corrected_embeddings.detach()
             )
         else:
             reason = "no corrections matched" if corrections_applied == 0 else f"diff_norm too small ({diff_norm:.6f})"
@@ -269,4 +282,60 @@ async def synthesize_text(
         # Cleanup speaker temp file
         if os.path.exists(temp_speaker_path):
             os.remove(temp_speaker_path)
+
+@app.post("/api/baseline")
+async def synthesize_baseline_api(
+    text: str = Form(..., description="Text to synthesize"),
+    language: str = Form("en", description="Language code"),
+    speaker_wav: UploadFile = File(..., description="Speaker reference audio for voice conditioning"),
+    ref_text: Optional[str] = Form(None, description="Optional transcription of the speaker audio."),
+):
+    """
+    Phase 1 Baseline Endpoint: Pure native F5-TTS synthesis without hooks or patches.
+    """
+    global pipeline
+    if not pipeline:
+        raise HTTPException(status_code=503, detail="Pipeline not loaded yet.")
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_speaker:
+        temp_speaker_path = temp_speaker.name
+        
+    await speaker_wav.seek(0)
+    with open(temp_speaker_path, "wb") as f:
+        f.write(await speaker_wav.read())
+        
+    temp_speaker_path = convert_to_wav(temp_speaker_path)
+    output_path = tempfile.mktemp(suffix=".wav")
+
+    try:
+        bb = pipeline.get_backbone()
+        speaker_conditioning = bb.get_speaker_embedding(temp_speaker_path, language, ref_text=ref_text)
+        
+        print(f"[Synthesize Baseline] Calling pure F5-TTS...")
+        waveform, sr = bb.synthesize_baseline(
+            text=text,
+            speaker_conditioning=speaker_conditioning,
+            language=language,
+            user_ref_text=ref_text,
+        )
+        
+        import soundfile as sf
+        sf.write(output_path, waveform.squeeze().detach().cpu().numpy(), sr)
+
+        return FileResponse(
+            path=output_path, 
+            media_type="audio/wav", 
+            filename="synthesized_baseline.wav",
+            background=None
+        )
+    except Exception as e:
+        if os.path.exists(output_path):
+            os.remove(output_path)
+        import traceback
+        tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+        raise HTTPException(status_code=500, detail=f"{str(e)}\n\nTraceback:\n{tb}")
+    finally:
+        if os.path.exists(temp_speaker_path):
+            os.remove(temp_speaker_path)
+
 

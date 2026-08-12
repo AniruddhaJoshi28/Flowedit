@@ -110,12 +110,13 @@ class LatentOptimizer:
         self,
         backbone,
         text: str,
+        target_word: str,
         ref_audio_path: str,
         token_indices: List[int],
         speaker_conditioning: dict,
         language: str = "en",
-        target_word_start_time: Optional[float] = None,
-        target_word_end_time: Optional[float] = None,
+        target_word_start_idx: Optional[int] = None,
+        target_word_end_idx: Optional[int] = None,
         progress_callback: Optional[Callable] = None,
     ) -> OptimizationResult:
         """Run latent input optimization for pronunciation correction.
@@ -135,9 +136,8 @@ class LatentOptimizer:
             token_indices: Token indices to optimize (from Stage 1)
             speaker_conditioning: Speaker embedding dict from backbone
             language: Language code
-            target_word_start_time: Start time of target word in seconds
-                                   (from Whisper alignment of reference audio)
-            target_word_end_time: End time of target word in seconds
+            target_word_start_idx: Start sample index of target word in synthesized audio
+            target_word_end_idx: End sample index of target word in synthesized audio
             progress_callback: Optional callback(step, loss, grad_norm)
 
         Returns:
@@ -201,6 +201,9 @@ class LatentOptimizer:
 
         loss_history = []
         grad_norm_history = []
+        task_loss_history = []
+        
+        initial_task_loss = None
 
         progress = tqdm(
             range(self.config.n_steps),
@@ -210,15 +213,16 @@ class LatentOptimizer:
 
         for step in progress:
             optimizer.zero_grad()
+            
+            delta_before_step = delta.detach().clone()
 
             # Apply mask: zero out non-target positions
-            # This is the key constraint from the paper
             delta_masked = delta * mask
 
-            # Perturbed embeddings: c + δ
+            # Apply delta to the target tokens in the full sequence
             perturbed_embeddings = base_embeddings.detach() + delta_masked
 
-            # Compute backbone-specific optimization loss (differentiable path)
+            # Compute backbone-specific optimization loss
             try:
                 loss_dict = backbone.compute_optimization_loss(
                     perturbed_embeddings=perturbed_embeddings,
@@ -226,113 +230,105 @@ class LatentOptimizer:
                     speaker_conditioning=speaker_conditioning,
                     text=text,
                     language=language,
-                    target_word_start_time=target_word_start_time,
-                    target_word_end_time=target_word_end_time,
+                    target_word_start_idx=target_word_start_idx,
+                    target_word_end_idx=target_word_end_idx,
                 )
                 task_loss = loss_dict["loss"]
-                logger.warning(f"[DIAG] task_loss requires_grad: {task_loss.requires_grad}")
             except Exception as e:
                 import traceback
-                logger.warning(f"Optimization loss computation failed at step {step}: {e}")
-                logger.warning(traceback.format_exc())
-                task_loss = torch.tensor(0.0, device=device, requires_grad=True)
-                loss_dict = {"loss": task_loss}
+                logger.error(f"Optimization loss computation failed at step {step}: {e}")
+                logger.error(traceback.format_exc())
+                raise RuntimeError(f"Optimization failed during F5-TTS synthesis: {e}") from e
 
-            # ── Diagnostic checks ──
+            # Record initial loss for relative reduction check
             if step == 0:
-                logger.info(
-                    f"  [DIAG] task_loss.requires_grad={task_loss.requires_grad}, "
-                    f"task_loss={task_loss.item():.6f}"
-                )
+                initial_task_loss = task_loss.item()
                 if not task_loss.requires_grad:
-                    logger.error(
-                        "  [DIAG] ⚠ task_loss has NO gradient! "
-                        "The optimization will not produce meaningful δ values."
-                    )
-                if abs(task_loss.item()) < 1e-8:
-                    logger.warning(
-                        "  [DIAG] ⚠ task_loss is ~0.0 — "
-                        "likely hitting the dummy fallback loss path."
-                    )
+                    raise RuntimeError("task_loss has NO gradient. Adjoint ODE solver failed to preserve gradients.")
 
-            # Regularization: ||δ||² (prevent catastrophic forgetting / excessive deviation)
             reg_loss = self.config.lambda_reg * torch.sum(delta_masked ** 2)
-
-            # Total loss: L = L_task + λ||δ||²
             total_loss = task_loss + reg_loss
 
-            # Numerical safety check
             if not torch.isfinite(total_loss):
-                raise FloatingPointError(f"Optimization loss became non-finite (NaN or Inf) at step {step}.")
+                raise FloatingPointError(f"Optimization loss became non-finite at step {step}.")
 
-            # Backward pass (autograd/adjoint through frozen backbone)
             total_loss.backward()
 
-            # ── Gradient diagnostic (first step only) ──
-            if step == 0 and delta.grad is not None:
-                delta_grad_norm = delta.grad.norm().item()
-                delta_grad_max = delta.grad.abs().max().item()
-                logger.warning(
-                    f"  [DIAG] δ grad norm={delta_grad_norm:.6f}, "
-                    f"δ grad max={delta_grad_max:.6f}"
-                )
-                if delta_grad_norm < 1e-8:
-                    logger.error(
-                        "  [DIAG] ⚠ δ gradient is near-zero! "
-                        "No meaningful perturbation will be learned."
-                    )
+            # Assert gradients are flowing properly
+            assert delta.requires_grad, "delta must require grad"
+            assert delta.grad is not None, "delta.grad is None after backward"
+            if not torch.isfinite(delta.grad).all():
+                raise FloatingPointError(f"delta.grad contains non-finite values at step {step}")
 
-            # Gradient clipping: ||∇_δ||_∞ ≤ 1.0
+            grad_norm_val = delta.grad.norm().item()
+            if step == 0 and grad_norm_val < 1e-10:
+                logger.warning(f"Initial gradient norm is extremely small: {grad_norm_val}")
+
             grad_norm = torch.nn.utils.clip_grad_norm_(
                 [delta], self.config.grad_clip_max_norm
             )
 
-            # Step optimizer
             optimizer.step()
             scheduler.step()
 
-            # Trust-region projection step (relative projection per strategy)
+            # Trust-region projection step
             with torch.no_grad():
                 strat_key = getattr(backbone, "backbone_name", "f5_conditioning")
                 ratio = TRUST_REGION_RATIO.get(strat_key, 0.03)
                 delta.copy_(project_delta(delta, base_embeddings, ratio=ratio))
                 delta.data *= mask
-
+                
                 if not torch.isfinite(delta).all():
-                    raise FloatingPointError(f"Perturbation delta became non-finite (NaN or Inf) at step {step}.")
+                    raise FloatingPointError(f"Perturbation delta became non-finite at step {step}.")
             
+            update_norm = (delta.detach() - delta_before_step).norm().item()
+            delta_norm_val = delta.norm().item()
+            embedding_diff = torch.norm(perturbed_embeddings - base_embeddings).item()
+
             if step % 10 == 0 or step == self.config.n_steps - 1:
-                delta_norm = torch.norm(delta * mask).item()
-                diag_str = " | ".join(f"{k}: {v:.4f}" for k, v in loss_dict.items() if k != "loss" and isinstance(v, (int, float)))
                 logger.info(
                     f"Step {step:02d} | "
-                    f"Task Loss: {task_loss.item():.4f} | "
-                    f"Reg Loss: {reg_loss.item():.4f} | "
-                    f"Total Loss: {total_loss.item():.4f} | "
-                    f"||δ||: {delta_norm:.4f} | "
-                    f"||∇δ||: {grad_norm.item() if isinstance(grad_norm, torch.Tensor) else grad_norm:.4f} | "
-                    f"LR: {scheduler.get_last_lr()[0]:.6f} | "
-                    f"{diag_str}"
+                    f"task_loss={task_loss.item():.4f} | "
+                    f"reg_loss={reg_loss.item():.4f} | "
+                    f"total_loss={total_loss.item():.4f} | "
+                    f"grad_norm={grad_norm_val:.6f} | "
+                    f"delta_norm={delta_norm_val:.6f} | "
+                    f"update_norm={update_norm:.6f} | "
+                    f"embedding_diff={embedding_diff:.6f}"
                 )
 
             # Track metrics
             loss_val = total_loss.item()
-            grad_val = grad_norm.item() if isinstance(grad_norm, torch.Tensor) else grad_norm
+            task_loss_history.append(task_loss.item())
             loss_history.append(loss_val)
-            grad_norm_history.append(grad_val)
+            grad_norm_history.append(grad_norm_val)
 
-
-            # Progress bar update
             progress.set_postfix({
-                "loss": f"{loss_val:.4f}",
                 "task": f"{task_loss.item():.4f}",
-                "reg": f"{reg_loss.item():.4f}",
-                "∇": f"{grad_val:.4f}",
-                "lr": f"{scheduler.get_last_lr()[0]:.5f}",
+                "∇": f"{grad_norm_val:.4f}",
+                "Δ_norm": f"{delta_norm_val:.4f}",
             })
 
             if progress_callback:
-                progress_callback(step, loss_val, grad_val, perturbed_embeddings)
+                progress_callback(step, loss_val, grad_norm_val, perturbed_embeddings)
+
+        # Post-optimization verification
+        final_task_loss = task_loss_history[-1]
+        min_task_loss = min(task_loss_history)
+        relative_reduction = (initial_task_loss - final_task_loss) / max(abs(initial_task_loss), 1e-8)
+        
+        logger.info(
+            f"Optimization finished. Initial Task Loss: {initial_task_loss:.6f}, "
+            f"Final Task Loss: {final_task_loss:.6f}, "
+            f"Min Task Loss: {min_task_loss:.6f}, "
+            f"Relative Reduction: {relative_reduction:.2%}"
+        )
+        
+        if relative_reduction <= 0 and min_task_loss >= initial_task_loss:
+            logger.warning(
+                f"Optimization failed to reduce task loss: "
+                f"initial={initial_task_loss:.6f}, final={final_task_loss:.6f}"
+            )
 
         # Step 6: Extract optimized δ* sequence
         with torch.no_grad():

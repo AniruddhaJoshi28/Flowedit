@@ -190,12 +190,18 @@ class CorrectionLoop:
                     self.aligner._model.to(whisper_device)
             torch.cuda.empty_cache()
 
+            # Dynamically determine if the reference audio is just a single word
+            import librosa
+            audio_duration = librosa.get_duration(path=ref_audio_path)
+            is_word_only = audio_duration < 2.0
+            logger.info(f"Ref audio duration: {audio_duration:.2f}s, treating as word-only: {is_word_only}")
+
             alignment = self.aligner.align(
                 audio_path=ref_audio_path,
                 target_word=primary_target_word,
-                full_text=primary_target_word,
+                full_text=None,
                 language=language,
-                ref_is_word_only=True,
+                ref_is_word_only=is_word_only,
             )
 
             # Map word boundaries to token indices using requested backbone tokenizer
@@ -240,7 +246,7 @@ class CorrectionLoop:
             torch.cuda.empty_cache()
 
             speaker_path = speaker_wav or ref_audio_path
-            provided_ref_text = target_word if not speaker_wav else None
+            provided_ref_text = None
             
             speaker_conditioning = bb.get_speaker_embedding(
                 speaker_path, 
@@ -248,15 +254,68 @@ class CorrectionLoop:
                 ref_text=provided_ref_text
             )
 
+            # Phase 5a (Mandatory): Find fixed target sample indices from baseline synthesis
+            import tempfile
+            import os
+            import soundfile as sf
+            
+            logger.info("\n▶ STAGE 1b: Target Audio Extraction (Baseline Alignment)")
+            
+            with torch.no_grad():
+                baseline_wav, sr = bb.synthesize_direct(
+                    text=text,
+                    speaker_conditioning=speaker_conditioning,
+                    language=language,
+                    user_ref_text=provided_ref_text,
+                    cfg_strength=2.0, # Must use a normal CFG so WhisperX can actually understand and align the audio
+                )
+                
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_base:
+                tmp_base_path = tmp_base.name
+            sf.write(tmp_base_path, baseline_wav.squeeze().cpu().numpy(), sr)
+            
+            # Align baseline synthesis
+            whisper_device = "cuda" if torch.cuda.is_available() else "cpu"
+            if self.aligner is not None and getattr(self.aligner, '_model', None) is not None:
+                if hasattr(self.aligner._model, 'to'):
+                    self.aligner._model.to(whisper_device)
+            torch.cuda.empty_cache()
+            
+            baseline_alignment = self.aligner.align(
+                audio_path=tmp_base_path,
+                target_word=primary_target_word,
+                full_text=text,
+                language=language,
+                ref_is_word_only=False,
+            )
+            
+            os.remove(tmp_base_path)
+            
+            # We only need start_time and end_time (sample boundaries) from baseline alignment, not token_indices.
+                
+            target_start_idx = int(baseline_alignment.start_time * sr)
+            target_end_idx = int(baseline_alignment.end_time * sr)
+            
+            logger.info(f"  ✓ Target word in baseline synthesis: {baseline_alignment.start_time:.2f}s - {baseline_alignment.end_time:.2f}s "
+                        f"(samples {target_start_idx}:{target_end_idx})")
+
+            if self.aligner is not None and getattr(self.aligner, '_model', None) is not None:
+                if hasattr(self.aligner._model, 'to'):
+                    self.aligner._model.to("cpu")
+            if bb is not None and getattr(bb, 'model', None) is not None and hasattr(bb.model, 'to'):
+                bb.model.to(backbone_device)
+            torch.cuda.empty_cache()
+
             optimization = self.optimizer.optimize(
                 backbone=bb,
                 text=text,
+                target_word=primary_target_word,
                 ref_audio_path=ref_audio_path,
                 token_indices=alignment.token_indices,
                 speaker_conditioning=speaker_conditioning,
                 language=language,
-                target_word_start_time=alignment.start_time,
-                target_word_end_time=alignment.end_time,
+                target_word_start_idx=target_start_idx,
+                target_word_end_idx=target_end_idx,
             )
 
             logger.info(

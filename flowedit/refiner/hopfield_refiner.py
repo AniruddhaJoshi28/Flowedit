@@ -182,7 +182,7 @@ class HopfieldRefiner(nn.Module):
                         context_embeddings=context_embeddings,
                         target_index_in_context=target_index_in_context
                     )
-                    gate = torch.sigmoid(10.0 * (max_sim - self.tau))
+                    gate = torch.sigmoid(15.0 * (max_sim - self.tau))
 
                     if gate.item() > 0.5:
                         logger.info(
