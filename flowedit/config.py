@@ -19,17 +19,17 @@ class OptimizationConfig:
     reference pronunciation. Values from paper Section 3.2.
     """
 
-    # Number of Adam optimization steps (paper: 50, tuned: 80 for full convergence)
-    n_steps: int = 80
+    # Number of Adam optimization steps (paper Section 3.2: 50)
+    n_steps: int = 50
 
     # Learning rate schedule: cosine anneal from lr_start → lr_end
     lr_start: float = 0.005
     lr_end: float = 0.0005
 
-    # L2 regularization weight on δ (paper: λ=0.001)
-    lambda_reg: float = 0.01
+    # L2 regularization weight on δ (paper Section 3.2: λ=0.001)
+    lambda_reg: float = 0.001
 
-    # Gradient clipping max norm (paper: ‖∇_δ‖_∞ ≤ 1.0)
+    # Gradient clipping max norm (paper Section 3.2: ‖∇_δ‖_∞ ≤ 1.0)
     grad_clip_max_norm: float = 1.0
 
     # Data augmentation on reference mel during optimization
@@ -39,7 +39,7 @@ class OptimizationConfig:
     use_f0_loss: bool = False
 
     augment_gain_db_range: tuple = (-3.0, 3.0)
-    enable_augmentation: bool = True
+    enable_augmentation: bool = False
 
 
 
@@ -67,8 +67,8 @@ class MemoryConfig:
     gate_threshold_init: float = 0.5
 
     # Perturbation scale factor to amplify learned phonetic corrections
-    # (1.0 for XTTS autoregressive GPT to avoid phonetic distortion / stuttering)
-    perturbation_scale: float = 1.0
+    # (2.0 for F5-TTS continuous flow-matching; 1.0 for XTTS autoregressive GPT)
+    perturbation_scale: float = 2.0
 
     # Context window for homograph disambiguation (paper: ±3 tokens)
     # Keys are Gaussian-weighted average of surrounding embeddings

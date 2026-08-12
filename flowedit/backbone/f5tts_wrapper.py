@@ -191,7 +191,7 @@ class F5TTSBackbone(TTSBackbone):
 
                 # Build a tokenizer wrapper with an .encode() method
                 # The aligner expects tokenizer.encode(text, lang=...) → list[int]
-                vocab_map = getattr(self.tts_api, "vocab_char_map", None)
+                vocab_map = self.vocab_map
                 if vocab_map and isinstance(vocab_map, dict):
                     self.tokenizer_instance = self._make_char_tokenizer(vocab_map)
                 else:
@@ -207,6 +207,19 @@ class F5TTSBackbone(TTSBackbone):
         except ImportError:
             logger.error("f5-tts is not installed! Run: pip install f5-tts")
             raise
+
+    @property
+    def vocab_map(self) -> Optional[dict]:
+        """Retrieve vocabulary character map from backbone model or tts_api."""
+        if self.model is not None and hasattr(self.model, "vocab_char_map"):
+            return self.model.vocab_char_map
+        if self.tts_api is not None:
+            if hasattr(self.tts_api, "vocab_char_map"):
+                return self.tts_api.vocab_char_map
+            ema = getattr(self.tts_api, "ema_model", None)
+            if ema is not None and hasattr(ema, "vocab_char_map"):
+                return ema.vocab_char_map
+        return None
 
     @staticmethod
     def _make_char_tokenizer(vocab_map: Optional[dict]):
@@ -224,7 +237,12 @@ class F5TTSBackbone(TTSBackbone):
             def encode(self, text, lang=None):
                 """Map each character to its vocab ID."""
                 if self.char_map:
-                    return [[self.char_map.get(ch, 0) for ch in text]]
+                    try:
+                        from f5_tts.model.utils import convert_char_to_pinyin
+                        char_list = convert_char_to_pinyin([text])[0]
+                    except Exception:
+                        char_list = list(text)
+                    return [[self.char_map.get(ch, 0) for ch in char_list]]
                 else:
                     return [[i for i in range(len(text))]]
 
@@ -254,11 +272,14 @@ class F5TTSBackbone(TTSBackbone):
     def get_token_ids(self, text: str, language: str = "en") -> torch.Tensor:
         """Tokenize text into IDs."""
         self._ensure_loaded()
-        vocab_map = getattr(self.tts_api, "vocab_char_map", None)
+        vocab_map = self.vocab_map
         if vocab_map and isinstance(vocab_map, dict):
-            # Convert text to list of characters (or tokens if BPE)
-            # F5-TTS uses a custom char/pinyin mapping often
-            tokens = [vocab_map.get(ch, 0) for ch in text]
+            try:
+                from f5_tts.model.utils import convert_char_to_pinyin
+                char_list = convert_char_to_pinyin([text])[0]
+            except Exception:
+                char_list = list(text)
+            tokens = [vocab_map.get(ch, 0) for ch in char_list]
             return torch.tensor(tokens, dtype=torch.long, device=self.device).unsqueeze(0)
             
         # Fallback if vocab is missing
@@ -300,42 +321,7 @@ class F5TTSBackbone(TTSBackbone):
                 
         return embeddings
 
-    def compute_optimization_loss(
-        self,
-        perturbed_embeddings: torch.Tensor,
-        ref_audio_path: str,
-        speaker_conditioning: Dict[str, Any],
-        text: str,
-        language: str = "en",
-        target_word_start_time: Optional[float] = None,
-        target_word_end_time: Optional[float] = None,
-    ) -> Dict[str, Any]:
-        """Synthesize from perturbed embeddings and return mel reconstruction loss."""
-        pred_out = self.synthesize_from_embeddings(
-            text_embeddings=perturbed_embeddings,
-            speaker_conditioning=speaker_conditioning,
-            text=text,
-            language=language,
-        )
-        pred_waveform = pred_out[0] if isinstance(pred_out, tuple) else pred_out
-        pred_waveform = pred_waveform.to(self.device)
 
-        from flowedit.utils.audio import AudioProcessor
-        from flowedit.utils.metrics import compute_mel_loss
-        
-        ap = AudioProcessor()
-        ref_waveform, _ = ap.load_audio(ref_audio_path)
-        ref_waveform = ref_waveform.to(self.device)
-        ref_mel = ap.compute_mel(ref_waveform)
-
-        pred_mel = ap.compute_mel(pred_waveform)
-        loss = compute_mel_loss(pred_mel, ref_mel)
-
-        return {
-            "loss": loss,
-            "mel_loss": loss.item(),
-            "embedding_norm": torch.norm(perturbed_embeddings).item()
-        }
 
     def get_speaker_embedding(self, audio_path: Optional[str] = None, language: str = "en", ref_text: Optional[str] = None) -> Dict[str, Any]:
         """Store reference audio path for F5-TTS inference and transcribe if ref_text is missing."""
@@ -525,6 +511,12 @@ class F5TTSBackbone(TTSBackbone):
                 bound = self.sig.bind(x_cast, *cast_args, **cast_kwargs)
                 bound.apply_defaults()
                 bound.arguments[self.t_arg_name] = t_batch
+                
+                # CRITICAL: Force cache=False to ensure text_embed is evaluated at every step.
+                # This ensures the hook fires and the backward graph connects to text_embeddings.
+                if 'cache' in bound.arguments:
+                    bound.arguments['cache'] = False
+                    
                 result = self.original_forward(*bound.args, **bound.kwargs)
                 # Cast output back to the ODE solver's expected dtype (x.dtype)
                 return result.to(dtype=x.dtype)
@@ -591,9 +583,7 @@ class F5TTSBackbone(TTSBackbone):
                         )[-1]
                         return res
                         
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                    future = executor.submit(_run_ode_solver)
-                    final_x = future.result()
+                final_x = _run_ode_solver()
                     
                 with torch.set_grad_enabled(True):
                     logger.warning(f"[DIAG] odeint_adjoint final_x requires_grad: {final_x.requires_grad}")
@@ -627,46 +617,44 @@ class F5TTSBackbone(TTSBackbone):
             return tensor, sample_rate
         torchaudio.load = _sf_load
 
+        ref_text = speaker_conditioning.get("text", ".").strip()
+        if not ref_text:
+            ref_text = "."
+
+        ref_tokens = self.get_token_ids(ref_text, language)
+        ref_len = ref_tokens.shape[1]
+        gen_tokens = self.get_token_ids(text, language)
+
         # The Text Embedding Hook MUST stay, because FlowEdit directly edits the embeddings!
         target_embed_module = getattr(dit_model, "text_embed", None)
         hook_handle = None
         if target_embed_module is not None:
-            gen_tokens = self.get_token_ids(text, language)
             def hook(module, inputs, output):
                 with torch.set_grad_enabled(True):
-                    # output shape: [1, seq_len, 768] (or whatever)
                     out_tensor = output.clone()
                     t_embed = text_embeddings.to(device=out_tensor.device, dtype=out_tensor.dtype)
                     
                     B = out_tensor.shape[0]
                     T_mel = out_tensor.shape[1]
                     L_gen = text_embeddings.shape[1]
-                    start_pos = max(0, T_mel - L_gen)
                     
-                    # Fuzzy sequence alignment search
+                    # Exact position of gen_text tokens is right after ref_text tokens
+                    start_pos = ref_len
+                    if start_pos + L_gen > T_mel:
+                        start_pos = max(0, T_mel - L_gen)
+                    
                     if len(inputs) > 0 and isinstance(inputs[0], torch.Tensor) and inputs[0].dim() >= 2:
-                        tokens = inputs[0][0] # Conditional batch, shape [T_mel]
+                        tokens = inputs[0][0]
                         sub_seq = gen_tokens[0].to(tokens.device)
-                        T_mel_actual = tokens.shape[0]
-                        if T_mel_actual >= L_gen:
-                            best_match_pos = -1
-                            best_match_score = -1
-                            # Search backwards since gen_text is typically at the end
-                            for i in range(T_mel_actual - L_gen, -1, -1):
-                                score = (tokens[i:i+L_gen] == sub_seq).sum().item()
-                                if score > best_match_score:
-                                    best_match_score = score
-                                    best_match_pos = i
-                                    
-                            if best_match_score >= L_gen * 0.5: # At least 50% match
-                                start_pos = best_match_pos
-                                logger.info(f"[Hook] Fuzzy matched gen_text tokens at pos {start_pos} with score {best_match_score}/{L_gen}")
-                            else:
-                                logger.warning(f"[Hook] Could not find a good match for gen_text tokens. Best score: {best_match_score}/{L_gen}. Falling back to default.")
+                        if tokens.shape[0] >= start_pos + L_gen:
+                            score = (tokens[start_pos:start_pos+L_gen] == sub_seq).sum().item()
+                            logger.info(f"[Optimization Hook] Aligned gen_text tokens at pos {start_pos} with score {score}/{L_gen}")
 
                     avail = min(L_gen, T_mel - start_pos)
                     # ONLY inject into the conditional batch (index 0). 
                     # Overwriting the unconditional batch breaks CFG and causes severe hallucinations.
+                    injected_delta = t_embed[:, :avail, :] - out_tensor[0:1, start_pos:start_pos + avail, :]
+                    logger.info(f"[Optimization Hook] Injected delta_norm={injected_delta.norm().item():.8f} at pos {start_pos}:{start_pos+avail}")
                     out_tensor[0:1, start_pos:start_pos + avail, :] = t_embed[:, :avail, :]
                     
                     if isinstance(output, tuple):
@@ -675,9 +663,6 @@ class F5TTSBackbone(TTSBackbone):
             hook_handle = target_embed_module.register_forward_hook(hook)
 
         try:
-            ref_text = speaker_conditioning.get("text", ".").strip()
-            if not ref_text:
-                ref_text = "."
 
             ref_duration = speaker_conditioning.get("duration_seconds")
             planner = DurationPlanner()
@@ -689,10 +674,17 @@ class F5TTSBackbone(TTSBackbone):
             )
 
             # We DO NOT unwrap `infer`. We call it directly so it handles masking and tokenization.
-            # We MUST set nfe_step=1 so that the outer solver takes exactly 1 step (dt=1.0)
-            # from 0 to 1, effectively becoming a pass-through for our Adjoint solver.
-            with torch.set_grad_enabled(True):
-                # CRITICAL: Unwrap `infer` to bypass `@torch.inference_mode()` if present
+            # CRITICAL: Bypass @torch.no_grad and @torch.inference_mode inside F5-TTS internal sample()
+            class _AllowGradContext:
+                def __enter__(self): return self
+                def __exit__(self, *args): pass
+                def __call__(self, func): return func
+
+            orig_no_grad = torch.no_grad
+            orig_inf_mode = torch.inference_mode
+
+            with torch.enable_grad():
+                # Unwrap `infer` to bypass decorator if present
                 infer_method = self.tts_api.infer
                 if hasattr(infer_method, "__func__"):
                     func = infer_method.__func__
@@ -701,29 +693,37 @@ class F5TTSBackbone(TTSBackbone):
                 elif hasattr(infer_method, "__wrapped__"):
                     infer_method = infer_method.__wrapped__
 
-                # CRITICAL: cfg_strength=0 disables CFG batch-doubling.
-                # CFG doubles the batch [cond, uncond] internally, which breaks
-                # the adjoint ODE solver that expects a fixed batch size.
                 try:
-                    infer_method(
-                        ref_file=temp_ref,
-                        ref_text=ref_text,
-                        gen_text=text,
-                        speed=planned.dynamic_speed_factor,
-                        nfe_step=1,  # CRITICAL: Forces 1 outer step.
-                        cfg_strength=cfg_strength,
-                        target_rms=0.1,
-                    )
-                except TypeError:
-                    infer_method(
-                        ref_file=temp_ref,
-                        ref_text=ref_text,
-                        gen_text=text,
-                        speed=planned.dynamic_speed_factor,
-                        nfe_step=1,  # CRITICAL: Forces 1 outer step.
-                        cfg_strength=cfg_strength,
-                        target_rms=0.1,
-                    )
+                    torch.no_grad = _AllowGradContext
+                    torch.inference_mode = _AllowGradContext
+                    try:
+                        infer_method(
+                            ref_file=temp_ref,
+                            ref_text=ref_text,
+                            gen_text=text,
+                            speed=planned.dynamic_speed_factor,
+                            nfe_step=1,  # CRITICAL: Forces 1 outer step.
+                            cfg_strength=cfg_strength,
+                            target_rms=0.1,
+                        )
+                    except TypeError:
+                        infer_method(
+                            ref_file=temp_ref,
+                            ref_text=ref_text,
+                            gen_text=text,
+                            speed=planned.dynamic_speed_factor,
+                            nfe_step=1,  # CRITICAL: Forces 1 outer step.
+                            cfg_strength=cfg_strength,
+                            target_rms=0.1,
+                        )
+                except (RuntimeError, Exception) as e:
+                    if "Can't call numpy() on Tensor that requires grad" in str(e):
+                        logger.info("Intercepted final_x with gradients intact (bypassed F5-TTS numpy conversion).")
+                    else:
+                        raise
+                finally:
+                    torch.no_grad = orig_no_grad
+                    torch.inference_mode = orig_inf_mode
 
             # The manual vocoding bypass!
             # Because `infer_method` might run under `torch.inference_mode()`, all tensors returned
@@ -920,17 +920,13 @@ class F5TTSBackbone(TTSBackbone):
                         # Calculate the delta added by the Hopfield Memory
                         delta = t_embed[:, :avail, :] - orig_embed
                         
-                        # CFG scales the difference between cond and uncond by cfg_strength.
-                        # Since delta was optimized with cfg=0 (effectively cfg=1 for the gradient),
-                        # applying it only to cond will amplify it by cfg_strength.
-                        # We must scale delta down to counteract this amplification.
-                        effective_cfg = max(1.0, cfg_strength)
-                        scaled_delta = delta / effective_cfg
+                        # Apply full delta perturbation to conditional batch
+                        scaled_delta = delta
                         
                         # Apply to conditional batch ONLY
                         out_tensor[0:1, start_pos:start_pos + avail, :] = orig_embed + scaled_delta
                         
-                        logger.info(f"[Direct Hook] Applied scaled delta. Max delta={delta.abs().max().item():.4f}, Scaled={scaled_delta.abs().max().item():.4f}")
+                        logger.info(f"[Direct Hook] Applied delta. Max delta={delta.abs().max().item():.4f}")
                         
                         if isinstance(output, tuple):
                             return (out_tensor,) + output[1:]
@@ -1084,18 +1080,24 @@ class F5TTSBackbone(TTSBackbone):
         speaker_conditioning: Dict[str, str],
         text: str,
         language: str = "en",
-        target_word_start_idx: Optional[int] = None,
-        target_word_end_idx: Optional[int] = None,
+        target_word_start_sample: Optional[int] = None,
+        target_word_end_sample: Optional[int] = None,
+        **kwargs,
     ) -> Dict[str, torch.Tensor]:
         """Phase 5: Compute differentiable Mel-loss for the target word.
         
-        This synthesizes the full text using the perturbed embeddings, extracts the
-        audio corresponding to the target word using the fixed sample indices from
-        WhisperX, and computes the Mel-spectrogram MSE loss against the reference audio.
+        Synthesizes full text using perturbed embeddings, extracts target word audio
+        using fixed sample indices with 100ms temporal padding, and computes Mel loss against reference.
         """
         import torchaudio
         from flowedit.utils.audio import AudioProcessor
         
+        # Backwards compatibility fallback for older keyword argument names
+        if target_word_start_sample is None:
+            target_word_start_sample = kwargs.get("target_word_start_idx")
+        if target_word_end_sample is None:
+            target_word_end_sample = kwargs.get("target_word_end_idx")
+
         # 1. Synthesize full sentence with Adjoint ODE solver and CFG=0
         syn_wav, sr = self.synthesize_from_embeddings(
             text_embeddings=perturbed_embeddings,
@@ -1107,16 +1109,17 @@ class F5TTSBackbone(TTSBackbone):
         
         # syn_wav is [1, T_samples]
         
-        # 2. Slice the target word
-        if target_word_start_idx is None or target_word_end_idx is None:
-            raise ValueError("WhisperX sample indices must be provided for Mel-loss alignment.")
+        # 2. Slice the target word with 100ms padding
+        if target_word_start_sample is None or target_word_end_sample is None:
+            raise ValueError("WhisperX target_word_start_sample and target_word_end_sample must be provided for Mel-loss alignment.")
             
-        # Ensure indices are within bounds
-        start = max(0, target_word_start_idx)
-        end = min(syn_wav.shape[-1], target_word_end_idx)
+        pad = int(0.10 * sr)  # 100 ms padding to absorb minor duration expansion
+        start = max(0, target_word_start_sample - pad)
+        end = min(syn_wav.shape[-1], target_word_end_sample + pad)
         
+        logger.info(f"[DIAG Loss] syn_wav shape={syn_wav.shape}, requires_grad={syn_wav.requires_grad}, slice=[{start}:{end}] ({end-start} samples / {(end-start)/sr:.3f}s)")
+
         if end <= start:
-            # Fallback if alignment completely failed or is out of bounds
             syn_slice = syn_wav
         else:
             syn_slice = syn_wav[..., start:end]

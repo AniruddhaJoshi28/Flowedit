@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 TRUST_REGION_RATIO = {
-    "f5_conditioning": 0.03,
+    "f5_conditioning": 0.08,
     "xtts_gpt_conditioning": 0.02,
     "cosyvoice_adapter_hidden": 0.01,
 }
@@ -115,9 +115,10 @@ class LatentOptimizer:
         token_indices: List[int],
         speaker_conditioning: dict,
         language: str = "en",
-        target_word_start_idx: Optional[int] = None,
-        target_word_end_idx: Optional[int] = None,
+        target_word_start_sample: Optional[int] = None,
+        target_word_end_sample: Optional[int] = None,
         progress_callback: Optional[Callable] = None,
+        **kwargs,
     ) -> OptimizationResult:
         """Run latent input optimization for pronunciation correction.
 
@@ -136,14 +137,20 @@ class LatentOptimizer:
             token_indices: Token indices to optimize (from Stage 1)
             speaker_conditioning: Speaker embedding dict from backbone
             language: Language code
-            target_word_start_idx: Start sample index of target word in synthesized audio
-            target_word_end_idx: End sample index of target word in synthesized audio
+            target_word_start_sample: Start sample index of target word in synthesized audio
+            target_word_end_sample: End sample index of target word in synthesized audio
             progress_callback: Optional callback(step, loss, grad_norm)
 
         Returns:
             OptimizationResult with the optimized δ*
         """
         device = backbone.device
+
+        # Backwards compatibility fallback for older keyword argument names
+        if target_word_start_sample is None:
+            target_word_start_sample = kwargs.get("target_word_start_idx")
+        if target_word_end_sample is None:
+            target_word_end_sample = kwargs.get("target_word_end_idx")
 
         # Step 1: Get base text embeddings c = E(text)
         logger.info("Step 1: Encoding base text embeddings")
@@ -157,6 +164,24 @@ class LatentOptimizer:
             f"  Embedding shape: [{seq_len} tokens × {embed_dim} dim]"
         )
         logger.info(f"  Target token indices: {token_indices}")
+
+        # Assertion B Check: Strict invariant validation of target token indices against F5 text tokenization
+        try:
+            full_token_ids = backbone.get_token_ids(text, language)[0].tolist()
+            invalid_indices = [i for i in token_indices if i < 0 or i >= len(full_token_ids)]
+            if invalid_indices:
+                raise RuntimeError(
+                    f"[Assertion B] Invalid F5 token indices: {invalid_indices}. "
+                    f"F5 token sequence length={len(full_token_ids)}, token_indices={token_indices}"
+                )
+            target_token_ids = [full_token_ids[i] for i in token_indices]
+            logger.info(f"  [Assertion B] F5 token sequence length={len(full_token_ids)}")
+            logger.info(f"  [Assertion B] target positions={token_indices}")
+            logger.info(f"  [Assertion B] target token IDs={target_token_ids}")
+        except Exception as ex:
+            if "Invalid F5 token indices" in str(ex):
+                raise
+            logger.warning(f"Could not log Assertion B token IDs: {ex}")
 
         logger.info("Step 2: Preparing reference mel-spectrogram")
         ref_waveform, sr = self.audio_processor.load_audio(ref_audio_path)
@@ -186,7 +211,7 @@ class LatentOptimizer:
             betas=(0.9, 0.999),
         )
 
-        # Cosine annealing: η₀=0.01 → η₅₀=0.001
+        # Cosine annealing schedule
         scheduler = optim.lr_scheduler.CosineAnnealingLR(
             optimizer,
             T_max=self.config.n_steps,
@@ -230,8 +255,8 @@ class LatentOptimizer:
                     speaker_conditioning=speaker_conditioning,
                     text=text,
                     language=language,
-                    target_word_start_idx=target_word_start_idx,
-                    target_word_end_idx=target_word_end_idx,
+                    target_word_start_sample=target_word_start_sample,
+                    target_word_end_sample=target_word_end_sample,
                 )
                 task_loss = loss_dict["loss"]
             except Exception as e:
@@ -254,6 +279,12 @@ class LatentOptimizer:
 
             total_loss.backward()
 
+            # Diagnostic check: unmasked gradient flow across all token positions
+            with torch.no_grad():
+                unmasked_grad = delta.grad.abs().sum(dim=-1)[0] # [seq_len]
+                target_grads = unmasked_grad[token_indices] if len(token_indices) > 0 else torch.tensor([])
+                logger.info(f"[DIAG Step {step}] Unmasked max token grad: {unmasked_grad.max().item():.8f}, Target token grads: {target_grads.tolist()}")
+
             # Assert gradients are flowing properly
             assert delta.requires_grad, "delta must require grad"
             assert delta.grad is not None, "delta.grad is None after backward"
@@ -264,26 +295,24 @@ class LatentOptimizer:
             if step == 0 and grad_norm_val < 1e-10:
                 logger.warning(f"Initial gradient norm is extremely small: {grad_norm_val}")
 
+            # Paper spec: infinity norm clipping (||∇_δ||_∞ <= max_norm)
             grad_norm = torch.nn.utils.clip_grad_norm_(
-                [delta], self.config.grad_clip_max_norm
+                [delta], self.config.grad_clip_max_norm, norm_type=float("inf")
             )
 
             optimizer.step()
             scheduler.step()
 
-            # Trust-region projection step
+            # Enforce target token masking after optimizer step (L2 regularization constrains delta norm)
             with torch.no_grad():
-                strat_key = getattr(backbone, "backbone_name", "f5_conditioning")
-                ratio = TRUST_REGION_RATIO.get(strat_key, 0.03)
-                delta.copy_(project_delta(delta, base_embeddings, ratio=ratio))
                 delta.data *= mask
-                
                 if not torch.isfinite(delta).all():
                     raise FloatingPointError(f"Perturbation delta became non-finite at step {step}.")
             
             update_norm = (delta.detach() - delta_before_step).norm().item()
             delta_norm_val = delta.norm().item()
-            embedding_diff = torch.norm(perturbed_embeddings - base_embeddings).item()
+            with torch.no_grad():
+                embedding_diff = (delta * mask).norm().item()
 
             if step % 10 == 0 or step == self.config.n_steps - 1:
                 logger.info(

@@ -245,7 +245,11 @@ class CorrectionLoop:
                 bb.model.to(backbone_device)
             torch.cuda.empty_cache()
 
-            speaker_path = speaker_wav or ref_audio_path
+            if not speaker_wav:
+                logger.info("speaker_wav not provided; defaulting to ref_audio_path for speaker conditioning.")
+                speaker_path = ref_audio_path
+            else:
+                speaker_path = speaker_wav
             provided_ref_text = None
             
             speaker_conditioning = bb.get_speaker_embedding(
@@ -293,11 +297,11 @@ class CorrectionLoop:
             
             # We only need start_time and end_time (sample boundaries) from baseline alignment, not token_indices.
                 
-            target_start_idx = int(baseline_alignment.start_time * sr)
-            target_end_idx = int(baseline_alignment.end_time * sr)
+            target_start_sample = int(baseline_alignment.start_time * sr)
+            target_end_sample = int(baseline_alignment.end_time * sr)
             
             logger.info(f"  ✓ Target word in baseline synthesis: {baseline_alignment.start_time:.2f}s - {baseline_alignment.end_time:.2f}s "
-                        f"(samples {target_start_idx}:{target_end_idx})")
+                        f"(samples {target_start_sample}:{target_end_sample})")
 
             if self.aligner is not None and getattr(self.aligner, '_model', None) is not None:
                 if hasattr(self.aligner._model, 'to'):
@@ -314,8 +318,8 @@ class CorrectionLoop:
                 token_indices=alignment.token_indices,
                 speaker_conditioning=speaker_conditioning,
                 language=language,
-                target_word_start_idx=target_start_idx,
-                target_word_end_idx=target_end_idx,
+                target_word_start_sample=target_start_sample,
+                target_word_end_sample=target_end_sample,
             )
 
             logger.info(
