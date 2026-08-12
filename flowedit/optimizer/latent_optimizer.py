@@ -277,7 +277,21 @@ class LatentOptimizer:
             if not torch.isfinite(total_loss):
                 raise FloatingPointError(f"Optimization loss became non-finite at step {step}.")
 
+            # Register gradient hooks to trace autograd chain
+            grads_trace = {}
+            def get_hook(name):
+                def hook(g):
+                    grads_trace[name] = g.norm().item() if g is not None else 0.0
+                return hook
+
+            if perturbed_embeddings.requires_grad:
+                perturbed_embeddings.register_hook(get_hook("perturbed_embeddings"))
+            if task_loss.requires_grad:
+                task_loss.register_hook(get_hook("task_loss"))
+
             total_loss.backward()
+
+            logger.warning(f"[GRAD TRACE Step {step}] loss={task_loss.item():.4f}, task_loss_grad={grads_trace.get('task_loss', 'N/A')}, perturbed_emb_grad={grads_trace.get('perturbed_embeddings', 'N/A')}, delta_grad={delta.grad.norm().item() if delta.grad is not None else 'None'}")
 
             # Diagnostic check: unmasked gradient flow across all token positions
             with torch.no_grad():
@@ -363,10 +377,9 @@ class LatentOptimizer:
         with torch.no_grad():
             delta_final = (delta * mask).detach()
 
-            # Preserve full sequence perturbation [n_target, d] instead of pooling
-            # This is critical for character-level models like F5-TTS
+            # Pool the sequence perturbation into a single [d] vector (Paper Eq. 5)
             target_delta_vectors = delta_final[0, token_indices, :]  # [n_target, d]
-            delta_target_sequence = target_delta_vectors
+            delta_target_pooled = target_delta_vectors.mean(dim=0)   # [d]
 
         # Check convergence (gradient norms < 0.02 per paper)
         converged = (
@@ -382,7 +395,7 @@ class LatentOptimizer:
 
         return OptimizationResult(
             delta=delta_final,
-            delta_target=delta_target_sequence,
+            delta_target=delta_target_pooled,
             target_indices=token_indices,
             final_loss=loss_history[-1],
             loss_history=loss_history,

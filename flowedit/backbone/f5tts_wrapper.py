@@ -494,17 +494,29 @@ class F5TTSBackbone(TTSBackbone):
                 x_cast = x.to(dtype=model_dtype)
                 t_batch = t.expand(x.shape[0]).to(x.device, dtype=model_dtype)
                 
-                # Also cast any floating-point tensor args/kwargs to match
+                # Also cast any floating-point tensor args/kwargs to match,
+                # and expand batch dim 0 if x has batch size > 1 (e.g. CFG batch size 2).
                 cast_args = []
                 for arg in self.captured_args:
-                    if isinstance(arg, torch.Tensor) and arg.is_floating_point():
-                        cast_args.append(arg.to(dtype=model_dtype))
+                    if isinstance(arg, torch.Tensor):
+                        t_arg = arg
+                        if t_arg.dim() > 0 and t_arg.shape[0] == 1 and x.shape[0] > 1:
+                            t_arg = t_arg.expand(x.shape[0], *t_arg.shape[1:])
+                        if t_arg.is_floating_point():
+                            t_arg = t_arg.to(dtype=model_dtype)
+                        cast_args.append(t_arg)
                     else:
                         cast_args.append(arg)
+
                 cast_kwargs = {}
                 for k, v in self.captured_kwargs.items():
-                    if isinstance(v, torch.Tensor) and v.is_floating_point():
-                        cast_kwargs[k] = v.to(dtype=model_dtype)
+                    if isinstance(v, torch.Tensor):
+                        t_v = v
+                        if t_v.dim() > 0 and t_v.shape[0] == 1 and x.shape[0] > 1:
+                            t_v = t_v.expand(x.shape[0], *t_v.shape[1:])
+                        if t_v.is_floating_point():
+                            t_v = t_v.to(dtype=model_dtype)
+                        cast_kwargs[k] = t_v
                     else:
                         cast_kwargs[k] = v
                 
@@ -513,7 +525,6 @@ class F5TTSBackbone(TTSBackbone):
                 bound.arguments[self.t_arg_name] = t_batch
                 
                 # CRITICAL: Force cache=False to ensure text_embed is evaluated at every step.
-                # This ensures the hook fires and the backward graph connects to text_embeddings.
                 if 'cache' in bound.arguments:
                     bound.arguments['cache'] = False
                     
@@ -541,7 +552,19 @@ class F5TTSBackbone(TTSBackbone):
                 if t_arg_name is None:
                     raise RuntimeError("Could not identify the time argument in DiT signature.")
                 if self.intercepted:
-                    return self.original_forward(x, *args, **kwargs)
+                    exp_args = []
+                    for arg in args:
+                        if isinstance(arg, torch.Tensor) and arg.dim() > 0 and arg.shape[0] == 1 and x.shape[0] > 1:
+                            exp_args.append(arg.expand(x.shape[0], *arg.shape[1:]))
+                        else:
+                            exp_args.append(arg)
+                    exp_kwargs = {}
+                    for k, v in kwargs.items():
+                        if isinstance(v, torch.Tensor) and v.dim() > 0 and v.shape[0] == 1 and x.shape[0] > 1:
+                            exp_kwargs[k] = v.expand(x.shape[0], *v.shape[1:])
+                        else:
+                            exp_kwargs[k] = v
+                    return self.original_forward(x, *exp_args, **exp_kwargs)
                 self.intercepted = True
 
                 # We spawn a new thread to run the ODE solver.
@@ -559,7 +582,10 @@ class F5TTSBackbone(TTSBackbone):
                         cloned_args = []
                         for arg in args:
                             if isinstance(arg, torch.Tensor):
-                                cloned_args.append(arg.clone())
+                                t_arg = arg.clone()
+                                if t_arg.dim() > 0 and t_arg.shape[0] == 1 and isinstance(x_norm, torch.Tensor) and x_norm.shape[0] > 1:
+                                    t_arg = t_arg.expand(x_norm.shape[0], *t_arg.shape[1:])
+                                cloned_args.append(t_arg)
                             else:
                                 cloned_args.append(arg)
                         cloned_args = tuple(cloned_args)
@@ -567,20 +593,31 @@ class F5TTSBackbone(TTSBackbone):
                         cloned_kwargs = {}
                         for k, v in kwargs.items():
                             if isinstance(v, torch.Tensor):
-                                cloned_kwargs[k] = v.clone()
+                                t_v = v.clone()
+                                if t_v.dim() > 0 and t_v.shape[0] == 1 and isinstance(x_norm, torch.Tensor) and x_norm.shape[0] > 1:
+                                    t_v = t_v.expand(x_norm.shape[0], *t_v.shape[1:])
+                                cloned_kwargs[k] = t_v
                             else:
                                 cloned_kwargs[k] = v
                                 
                         t_eval = torch.linspace(0, 1, self.steps, device=x_norm.device, dtype=x_norm.dtype)
                         odefunc = ODEFV(self.original_forward, cloned_args, cloned_kwargs, t_arg_name)
                         
+                        adj_embed = text_embeddings
+                        if isinstance(x_norm, torch.Tensor) and adj_embed.dim() == x_norm.dim() and adj_embed.shape[0] != x_norm.shape[0]:
+                            adj_embed = adj_embed.expand(x_norm.shape[0], *adj_embed.shape[1:])
+                        
                         res = odeint_adjoint(
                             odefunc, 
                             x_norm, 
                             t_eval, 
                             method=self.method,
-                            adjoint_params=(text_embeddings,)
+                            adjoint_params=(adj_embed,)
                         )[-1]
+                        
+                        if not hook_fired[0]:
+                            raise RuntimeError("The text embedding hook did NOT fire during the ODE solver loop! This means F5-TTS is caching or bypassing 'text_embed'.")
+                            
                         return res
                         
                 final_x = _run_ode_solver()
@@ -625,42 +662,43 @@ class F5TTSBackbone(TTSBackbone):
         ref_len = ref_tokens.shape[1]
         gen_tokens = self.get_token_ids(text, language)
 
-        # The Text Embedding Hook MUST stay, because FlowEdit directly edits the embeddings!
         target_embed_module = getattr(dit_model, "text_embed", None)
-        hook_handle = None
-        if target_embed_module is not None:
-            def hook(module, inputs, output):
-                with torch.set_grad_enabled(True):
-                    out_tensor = output.clone()
-                    t_embed = text_embeddings.to(device=out_tensor.device, dtype=out_tensor.dtype)
-                    
-                    B = out_tensor.shape[0]
-                    T_mel = out_tensor.shape[1]
-                    L_gen = text_embeddings.shape[1]
-                    
-                    # Exact position of gen_text tokens is right after ref_text tokens
-                    start_pos = ref_len
-                    if start_pos + L_gen > T_mel:
-                        start_pos = max(0, T_mel - L_gen)
-                    
-                    if len(inputs) > 0 and isinstance(inputs[0], torch.Tensor) and inputs[0].dim() >= 2:
-                        tokens = inputs[0][0]
-                        sub_seq = gen_tokens[0].to(tokens.device)
-                        if tokens.shape[0] >= start_pos + L_gen:
-                            score = (tokens[start_pos:start_pos+L_gen] == sub_seq).sum().item()
-                            logger.info(f"[Optimization Hook] Aligned gen_text tokens at pos {start_pos} with score {score}/{L_gen}")
+        if target_embed_module is None:
+            # Print available modules to help debug
+            modules = [name for name, _ in dit_model.named_modules()]
+            raise RuntimeError(f"Could not find 'text_embed' in F5-TTS DiT. Available modules: {modules}")
 
-                    avail = min(L_gen, T_mel - start_pos)
-                    # ONLY inject into the conditional batch (index 0). 
-                    # Overwriting the unconditional batch breaks CFG and causes severe hallucinations.
-                    injected_delta = t_embed[:, :avail, :] - out_tensor[0:1, start_pos:start_pos + avail, :]
-                    logger.info(f"[Optimization Hook] Injected delta_norm={injected_delta.norm().item():.8f} at pos {start_pos}:{start_pos+avail}")
+        hook_handle = None
+        hook_fired = [False]
+        
+        def hook(module, inputs, output):
+            hook_fired[0] = True
+            with torch.set_grad_enabled(True):
+                out_tensor = output.clone()
+                t_embed = text_embeddings.to(device=out_tensor.device, dtype=out_tensor.dtype)
+                
+                B = out_tensor.shape[0]
+                T_mel = out_tensor.shape[1]
+                L_gen = text_embeddings.shape[1]
+                
+                # Exact position of gen_text tokens is right after ref_text tokens
+                start_pos = ref_len
+                if start_pos + L_gen > T_mel:
+                    start_pos = max(0, T_mel - L_gen)
+                
+                avail = min(L_gen, T_mel - start_pos)
+                if avail > 0:
                     out_tensor[0:1, start_pos:start_pos + avail, :] = t_embed[:, :avail, :]
-                    
-                    if isinstance(output, tuple):
-                        return (out_tensor,) + output[1:]
-                    return out_tensor
-            hook_handle = target_embed_module.register_forward_hook(hook)
+                
+                # If CFG is active (batch size 2 on x), expand text_embed output to batch size 2
+                if out_tensor.shape[0] == 1 and cfg_strength > 0:
+                    out_tensor = out_tensor.expand(2, *out_tensor.shape[1:])
+                
+                if isinstance(output, tuple):
+                    return (out_tensor,) + output[1:]
+                return out_tensor
+                
+        hook_handle = target_embed_module.register_forward_hook(hook)
 
         try:
 
@@ -995,11 +1033,7 @@ class F5TTSBackbone(TTSBackbone):
         language: str = "en",
         user_ref_text: Optional[str] = None,
     ) -> Tuple[torch.Tensor, int]:
-        """Phase 1: Pure vanilla F5-TTS synthesis WITHOUT hooks and monkey-patches.
-        
-        This establishes the ground-truth behavior of the F5-TTS model before any
-        FlowEdit interference or gradient tracking.
-        """
+        """Phase 1: Pure vanilla F5-TTS synthesis WITHOUT hooks and monkey-patches."""
         self._ensure_loaded()
         logger.info("Synthesizing BASELINE via pure F5-TTS (no hooks)...")
 
@@ -1020,12 +1054,6 @@ class F5TTSBackbone(TTSBackbone):
             language=language,
         )
 
-        # Ensure no hooks are active
-        if hasattr(self, '_vocoder_hook_handle') and self._vocoder_hook_handle is not None:
-            self._vocoder_hook_handle.remove()
-            self._vocoder_hook_handle = None
-
-        # Call infer cleanly. F5TTS infer usually yields (wav, sample_rate, spec)
         try:
             result = self.tts_api.infer(
                 ref_file=temp_ref,
@@ -1043,8 +1071,8 @@ class F5TTSBackbone(TTSBackbone):
             )
 
         import inspect
-        waveforms = []
         import numpy as np
+        waveforms = []
 
         if inspect.isgenerator(result):
             for chunk in result:
@@ -1059,18 +1087,15 @@ class F5TTSBackbone(TTSBackbone):
         if not waveforms:
             raise RuntimeError("F5TTS.infer returned no audio chunks in baseline mode.")
 
-        # Convert to torch tensor if necessary
         if isinstance(waveforms[0], np.ndarray):
             waveforms = [torch.from_numpy(w).float() for w in waveforms]
 
         final_wav = torch.cat([w if w.dim() > 1 else w.unsqueeze(0) for w in waveforms], dim=-1)
-
         if final_wav.dim() == 1:
             final_wav = final_wav.unsqueeze(0)
         elif final_wav.dim() == 3:
             final_wav = final_wav.squeeze(0)
 
-        logger.info(f"[Baseline] Synthesis complete. Waveform shape: {final_wav.shape}")
         return final_wav, 24000
 
     def compute_optimization_loss(
@@ -1084,65 +1109,45 @@ class F5TTSBackbone(TTSBackbone):
         target_word_end_sample: Optional[int] = None,
         **kwargs,
     ) -> Dict[str, torch.Tensor]:
-        """Phase 5: Compute differentiable Mel-loss for the target word.
-        
-        Synthesizes full text using perturbed embeddings, extracts target word audio
-        using fixed sample indices with 100ms temporal padding, and computes Mel loss against reference.
-        """
+        """Phase 5: Compute differentiable Mel-loss for the target word."""
         import torchaudio
         from flowedit.utils.audio import AudioProcessor
         
-        # Backwards compatibility fallback for older keyword argument names
         if target_word_start_sample is None:
             target_word_start_sample = kwargs.get("target_word_start_idx")
         if target_word_end_sample is None:
             target_word_end_sample = kwargs.get("target_word_end_idx")
 
-        # 1. Synthesize full sentence with Adjoint ODE solver and CFG=0
         syn_wav, sr = self.synthesize_from_embeddings(
             text_embeddings=perturbed_embeddings,
             speaker_conditioning=speaker_conditioning,
             text=text,
             language=language,
-            cfg_strength=0.0,
+            cfg_strength=2.0,
         )
         
-        # syn_wav is [1, T_samples]
-        
-        # 2. Slice the target word with 100ms padding
         if target_word_start_sample is None or target_word_end_sample is None:
             raise ValueError("WhisperX target_word_start_sample and target_word_end_sample must be provided for Mel-loss alignment.")
             
-        pad = int(0.10 * sr)  # 100 ms padding to absorb minor duration expansion
+        pad = int(0.10 * sr)
         start = max(0, target_word_start_sample - pad)
         end = min(syn_wav.shape[-1], target_word_end_sample + pad)
         
-        logger.info(f"[DIAG Loss] syn_wav shape={syn_wav.shape}, requires_grad={syn_wav.requires_grad}, slice=[{start}:{end}] ({end-start} samples / {(end-start)/sr:.3f}s)")
-
-        if end <= start:
-            syn_slice = syn_wav
-        else:
-            syn_slice = syn_wav[..., start:end]
+        syn_slice = syn_wav[..., start:end] if end > start else syn_wav
             
-        # 3. Load reference audio (which contains ONLY the target word)
         ref_wav, ref_sr = torchaudio.load(ref_audio_path)
         if ref_sr != sr:
             ref_wav = torchaudio.functional.resample(ref_wav, ref_sr, sr)
         ref_wav = ref_wav.to(device=syn_slice.device, dtype=syn_slice.dtype)
         if ref_wav.dim() == 1:
             ref_wav = ref_wav.unsqueeze(0)
-        elif ref_wav.dim() > 2:
-            ref_wav = ref_wav.squeeze(0)
             
-        # 4. Compute Mel spectrograms
-        processor = AudioProcessor() # defaults to target_sr=24000
+        processor = AudioProcessor()
         syn_mel = processor.compute_mel(syn_slice)
+        syn_mel.retain_grad()
         ref_mel = processor.compute_mel(ref_wav)
         
-        # 5. Interpolate to match sequence lengths
         import torch.nn.functional as F
-        
-        # Mel shape: [B, n_mels, T_mel]
         if syn_mel.shape[-1] != ref_mel.shape[-1]:
             syn_mel_aligned = F.interpolate(
                 syn_mel, 
@@ -1153,7 +1158,5 @@ class F5TTSBackbone(TTSBackbone):
         else:
             syn_mel_aligned = syn_mel
             
-        # 6. MSE Loss
         loss = F.mse_loss(syn_mel_aligned, ref_mel)
-        
         return {"loss": loss}

@@ -146,13 +146,7 @@ class HopfieldMemory:
                 f"Key shape mismatch: expected [{self.dim}], got {key.shape}"
             )
 
-        # Context-conditioned key for homograph disambiguation
-        # Paper: "Gaussian-weighted average of surrounding text embeddings
-        # within a window of ±3 tokens"
-        if context_embeddings is not None:
-            key = self._apply_context_conditioning(
-                key, context_embeddings, target_index_in_context
-            )
+
 
         # L2-normalize key (paper: "Queries and keys are L2-normalized")
         key = F.normalize(key, dim=0)
@@ -221,11 +215,7 @@ class HopfieldMemory:
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """Retrieve corrections via Modern Hopfield update with backbone & version isolation."""
         
-        # Apply context conditioning to the query if provided
-        if context_embeddings is not None:
-            query = self._apply_context_conditioning(
-                query, context_embeddings, target_index_in_context
-            )
+
         if self.is_empty:
             if query.dim() == 1:
                 return torch.zeros(self.dim, device=query.device), torch.tensor(-1.0)
@@ -279,12 +269,11 @@ class HopfieldMemory:
         logits = self.beta * cosine_sims
         weights = F.softmax(logits, dim=-1)
 
-        best_filtered_idx = max_indices[0].item()
-        retrieved_sequence = filtered_values[best_filtered_idx].to(device=query.device)
-
-        # Update access times
-        actual_memory_idx = valid_indices[best_filtered_idx]
-        self.access_times[actual_memory_idx] = time.time()
+        V = torch.stack(filtered_values).to(device=query.device, dtype=query.dtype) # [M, d]
+        retrieved_sequence = (weights @ V).squeeze(0)  # [d]
+        
+        # Update access times using weights
+        self._update_access_times(weights.squeeze(0))
 
 
         return retrieved_sequence, max_similarities.squeeze(0)
@@ -424,12 +413,16 @@ class HopfieldMemory:
 
         Entries with high attention weight are marked as recently accessed.
         """
-        # Only update if weights are significant
-        max_weights = weights.max(dim=0).values  # [M]
         current_time = time.time()
+        if weights.dim() == 2:
+            max_weights = weights.max(dim=0).values  # [M]
+        elif weights.dim() == 1:
+            max_weights = weights  # [M]
+        else:
+            return
 
-        for idx in range(self.size):
-            if idx < max_weights.shape[0] and max_weights[idx].item() > 0.1:
+        for idx in range(min(self.size, max_weights.shape[0])):
+            if max_weights[idx].item() > 0.1:
                 self.access_times[idx] = current_time
 
     def save(self, path: str) -> None:

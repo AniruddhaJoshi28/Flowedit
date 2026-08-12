@@ -190,21 +190,11 @@ class HopfieldRefiner(nn.Module):
                             f"(sim={max_sim.item():.3f}, gate={gate.item():.3f}, "
                             f"tokens={token_start}:{token_end})"
                         )
-                        N_stored = retrieved_sequence.shape[0] if retrieved_sequence.dim() > 1 else 1
-                        N_current = token_end - token_start
-
                         scale = getattr(self.config, "perturbation_scale", 1.0)
-                        if retrieved_sequence.dim() == 1:
-                            correction = scale * gate.item() * retrieved_sequence
-                            refined[b, token_start:token_end, :] = word_embeddings + correction.unsqueeze(0)
-                        elif N_stored == N_current:
-                            correction = scale * gate.item() * retrieved_sequence
-                            refined[b, token_start:token_end, :] = word_embeddings + correction
-                        else:
-                            retrieved_seq_t = retrieved_sequence.unsqueeze(0).transpose(1, 2)
-                            interpolated_t = F.interpolate(retrieved_seq_t, size=N_current, mode='linear', align_corners=True)
-                            correction = scale * gate.item() * interpolated_t.transpose(1, 2).squeeze(0)
-                            refined[b, token_start:token_end, :] = word_embeddings + correction
+                        
+                        # Retrieved value is [d], broadcast across target tokens [N, d]
+                        correction = scale * gate.item() * retrieved_sequence
+                        refined[b, token_start:token_end, :] = word_embeddings + correction.unsqueeze(0)
 
                         for pos in range(token_start, token_end):
                             gate_values[b, pos] = gate.item()
