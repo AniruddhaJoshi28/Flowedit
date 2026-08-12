@@ -471,12 +471,13 @@ class F5TTSBackbone(TTSBackbone):
         # --- The ODE Interceptor ---
         # We intercept the VERY FIRST call to the transformer inside F5-TTS's solver loop.
         class ODEFV(nn.Module):
-            def __init__(self, original_forward, captured_args, captured_kwargs, t_arg_name):
+            def __init__(self, original_forward, captured_args, captured_kwargs, t_arg_name, cfg_strength=0.0):
                 super().__init__()
                 self.original_forward = original_forward
                 self.captured_args = captured_args
                 self.captured_kwargs = captured_kwargs
                 self.t_arg_name = t_arg_name
+                self.cfg_strength = cfg_strength
                 self.sig = inspect.signature(original_forward)
                 # Detect the model's parameter dtype (typically float16 for F5-TTS)
                 self._model_dtype = None
@@ -529,15 +530,23 @@ class F5TTSBackbone(TTSBackbone):
                     bound.arguments['cache'] = False
                     
                 result = self.original_forward(*bound.args, **bound.kwargs)
+                
+                # If CFG is active, DiT returns batch size 2 (cond, uncond), but the ODE state (x) has batch size 1.
+                # We MUST combine them here just like cfm.fn does, so the derivative matches the state size!
+                if result.shape[0] == 2 and x.shape[0] == 1 and self.cfg_strength > 0:
+                    cond, uncond = result.chunk(2, dim=0)
+                    result = uncond + self.cfg_strength * (cond - uncond)
+                    
                 # Cast output back to the ODE solver's expected dtype (x.dtype)
                 return result.to(dtype=x.dtype)
 
         class ODEWrapper(nn.Module):
-            def __init__(self, original_forward, steps=32, method="euler"):
+            def __init__(self, original_forward, steps=32, method="euler", cfg_strength=0.0):
                 super().__init__()
                 self.original_forward = original_forward
                 self.steps = steps
                 self.method = method
+                self.cfg_strength = cfg_strength
                 self.intercepted = False
                 
             def forward(self, x, *args, **kwargs):
@@ -601,7 +610,7 @@ class F5TTSBackbone(TTSBackbone):
                                 cloned_kwargs[k] = v
                                 
                         t_eval = torch.linspace(0, 1, self.steps, device=x_norm.device, dtype=x_norm.dtype)
-                        odefunc = ODEFV(self.original_forward, cloned_args, cloned_kwargs, t_arg_name)
+                        odefunc = ODEFV(self.original_forward, cloned_args, cloned_kwargs, t_arg_name, self.cfg_strength)
                         
                         adj_embed = text_embeddings
                         if isinstance(x_norm, torch.Tensor) and adj_embed.dim() == x_norm.dim() and adj_embed.shape[0] != x_norm.shape[0]:
@@ -630,9 +639,17 @@ class F5TTSBackbone(TTSBackbone):
                 
                 # Return the delta, so when the outer F5-TTS Euler step does x0 + v * 1.0,
                 # it results exactly in final_x.
-                return final_x - x
+                delta = final_x - x
+                
+                # If we combined CFG, the delta has batch size 1. But the outer F5-TTS loop (cfm.fn)
+                # EXPECTS a batch size 2 tensor so it can do its own chunk and combine.
+                # We replicate it to batch size 2 so cfm.fn's combine operation just yields delta again!
+                if delta.shape[0] == 1 and getattr(self, "cfg_strength", 0) > 0:
+                    delta = torch.cat([delta, delta], dim=0)
+                    
+                return delta
 
-        wrapper = ODEWrapper(orig_forward, steps=32, method=solver_method)
+        wrapper = ODEWrapper(orig_forward, steps=32, method=solver_method, cfg_strength=cfg_strength)
         dit_model.forward = wrapper.forward
 
         # Prepare audio & text
@@ -670,8 +687,15 @@ class F5TTSBackbone(TTSBackbone):
 
         hook_handle = None
         hook_fired = [False]
+        hook_call_count = [0]
         
         def hook(module, inputs, output):
+            hook_call_count[0] += 1
+            # F5-TTS cfg_infer=True calls text_embed twice sequentially (cond, then uncond).
+            # We MUST only apply the learned memory delta to the conditional stream!
+            if hook_call_count[0] % 2 == 0:
+                return output
+                
             hook_fired[0] = True
             with torch.set_grad_enabled(True):
                 out_tensor = output.clone()
@@ -690,10 +714,8 @@ class F5TTSBackbone(TTSBackbone):
                 if avail > 0:
                     out_tensor[0:1, start_pos:start_pos + avail, :] = t_embed[:, :avail, :]
                 
-                # If CFG is active (batch size 2 on x), expand text_embed output to batch size 2
-                if out_tensor.shape[0] == 1 and cfg_strength > 0:
-                    out_tensor = out_tensor.expand(2, *out_tensor.shape[1:])
                 
+
                 if isinstance(output, tuple):
                     return (out_tensor,) + output[1:]
                 return out_tensor
@@ -919,7 +941,14 @@ class F5TTSBackbone(TTSBackbone):
             if text_embeddings is not None and target_embed_module is not None:
                 logger.info(f"[Direct] Injecting Hopfield edited text embeddings for inference!")
                 gen_tokens = self.get_token_ids(text, language)
+                hook_call_count = [0]
                 def hook(module, inputs, output):
+                    hook_call_count[0] += 1
+                    # F5-TTS cfg_infer=True calls text_embed twice sequentially (cond, then uncond).
+                    # We MUST only apply the learned memory delta to the conditional stream!
+                    if hook_call_count[0] % 2 == 0:
+                        return output
+                        
                     with torch.set_grad_enabled(False):
                         out_tensor = output.clone()
                         t_embed = text_embeddings.to(device=out_tensor.device, dtype=out_tensor.dtype)

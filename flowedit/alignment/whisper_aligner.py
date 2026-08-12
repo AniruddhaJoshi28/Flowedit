@@ -145,14 +145,36 @@ class WhisperAligner:
         model_a, metadata = whisperx.load_align_model(language_code=align_language, device=device)
         
         # In whisperx, align modifies the segments to include word-level timings
-        aligned_result = whisperx.align(
-            result["segments"], 
-            model_a, 
-            metadata, 
-            audio, 
-            device, 
-            return_char_alignments=False
-        )
+        try:
+            aligned_result = whisperx.align(
+                result["segments"], 
+                model_a, 
+                metadata, 
+                audio, 
+                device, 
+                return_char_alignments=False
+            )
+            
+            # Check if forced alignment returned empty word segments (often happens if full_text contains digits/symbols not in wav2vec2 dict)
+            if full_text and not self._extract_word_segments(aligned_result):
+                raise ValueError("Forced alignment returned no words")
+                
+        except Exception as e:
+            if full_text:
+                logger.warning(f"Forced alignment with full_text failed ({e}). Falling back to free transcription.")
+                result = self._model.transcribe(audio, language=language)
+                
+                # Re-align with transcribed segments
+                aligned_result = whisperx.align(
+                    result["segments"], 
+                    model_a, 
+                    metadata, 
+                    audio, 
+                    device, 
+                    return_char_alignments=False
+                )
+            else:
+                raise e
 
         if ref_is_word_only:
             # Reference audio contains ONLY the target word.

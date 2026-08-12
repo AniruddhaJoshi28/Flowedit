@@ -65,4 +65,15 @@ def normalize_indic_phonetics(text: str) -> str:
     for pattern, replacement in INDIC_PREFIX_RESPEL:
         normalized = pattern.sub(replacement, normalized)
 
+    # 4. Basic digit normalization to prevent TTS tokenization failures (silence / hallucination)
+    digit_map = {
+        '0': 'zero', '1': 'one', '2': 'two', '3': 'three', '4': 'four',
+        '5': 'five', '6': 'six', '7': 'seven', '8': 'eight', '9': 'nine'
+    }
+    
+    def replace_digits(match):
+        return " ".join([digit_map[d] for d in match.group(0)])
+        
+    normalized = re.sub(r'\d+', replace_digits, normalized)
+
     return normalized
