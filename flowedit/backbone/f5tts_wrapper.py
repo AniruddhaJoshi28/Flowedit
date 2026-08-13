@@ -624,7 +624,9 @@ class F5TTSBackbone(TTSBackbone):
                             
                         return res
                         
-                final_x = _run_ode_solver()
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                    future = pool.submit(_run_ode_solver)
+                    final_x = future.result()
                     
                 with torch.set_grad_enabled(True):
                     logger.warning(f"[DIAG] odeint_adjoint final_x requires_grad: {final_x.requires_grad}")
@@ -686,11 +688,6 @@ class F5TTSBackbone(TTSBackbone):
         
         def hook(module, inputs, output):
             hook_call_count[0] += 1
-            # F5-TTS cfg_infer=True calls text_embed twice sequentially (cond, then uncond).
-            # We MUST only apply the learned memory delta to the conditional stream!
-            if hook_call_count[0] % 2 == 0:
-                return output
-                
             hook_fired[0] = True
             with torch.set_grad_enabled(True):
                 out_tensor = output.clone()
@@ -1150,6 +1147,7 @@ class F5TTSBackbone(TTSBackbone):
             text=text,
             language=language,
             cfg_strength=2.0,
+            solver_method="euler",
         )
         
         if target_word_start_sample is None or target_word_end_sample is None:

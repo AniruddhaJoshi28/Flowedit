@@ -344,12 +344,14 @@ class CorrectionLoop:
             if not val_result.accepted:
                 logger.warning(f"  ✗ Candidate correction for '{primary_target_word}' REJECTED: {val_result.reason}")
                 return CorrectionResult(
-                    word=primary_target_word,
-                    delta=optimization.delta,
-                    loss=optimization.final_loss,
-                    memory_index=-1,
-                    token_indices=alignment.token_indices,
                     success=False,
+                    word=primary_target_word,
+                    alignment=alignment,
+                    optimization=optimization,
+                    memory_index=None,
+                    wall_clock_seconds=time.time() - start_time,
+                    memory_size=len(self.memory.keys),
+                    error_message=val_result.reason,
                 )
 
             # ════════════════════════════════════════════

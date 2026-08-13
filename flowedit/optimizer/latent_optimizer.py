@@ -113,10 +113,10 @@ class LatentOptimizer:
 
         # Hyperparameters (Paper Section 4.1)
         n_steps = getattr(self.config, "n_steps", 50)
-        lr_init = getattr(self.config, "lr", 0.01)
-        lr_final = getattr(self.config, "min_lr", 0.001)
+        lr_init = getattr(self.config, "lr_start", 0.005)
+        lr_final = getattr(self.config, "lr_end", 0.0005)
         lambda_reg = getattr(self.config, "lambda_reg", 0.001)
-        max_grad_norm = getattr(self.config, "max_grad_norm", 1.0)
+        max_grad_norm = getattr(self.config, "grad_clip_max_norm", 1.0)
         alpha_max = getattr(self.config, "max_relative_delta", 0.15)
 
         optimizer = torch.optim.Adam([delta], lr=lr_init)
@@ -127,6 +127,7 @@ class LatentOptimizer:
         initial_loss = 0.0
         final_loss = 0.0
         grad_history = []
+        nan_count = 0
 
         logger.info(
             f"[FlowEdit Optimization] Target: '{target_word}', Tokens: {target_indices}, "
@@ -164,6 +165,14 @@ class LatentOptimizer:
             if step == 0:
                 initial_loss = total_loss.item()
             final_loss = total_loss.item()
+
+            if math.isnan(final_loss):
+                nan_count += 1
+                if nan_count >= 3:
+                    logger.warning(f"Optimization diverged to NaN for 3 consecutive steps. Aborting early at step {step}.")
+                    break
+            else:
+                nan_count = 0
 
             total_loss.backward()
 
