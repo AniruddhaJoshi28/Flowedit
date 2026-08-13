@@ -146,7 +146,12 @@ class HopfieldMemory:
                 f"Key shape mismatch: expected [{self.dim}], got {key.shape}"
             )
 
-
+        if context_embeddings is not None:
+            key = self._apply_context_conditioning(
+                key=key,
+                context_embeddings=context_embeddings,
+                target_index_in_context=target_index_in_context
+            )
 
         # L2-normalize key (paper: "Queries and keys are L2-normalized")
         key = F.normalize(key, dim=0)
@@ -248,6 +253,13 @@ class HopfieldMemory:
         # Stack filtered keys into matrix
         filtered_keys = [self.keys[i] for i in valid_indices]
         filtered_values = [self.values[i] for i in valid_indices]
+
+        if context_embeddings is not None:
+            query = self._apply_context_conditioning(
+                key=query.squeeze(0) if query.dim() > 1 else query,
+                context_embeddings=context_embeddings,
+                target_index_in_context=target_index_in_context
+            )
 
         K = torch.stack(filtered_keys).to(device=query.device, dtype=query.dtype)  # [M_filtered, d]
 
@@ -381,7 +393,7 @@ class HopfieldMemory:
         # Combine original key with context (equal weighting)
         conditioned_key = 0.7 * key + 0.3 * context_key
 
-        return conditioned_key
+        return conditioned_key.to(key.dtype)
 
     def _prune_lru(self) -> None:
         """Prune least-recently-used entries when at capacity.

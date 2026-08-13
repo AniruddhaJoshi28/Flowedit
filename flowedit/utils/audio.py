@@ -115,7 +115,7 @@ class AudioProcessor:
 
         if normalize:
             # Log-mel spectrogram (standard for TTS loss computation)
-            mel = torch.log(torch.clamp(mel, min=1e-5))
+            mel = torch.log(mel + 1e-5)
 
         return mel
 

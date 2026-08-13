@@ -325,8 +325,32 @@ class CorrectionLoop:
             logger.info(
                 f"  ✓ Optimization complete: loss={optimization.final_loss:.4f}, "
                 f"converged={optimization.converged}, "
-                f"δ_target norm={torch.norm(optimization.delta_target).item():.4f}"
+                f"δ_target norm={optimization.delta_norm:.4f}, "
+                f"rel_ratio={optimization.relative_delta_ratio:.4f}"
             )
+
+            # ════════════════════════════════════════════
+            # Candidate Validation Gate
+            # ════════════════════════════════════════════
+            from flowedit.memory.candidate_validator import CandidateValidator
+            validator = CandidateValidator(max_relative_delta=0.15)
+            val_result = validator.validate(
+                optimization_result=optimization,
+                word=primary_target_word,
+                initial_loss=optimization.initial_loss,
+                final_loss=optimization.final_loss,
+            )
+
+            if not val_result.accepted:
+                logger.warning(f"  ✗ Candidate correction for '{primary_target_word}' REJECTED: {val_result.reason}")
+                return CorrectionResult(
+                    word=primary_target_word,
+                    delta=optimization.delta,
+                    loss=optimization.final_loss,
+                    memory_index=-1,
+                    token_indices=alignment.token_indices,
+                    success=False,
+                )
 
             # ════════════════════════════════════════════
             # Stage 3: Memory Write
@@ -351,13 +375,13 @@ class CorrectionLoop:
                 target_mean_idx = sum(alignment.token_indices) // len(alignment.token_indices)
                 target_index_in_context = target_mean_idx - context_start
 
-            # Value: pool(δ*_I) — average perturbation for target tokens
-            value = optimization.delta_target.squeeze()
+            # Value: pool(δ*_I) — pooled perturbation vector V_i ∈ R^d
+            value = optimization.delta_pooled.squeeze()
 
             memory_index = self.memory.write(
                 key=key,
                 value=value,
-                word=target_word,
+                word=primary_target_word,
                 context_embeddings=context_embeddings,
                 target_index_in_context=target_index_in_context,
             )

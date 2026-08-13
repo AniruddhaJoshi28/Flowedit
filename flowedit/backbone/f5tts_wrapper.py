@@ -382,7 +382,7 @@ class F5TTSBackbone(TTSBackbone):
 
     def synthesize_from_embeddings(
         self,
-        text_embeddings: torch.Tensor,
+        text_embedding_delta: torch.Tensor,
         speaker_conditioning: Dict[str, str],
         text: str,
         language: str = "en",
@@ -405,7 +405,7 @@ class F5TTSBackbone(TTSBackbone):
         import types
         import inspect
         try:
-            from torchdiffeq import odeint_adjoint
+            from torchdiffeq import odeint
         except ImportError:
             raise ImportError("torchdiffeq is required for the ODE solver. Run: pip install torchdiffeq")
 
@@ -612,16 +612,11 @@ class F5TTSBackbone(TTSBackbone):
                         t_eval = torch.linspace(0, 1, self.steps, device=x_norm.device, dtype=x_norm.dtype)
                         odefunc = ODEFV(self.original_forward, cloned_args, cloned_kwargs, t_arg_name, self.cfg_strength)
                         
-                        adj_embed = text_embeddings
-                        if isinstance(x_norm, torch.Tensor) and adj_embed.dim() == x_norm.dim() and adj_embed.shape[0] != x_norm.shape[0]:
-                            adj_embed = adj_embed.expand(x_norm.shape[0], *adj_embed.shape[1:])
-                        
-                        res = odeint_adjoint(
+                        res = odeint(
                             odefunc, 
                             x_norm, 
                             t_eval, 
-                            method=self.method,
-                            adjoint_params=(adj_embed,)
+                            method=self.method
                         )[-1]
                         
                         if not hook_fired[0]:
@@ -699,11 +694,11 @@ class F5TTSBackbone(TTSBackbone):
             hook_fired[0] = True
             with torch.set_grad_enabled(True):
                 out_tensor = output.clone()
-                t_embed = text_embeddings.to(device=out_tensor.device, dtype=out_tensor.dtype)
+                t_delta = text_embedding_delta.to(device=out_tensor.device, dtype=out_tensor.dtype)
                 
                 B = out_tensor.shape[0]
                 T_mel = out_tensor.shape[1]
-                L_gen = text_embeddings.shape[1]
+                L_gen = text_embedding_delta.shape[1]
                 
                 # Exact position of gen_text tokens is right after ref_text tokens
                 start_pos = ref_len
@@ -712,8 +707,7 @@ class F5TTSBackbone(TTSBackbone):
                 
                 avail = min(L_gen, T_mel - start_pos)
                 if avail > 0:
-                    out_tensor[0:1, start_pos:start_pos + avail, :] = t_embed[:, :avail, :]
-                
+                    out_tensor[0:1, start_pos:start_pos + avail, :] += t_delta[:, :avail, :]
                 
 
                 if isinstance(output, tuple):
@@ -844,7 +838,7 @@ class F5TTSBackbone(TTSBackbone):
         language: str = "en",
         user_ref_text: Optional[str] = None,
         cfg_strength: float = 2.0,
-        text_embeddings: Optional[torch.Tensor] = None,
+        text_embedding_delta: Optional[torch.Tensor] = None,
     ) -> Tuple[torch.Tensor, int]:
         """Direct F5-TTS synthesis WITHOUT embedding injection hooks.
 
@@ -938,7 +932,7 @@ class F5TTSBackbone(TTSBackbone):
             dit_model = getattr(self.model, "transformer", self.model)
             target_embed_module = getattr(dit_model, "text_embed", None)
             hook_handle = None
-            if text_embeddings is not None and target_embed_module is not None:
+            if text_embedding_delta is not None and target_embed_module is not None:
                 logger.info(f"[Direct] Injecting Hopfield edited text embeddings for inference!")
                 gen_tokens = self.get_token_ids(text, language)
                 hook_call_count = [0]
@@ -951,11 +945,11 @@ class F5TTSBackbone(TTSBackbone):
                         
                     with torch.set_grad_enabled(False):
                         out_tensor = output.clone()
-                        t_embed = text_embeddings.to(device=out_tensor.device, dtype=out_tensor.dtype)
+                        t_delta = text_embedding_delta.to(device=out_tensor.device, dtype=out_tensor.dtype)
                         
                         B = out_tensor.shape[0]
                         T_mel = out_tensor.shape[1]
-                        L_gen = text_embeddings.shape[1]
+                        L_gen = text_embedding_delta.shape[1]
                         
                         start_pos = max(0, T_mel - L_gen)
                         
@@ -981,19 +975,10 @@ class F5TTSBackbone(TTSBackbone):
 
                         avail = min(L_gen, T_mel - start_pos)
                         
-                        # Extract the base tokens from the conditional batch
-                        orig_embed = out_tensor[0:1, start_pos:start_pos + avail, :]
-                        
-                        # Calculate the delta added by the Hopfield Memory
-                        delta = t_embed[:, :avail, :] - orig_embed
-                        
-                        # Apply full delta perturbation to conditional batch
-                        scaled_delta = delta
-                        
                         # Apply to conditional batch ONLY
-                        out_tensor[0:1, start_pos:start_pos + avail, :] = orig_embed + scaled_delta
+                        out_tensor[0:1, start_pos:start_pos + avail, :] += t_delta[:, :avail, :]
                         
-                        logger.info(f"[Direct Hook] Applied delta. Max delta={delta.abs().max().item():.4f}")
+                        logger.info(f"[Direct Hook] Applied delta. Max delta={t_delta.abs().max().item():.4f}")
                         
                         if isinstance(output, tuple):
                             return (out_tensor,) + output[1:]
@@ -1129,17 +1114,23 @@ class F5TTSBackbone(TTSBackbone):
 
     def compute_optimization_loss(
         self,
-        perturbed_embeddings: torch.Tensor,
+        text_embedding_delta: torch.Tensor,
         ref_audio_path: str,
         speaker_conditioning: Dict[str, str],
         text: str,
         language: str = "en",
         target_word_start_sample: Optional[int] = None,
         target_word_end_sample: Optional[int] = None,
+        seed: Optional[int] = 42,
         **kwargs,
     ) -> Dict[str, torch.Tensor]:
-        """Phase 5: Compute differentiable Mel-loss for the target word."""
+        """Stage 2: Compute differentiable Mel-loss for the target word region.
+
+        Paper Section 3.1:
+            L_FlowEdit = ||Mel(g_θ(c + δ)) - Mel(y_ref)||_2^2 + λ||δ||_2^2
+        """
         import torchaudio
+        import torch.nn.functional as F
         from flowedit.utils.audio import AudioProcessor
         
         if target_word_start_sample is None:
@@ -1147,8 +1138,14 @@ class F5TTSBackbone(TTSBackbone):
         if target_word_end_sample is None:
             target_word_end_sample = kwargs.get("target_word_end_idx")
 
+        # Set reproducible seed for z0 ~ p0 ODE initial condition if provided
+        if seed is not None:
+            torch.manual_seed(seed)
+            if torch.cuda.is_available():
+                torch.cuda.manual_seed_all(seed)
+
         syn_wav, sr = self.synthesize_from_embeddings(
-            text_embeddings=perturbed_embeddings,
+            text_embedding_delta=text_embedding_delta,
             speaker_conditioning=speaker_conditioning,
             text=text,
             language=language,
@@ -1156,14 +1153,18 @@ class F5TTSBackbone(TTSBackbone):
         )
         
         if target_word_start_sample is None or target_word_end_sample is None:
-            raise ValueError("WhisperX target_word_start_sample and target_word_end_sample must be provided for Mel-loss alignment.")
+            # Fallback to full waveform if target boundaries not specified
+            syn_slice = syn_wav
+        else:
+            pad = int(0.10 * sr)
+            start = max(0, target_word_start_sample - pad)
+            end = min(syn_wav.shape[-1], target_word_end_sample + pad)
+            syn_slice = syn_wav[..., start:end] if end > start else syn_wav
             
-        pad = int(0.10 * sr)
-        start = max(0, target_word_start_sample - pad)
-        end = min(syn_wav.shape[-1], target_word_end_sample + pad)
-        
-        syn_slice = syn_wav[..., start:end] if end > start else syn_wav
-            
+        processor = AudioProcessor()
+        syn_mel = processor.compute_mel(syn_slice, normalize=True)
+        syn_mel.retain_grad()
+
         ref_wav, ref_sr = torchaudio.load(ref_audio_path)
         if ref_sr != sr:
             ref_wav = torchaudio.functional.resample(ref_wav, ref_sr, sr)
@@ -1171,12 +1172,9 @@ class F5TTSBackbone(TTSBackbone):
         if ref_wav.dim() == 1:
             ref_wav = ref_wav.unsqueeze(0)
             
-        processor = AudioProcessor()
-        syn_mel = processor.compute_mel(syn_slice)
-        syn_mel.retain_grad()
-        ref_mel = processor.compute_mel(ref_wav)
-        
-        import torch.nn.functional as F
+        ref_mel = processor.compute_mel(ref_wav, normalize=True)
+
+        # Standard log-mel loss computation (Paper Section 3.1)
         if syn_mel.shape[-1] != ref_mel.shape[-1]:
             syn_mel_aligned = F.interpolate(
                 syn_mel, 

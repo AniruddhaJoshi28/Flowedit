@@ -244,13 +244,14 @@ async def synthesize_text(
                 print(f"  [Memory {i}] word='{m.get('word', '?')}', δ_norm={v_norm:.6f}")
         
         if corrections_applied > 0 and diff_norm > 1e-4:
+            embedding_delta = corrected_embeddings.detach() - base_embeddings.detach()
             print(f"[Synthesize] Corrections active (applied={corrections_applied}, diff={diff_norm:.4f}) → using hook-based NORMAL inference on {backbone_name}")
             waveform, sr = bb.synthesize_direct(
                 text=text,
                 speaker_conditioning=speaker_conditioning,
                 language=language,
                 user_ref_text=ref_text,
-                text_embeddings=corrected_embeddings.detach()
+                text_embedding_delta=embedding_delta
             )
         else:
             reason = "no corrections matched" if corrections_applied == 0 else f"diff_norm too small ({diff_norm:.6f})"
