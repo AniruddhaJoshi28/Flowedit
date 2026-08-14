@@ -1,44 +1,14 @@
 """
-Abstract TTS Backbone Interface for FlowEdit.
+Abstract Flow-Matching TTS Backbone Interface for FlowEdit.
 
-This module defines the unified TTSBackbone interface. All backbones (F5-TTS, XTTS-v2, etc.)
-implement this abstract base class.
-
-The FlowEdit pipeline interacts ONLY through this interface, ensuring that the paper's
-core algorithm (Whisper alignment -> Latent Optimization -> Hopfield Memory -> Gated Retrieval)
-remains 100% identical and model-agnostic.
+Paper Reference: FlowEdit (arXiv:2606.20518), Section 3.1 & 3.2.
+All backbones implement this abstract base class.
 """
 
 from abc import ABC, abstractmethod
-from enum import Enum
+from typing import Dict, Optional, Tuple, Any
 import torch
 import torch.nn as nn
-from typing import Dict, List, Optional, Tuple, Any
-
-
-
-from dataclasses import dataclass
-
-class OptimizationMode(str, Enum):
-    """Supported backbone optimization modes."""
-    FLOW_MATCHING = "flow_matching"
-    AUTOREGRESSIVE = "autoregressive"
-    DIFFUSION = "diffusion"
-    OTHER = "other"
-
-
-@dataclass(frozen=True)
-class BackboneCapabilities:
-    """Explicit capability contract for a TTS backbone."""
-    supports_zero_shot: bool = True
-    supports_cross_lingual: bool = True
-    supports_explicit_duration: bool = False
-    supports_speed_control: bool = True
-    supports_phonemes: bool = False
-    supports_differentiable_synthesis: bool = True
-    supports_conditioning_edit: bool = True
-    native_sample_rate: int = 24000
-
 
 
 class TTSBackbone(nn.Module, ABC):
@@ -49,21 +19,15 @@ class TTSBackbone(nn.Module, ABC):
         self.config = config
 
     @property
-    def capabilities(self) -> BackboneCapabilities:
-        """Return explicit BackboneCapabilities descriptor."""
-        return BackboneCapabilities()
-
-
-    @property
     @abstractmethod
     def embedding_dim(self) -> int:
-        """Return the dimension d of the text embedding space."""
+        """Return the dimension d of the text embedding space (Paper: d = 1024 or 512)."""
         pass
 
     @property
     @abstractmethod
     def device(self) -> str:
-        """Return the device (cuda/cpu) where the model is loaded."""
+        """Return the active device (cuda/cpu)."""
         pass
 
     @property
@@ -72,25 +36,14 @@ class TTSBackbone(nn.Module, ABC):
         """Return the tokenizer instance for token-text mapping."""
         pass
 
-    @property
-    @abstractmethod
-    def optimization_mode(self) -> OptimizationMode:
-        """Return the OptimizationMode enum for this backbone."""
-        pass
-
-    @property
-    def supports_differentiable_optimization(self) -> bool:
-        """Whether this backbone supports direct end-to-end autograd/adjoint gradients."""
-        return True
-
     @abstractmethod
     def load_model(self) -> None:
-        """Load model weights and initialize internal components."""
+        """Load model weights and initialize internal neural modules."""
         pass
 
     @abstractmethod
     def tokenize(self, text: str, language: str = "en") -> Dict[str, Any]:
-        """Tokenize text string into token dictionary containing 'token_ids' and metadata."""
+        """Tokenize text string into token dictionary containing 'token_ids'."""
         pass
 
     @abstractmethod
@@ -99,7 +52,7 @@ class TTSBackbone(nn.Module, ABC):
         pass
 
     def get_token_ids(self, text: str, language: str = "en") -> torch.Tensor:
-        """Backward-compatible helper: Tokenize text string into token IDs [1, S]."""
+        """Tokenize text string into token IDs [1, S]."""
         res = self.tokenize(text, language=language)
         if isinstance(res, dict) and "token_ids" in res:
             return res["token_ids"]
@@ -117,7 +70,6 @@ class TTSBackbone(nn.Module, ABC):
 
     @abstractmethod
     def get_speaker_embedding(
-
         self,
         audio_path: Optional[str] = None,
         language: str = "en",
@@ -129,21 +81,23 @@ class TTSBackbone(nn.Module, ABC):
     @abstractmethod
     def compute_optimization_loss(
         self,
-        perturbed_embeddings: torch.Tensor,
+        text_embedding_delta: torch.Tensor,
         ref_audio_path: str,
         speaker_conditioning: Dict[str, Any],
         text: str,
         language: str = "en",
-        target_word_start_time: Optional[float] = None,
-        target_word_end_time: Optional[float] = None,
-    ) -> Dict[str, Any]:
-        """Compute backbone-specific differentiable loss for optimizing perturbation δ.
+        target_word_start_sample: Optional[int] = None,
+        target_word_end_sample: Optional[int] = None,
+        ref_start_time: Optional[float] = None,
+        ref_end_time: Optional[float] = None,
+        seed: Optional[int] = 42,
+        **kwargs,
+    ) -> Dict[str, torch.Tensor]:
+        """Compute differentiable loss for optimizing perturbation δ (Paper Eq. 3).
         
         Returns:
             Dict containing at least:
-                - "loss": A scalar torch.Tensor containing the total loss to backpropagate.
-                - "ce_loss" or "mel_loss": The primary loss term.
-                - "delta_norm": Norm of the perturbation.
+                - "loss": scalar loss tensor for backpropagation.
         """
         pass
 
@@ -154,50 +108,41 @@ class TTSBackbone(nn.Module, ABC):
         speaker_conditioning: Dict[str, Any],
         text: str,
         language: str = "en",
+        **kwargs,
     ) -> Tuple[torch.Tensor, int]:
-        """Synthesize audio using (possibly perturbed) text embeddings c + δ.
+        """Synthesize audio using (possibly perturbed/refined) text embeddings c + δ.
         
         Returns:
             Tuple of (waveform tensor [1, T], sample_rate int)
         """
         pass
-
-    def decode_embeddings(
-        self,
-        text_embeddings: torch.Tensor,
-        speaker_conditioning: Dict[str, Any],
-        text: str,
-        language: str = "en",
-    ) -> Tuple[torch.Tensor, int]:
-        """Alias for synthesize_from_embeddings."""
-        return self.synthesize_from_embeddings(
-            text_embeddings, speaker_conditioning, text, language=language
-        )
 
     @abstractmethod
-    def synthesize(
-        self,
-        text: str,
-        speaker_conditioning: Dict[str, Any],
-        language: str = "en",
-        user_ref_text: Optional[str] = None,
-    ) -> Tuple[torch.Tensor, int]:
-        """Direct synthesis without embedding hooks (when Hopfield gate is inactive).
-        
-        Returns:
-            Tuple of (waveform tensor [1, T], sample_rate int)
-        """
-        pass
-
     def synthesize_direct(
         self,
         text: str,
         speaker_conditioning: Dict[str, Any],
         language: str = "en",
         user_ref_text: Optional[str] = None,
+        **kwargs,
     ) -> Tuple[torch.Tensor, int]:
-        """Backward-compatible alias for synthesize()."""
-        return self.synthesize(
-            text, speaker_conditioning, language=language, user_ref_text=user_ref_text
+        """Direct synthesis without embedding modifications (when Hopfield gate is inactive).
+        
+        Returns:
+            Tuple of (waveform tensor [1, T], sample_rate int)
+        """
+        pass
+
+    def synthesize(
+        self,
+        text: str,
+        speaker_conditioning: Dict[str, Any],
+        language: str = "en",
+        user_ref_text: Optional[str] = None,
+        **kwargs,
+    ) -> Tuple[torch.Tensor, int]:
+        """Alias for synthesize_direct."""
+        return self.synthesize_direct(
+            text, speaker_conditioning, language=language, user_ref_text=user_ref_text, **kwargs
         )
 

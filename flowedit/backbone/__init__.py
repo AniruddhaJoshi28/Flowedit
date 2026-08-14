@@ -1,9 +1,9 @@
-from .base import TTSBackbone, OptimizationMode
+from .base import TTSBackbone
 from .f5tts_wrapper import F5TTSBackbone
 
 
-def create_backbone(config) -> TTSBackbone:
-    """Factory function to create the correct backbone based on config.
+def create_backbone(config=None) -> TTSBackbone:
+    """Factory function to create the F5-TTS backbone.
 
     Args:
         config: BackboneConfig instance.

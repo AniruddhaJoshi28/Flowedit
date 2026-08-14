@@ -1,161 +1,143 @@
 """
-FlowEdit Configuration — all hyperparameters from the paper.
+FlowEdit Configuration — Research Paper Exact Hyperparameters.
 
-Reference: FlowEdit (arXiv:2606.20518), Section 3.2 & 4.1
-Adapted for XTTS-2 backbone (autoregressive GPT, not flow-matching).
+Reference: FlowEdit (arXiv:2606.20518), Sections 3.1, 3.2, 4.1 & 4.5.
+Flow Matching Text-to-Speech (F5-TTS DiT) Backbone.
 """
 
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, Tuple, Any
 import os
 import torch
 
 
 @dataclass
 class OptimizationConfig:
-    """Stage 2: Latent input optimization parameters.
+    """Stage 2: Latent input optimization parameters (Paper Section 3.2 & 4.1).
 
-    These control how the perturbation δ is optimized to match the
-    reference pronunciation. Values from paper Section 3.2.
+    δ* = argmin_δ [ ||Mel(g_θ(c + δ)) - Mel(y_ref)||_2^2 + λ||δ||_2^2 ]
     """
 
-    # Number of Adam optimization steps (paper Section 3.2: 50)
+    # Number of Adam optimization steps (Paper Section 3.2: 50 steps)
     n_steps: int = 50
 
-    # Learning rate schedule: cosine anneal from lr_start → lr_end
-    lr_start: float = 0.005
-    lr_end: float = 0.0005
+    # Learning rate schedule: cosine anneal from η0 = 0.01 → η50 = 0.001 (Paper Section 3.2)
+    lr_start: float = 0.01
+    lr_end: float = 0.001
 
-    # L2 regularization weight on δ (paper Section 3.2: λ=0.001)
+    # L2 regularization weight on δ (Paper Section 3.2 & Table 2: λ = 0.001)
     lambda_reg: float = 0.001
 
-    # Gradient clipping max norm (paper Section 3.2: ‖∇_δ‖_∞ ≤ 1.0)
+    # Gradient clipping L_infinity max norm (Paper Section 3.2: ||∇_δ||_∞ ≤ 1.0)
     grad_clip_max_norm: float = 1.0
 
-    # Data augmentation on reference mel during optimization
-    augment_time_stretch_range: tuple = (0.9, 1.1)
-    # F0 pitch guidance loss (paper Section 4.5: optional extension)
-    f0_loss_alpha: float = 0.3
-    use_f0_loss: bool = False
+    # Number of Euler ODE solver steps (Paper Section 3.1 & 3.2: N = 32 steps)
+    ode_steps: int = 32
 
-    augment_gain_db_range: tuple = (-3.0, 3.0)
+    # Relative perturbation norm constraint: ||δ_I|| / ||c_I|| ≤ max_relative_delta
+    max_relative_delta: float = 3.0
+
+    # Data augmentation on reference mel during optimization (Paper Section 3.2)
     enable_augmentation: bool = False
+    augment_time_stretch_range: Tuple[float, float] = (0.9, 1.1)
+    augment_gain_db_range: Tuple[float, float] = (-3.0, 3.0)
 
+    # Optional F0 pitch guidance loss for tonal languages (Paper Section 4.5: α = 0.3)
+    use_f0_loss: bool = False
+    f0_loss_alpha: float = 0.3
 
 
 @dataclass
 class MemoryConfig:
-    """Stage 3: Modern Hopfield Network memory parameters.
+    """Stage 3: Modern Hopfield Network memory parameters (Paper Section 3.2 & Eq. 5, 6, 7).
 
-    Controls the associative memory that stores pronunciation corrections.
-    Reference: paper Section 3.2 (Stage 3) and Section 4.5.
+    K_i = pool(c_I), V_i = pool(δ*_I)
+    Mem(Q) = softmax(β Q K^T) V, β = 1/√d
+    c_hat = c + σ(max_j(β Q K_j^T) - τ) ⊙ Mem(Q)
     """
 
-    # Maximum number of stored corrections
+    # Maximum number of stored corrections (Paper Section 3.2 & 4.5: M_max = 500)
     max_entries: int = 500
 
-    # Deduplication: cosine similarity > threshold → EMA update
+    # Deduplication: cosine similarity > 0.95 triggers EMA update (Paper Section 3.2)
     dedup_cosine_threshold: float = 0.95
 
-    # EMA decay for deduplication merges
-    dedup_ema_decay: float = 0.9
+    # EMA decay α for deduplication merges (Paper Section 3.2: α = 0.90)
+    dedup_ema_decay: float = 0.90
 
-    # Hopfield inverse temperature β = 1/√d (auto-computed if None)
+    # Hopfield inverse temperature β = 1/√d (Paper Eq. 6: auto-computed from embedding_dim if None)
     hopfield_beta: Optional[float] = None
 
-    # Learned gate threshold τ initialization
-    gate_threshold_init: float = 0.5
+    # Learned gate threshold scalar τ (Paper Section 3.2: τ ≈ 5.0)
+    gate_threshold_init: float = 5.0
 
-    # Perturbation scale factor to amplify learned phonetic corrections
-    # (2.0 for F5-TTS continuous flow-matching; 1.0 for XTTS autoregressive GPT)
-    perturbation_scale: float = 2.0
-
-    # Context window for homograph disambiguation (paper: ±3 tokens)
-    # Keys are Gaussian-weighted average of surrounding embeddings
+    # Context window for homograph disambiguation (Paper Section 3.2: ±3 tokens)
     context_window: int = 3
 
-    # Gaussian std for context weighting
+    # Gaussian standard deviation for context key weighting (Paper Section 3.2)
     context_sigma: float = 1.5
 
-    # LRU pruning: entries not accessed in this many retrievals are pruned
+    # LRU pruning access age threshold
     lru_max_age: int = 1000
 
 
 @dataclass
 class AlignmentConfig:
-    """Stage 1: Whisper forced alignment parameters.
+    """Stage 1: Whisper forced alignment parameters (Paper Section 3.2)."""
 
-    Controls how reference audio is aligned to extract target token indices.
-    """
-
-    # Whisper model size for alignment
+    # Whisper model for alignment (Paper Section 3.2: Whisper-Large-v3, fallback to base if large unavailable)
     whisper_model: str = "base"
 
-    # Token boundary expansion: ±N tokens around detected target
-    # Absorbs tokenizer boundary errors (paper: ±1)
+    # Token boundary expansion: ±1 token around detected target (Paper Section 3.2)
     token_expand: int = 1
 
-    # Minimum confidence for alignment acceptance
+    # Minimum alignment confidence threshold
     min_confidence: float = 0.5
 
-    # Language hint for Whisper (None = auto-detect)
+    # Language hint (None = auto-detect)
     language: Optional[str] = None
 
 
 @dataclass
 class AudioConfig:
-    """Audio processing parameters."""
+    """Audio and Mel-spectrogram processing parameters."""
 
-    # Sample rate for all audio processing
-    # F5-TTS operates natively at 24000 Hz — MUST match backbone
+    # F5-TTS native sampling rate
     sample_rate: int = 24000
 
     # Mel-spectrogram parameters
-    n_mels: int = 80
+    n_mels: int = 100
     n_fft: int = 1024
     hop_length: int = 256
     win_length: int = 1024
     fmin: float = 0.0
-    fmax: Optional[float] = 8000.0
+    fmax: Optional[float] = None
 
-    # Reference audio constraints (paper: ≥1.5s optimal, plateaus >3s)
-    # Lowered min to 0.3s because reference audio of a single word can be short
-    ref_audio_min_duration: float = 0.3
-    ref_audio_max_duration: float = 10.0
+    # Reference audio constraints (Paper Section 4.2: ≥1.5s optimal, plateaus >3s)
+    ref_audio_min_duration: float = 0.2
+    ref_audio_max_duration: float = 15.0
 
 
 @dataclass
 class BackboneConfig:
-    """Backbone configuration supporting F5-TTS.
+    """F5-TTS Diffusion Transformer Backbone configuration."""
 
-    Set backbone_type to select which model to use:
-        - "f5tts"     : Use F5-TTS via f5-tts package
-    """
-
-    # Backbone selector: "f5tts"
     backbone_type: str = "f5tts"
 
-    # ── F5-TTS-specific settings ────────────────────────────────────
+    # Model checkpoint & vocab paths (optional overrides, downloads automatically if empty)
     f5tts_ckpt_file: str = ""
     f5tts_vocab_file: str = ""
     vocoder_local_path: str = ""
 
-    # ── Shared settings ─────────────────────────────────────────────
-    use_gradient_checkpointing: bool = True
+    # Device & dtype
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
     optimization_dtype: str = "float32"
-    inference_dtype: str = "float16"
-
+    inference_dtype: str = "float32"
 
 
 @dataclass
 class FlowEditConfig:
-    """Master configuration combining all sub-configs.
-
-    Usage:
-        config = FlowEditConfig()
-        config.optimization.n_steps = 100  # Override defaults
-    """
+    """Master configuration combining all FlowEdit modules."""
 
     optimization: OptimizationConfig = field(default_factory=OptimizationConfig)
     memory: MemoryConfig = field(default_factory=MemoryConfig)
@@ -163,22 +145,19 @@ class FlowEditConfig:
     audio: AudioConfig = field(default_factory=AudioConfig)
     backbone: BackboneConfig = field(default_factory=BackboneConfig)
 
-    # Global settings
     seed: int = 42
     verbose: bool = True
 
     def __post_init__(self):
-        """Auto-compute derived values."""
-        # Auto-set Hopfield β if not specified
-        # Paper: β = 1/√d where d is embedding dimension
-        # XTTS-2 embedding dim is set after model loading
-        pass
+        # Propagate device preference
+        if hasattr(self.backbone, "device"):
+            pass
 
     @classmethod
     def from_yaml(cls, path: str) -> "FlowEditConfig":
-        """Load configuration from a YAML file."""
+        """Load configuration from YAML file."""
         import yaml
-        with open(path, "r") as f:
+        with open(path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
 
         config = cls()
@@ -193,10 +172,10 @@ class FlowEditConfig:
         return config
 
     def to_yaml(self, path: str) -> None:
-        """Save configuration to a YAML file."""
+        """Save configuration to YAML file."""
         import yaml
         from dataclasses import asdict
 
         data = asdict(self)
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             yaml.dump(data, f, default_flow_style=False, sort_keys=False)

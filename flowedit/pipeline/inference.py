@@ -1,78 +1,47 @@
 """
-FlowEdit Inference Pipeline — Synthesis with Pronunciation Corrections.
+FlowEdit Inference Pipeline — Synthesis with Pronunciation Corrections (arXiv:2606.20518).
 
-Paper Figure 1 (Left): "Inference pipeline. Input text is encoded by a
-frozen Text Encoder and refined by the Hopfield Refiner, which retrieves
-stored corrections via soft attention. The refined embeddings are decoded
-by the frozen DiT."
-
-Flow at inference:
-    text → TextEncoder → c → HopfieldRefiner → ĉ → FrozenDecoder → audio
-
-The HopfieldRefiner applies corrections only when the similarity gate
-activates (cosine similarity exceeds threshold τ). For general text
-without matching corrections, the gate outputs ~0 and the decoder
-receives EXACTLY the same embeddings as the base model.
+Paper Section 3.2 (Stage 3 & Inference):
+    "During inference, text embeddings c are refined using the associative memory:
+     c_hat = c + σ(max_j (β Q K_j^T) - τ) ⊙ Mem(Q)
+     where Mem(Q) = softmax(β Q K^T) V, β = 1/√d."
 """
 
-import torch
-import logging
 import time
-from typing import Optional, Dict, Tuple
+import logging
+from typing import Optional, Dict, Any, Tuple
 from pathlib import Path
+
+import torch
+import soundfile as sf
 
 from flowedit.config import FlowEditConfig
 from flowedit.backbone import create_backbone, F5TTSBackbone
 from flowedit.memory.hopfield_memory import HopfieldMemory
 from flowedit.refiner.hopfield_refiner import HopfieldRefiner
-from flowedit.utils.audio import AudioProcessor
+from flowedit.utils.indic_phonetics import normalize_indic_phonetics
 
 logger = logging.getLogger(__name__)
 
 
 class FlowEditInference:
-    """Production inference pipeline with pronunciation correction.
-
-    This is the deployment-time interface. After corrections have been
-    learned via CorrectionLoop, this class synthesizes speech with those
-    corrections automatically applied.
-
-    Key properties (from paper):
-    - Zero forgetting: general speech quality is IDENTICAL to base model
-    - Fuzzy matching: "Linux" correction partially applies to "Linux's"
-    - Speaker-agnostic: corrections work across all voices
-    - Low latency: retrieval overhead < 35ms for M ≤ 500 corrections
-    """
+    """Production inference pipeline with continuous Hopfield associative pronunciation memory."""
 
     def __init__(self, config: Optional[FlowEditConfig] = None):
-        """Initialize inference pipeline.
-
-        Args:
-            config: FlowEdit configuration
-        """
         self.config = config or FlowEditConfig()
         self.backbone: Optional[F5TTSBackbone] = None
         self.memory: Optional[HopfieldMemory] = None
         self.refiner: Optional[HopfieldRefiner] = None
-        self.audio_processor = AudioProcessor(self.config.audio)
         self._is_ready = False
 
     def load(
         self,
-        memory_path: Optional[str] = None,
         backbone: Optional[F5TTSBackbone] = None,
         memory: Optional[HopfieldMemory] = None,
     ) -> None:
-        """Load models and memory for inference.
+        """Initialize inference pipeline."""
+        logger.info("Initializing FlowEdit inference pipeline...")
 
-        Args:
-            memory_path: Path to saved Hopfield memory file
-            backbone: Optional pre-loaded backbone (avoids reloading)
-            memory: Optional pre-initialized memory (avoids reloading)
-        """
-        logger.info("Loading FlowEdit inference pipeline...")
-
-        # Load backbone
         if backbone is not None:
             self.backbone = backbone
         else:
@@ -81,239 +50,69 @@ class FlowEditInference:
 
         embed_dim = self.backbone.embedding_dim
 
-        # Load memory
         if memory is not None:
             self.memory = memory
         else:
-            self.memory = HopfieldMemory(dim=embed_dim, config=self.config.memory)
-            if memory_path and Path(memory_path).exists():
-                self.memory.load(memory_path)
+            self.memory = HopfieldMemory(self.config.memory, embedding_dim=embed_dim)
 
-        # Initialize refiner
-        self.refiner = HopfieldRefiner(
-            memory=self.memory,
-            config=self.config.memory,
-        )
-        self.refiner = self.refiner.to(self.backbone.device)
-
+        self.refiner = HopfieldRefiner(memory=self.memory, config=self.config.memory)
         self._is_ready = True
+        logger.info(f"✓ Inference pipeline ready. Memory has {self.memory.num_entries} corrections.")
 
-        logger.info(
-            f"Inference pipeline ready. "
-            f"Memory: {self.memory.size} corrections loaded."
-        )
+    def _ensure_ready(self) -> None:
+        if not self._is_ready:
+            self.load()
 
     def synthesize(
         self,
         text: str,
         speaker_wav: str,
         language: str = "en",
+        user_ref_text: Optional[str] = None,
         output_path: Optional[str] = None,
-        return_gate_info: bool = False,
-    ) -> Dict:
-        """Synthesize speech with automatic pronunciation corrections.
-
-        Pipeline:
-            text → encode → refine (Hopfield) → decode (F5-TTS) → audio
+    ) -> Dict[str, Any]:
+        """Synthesize speech with automatic Hopfield memory pronunciation retrieval.
 
         Args:
-            text: Input text to synthesize
-            speaker_wav: Speaker reference audio for voice cloning
+            text: Input carrier sentence
+            speaker_wav: Speaker voice audio
             language: Language code
-            output_path: Optional path to save output audio
-            return_gate_info: If True, include gate analysis in result
+            user_ref_text: Optional speaker text
+            output_path: Optional output .wav path
 
         Returns:
-            Dict with:
-            - 'waveform': Audio tensor [1, T]
-            - 'sample_rate': Sample rate
-            - 'corrections_applied': Number of tokens with active corrections
-            - 'gate_info': Optional gate analysis (if return_gate_info=True)
-            - 'inference_time_ms': Total inference time in milliseconds
+            Dict containing waveform, sample_rate, is_modified, and diagnostics
         """
         self._ensure_ready()
+        t0 = time.time()
 
-        start_time = time.time()
-
-        # Apply Indic phonetic normalizer (e.g. Mrunmayee -> Mroonmayee)
-        from flowedit.utils.indic_phonetics import normalize_indic_phonetics
         text = normalize_indic_phonetics(text)
+        speaker_conditioning = self.backbone.get_speaker_embedding(
+            speaker_wav, language=language, ref_text=user_ref_text
+        )
 
-        # Step 1: Encode text → c
-        with torch.no_grad():
-            text_embeddings = self.backbone.encode_text(text, language)
-            # text_embeddings: [1, seq_len, dim]
-
-        # Step 2: Refine via HopfieldRefiner → ĉ
-        # This is where corrections are applied (or passed through)
-        with torch.no_grad():
-            def token_locator(prefix_str):
-                # Returns the number of tokens in the prefix string
-                tokens = self.backbone.get_token_ids(prefix_str, language)
-                return tokens.shape[1]
-                
-            refined_embeddings, gate_values = self.refiner(
-                text_embeddings, 
-                text=text,
-                token_locator=token_locator,
-            )
-
-        # Count active corrections
-        corrections_applied = (gate_values > 0.5).sum().item()
-
-        if corrections_applied > 0:
-            logger.info(
-                f"Applied corrections to {corrections_applied} tokens "
-                f"(max gate: {gate_values.max().item():.3f})"
-            )
-        else:
-            logger.debug("No corrections applied (all gates < 0.5)")
-
-        # Step 3: Decode with F5-TTS → audio
-        speaker_conditioning = self.backbone.get_speaker_embedding(speaker_wav)
-
-        waveform, sr = self.backbone.synthesize_from_embeddings(
-            text_embeddings=refined_embeddings,
+        # Refine text embeddings and synthesize
+        refine_res = self.refiner(
+            backbone=self.backbone,
+            text=text,
             speaker_conditioning=speaker_conditioning,
-            text=text,
             language=language,
+            user_ref_text=user_ref_text,
         )
 
-        inference_time_ms = (time.time() - start_time) * 1000
-
-        # Save if output path specified
-        if output_path:
-            self.audio_processor.save_audio(
-                waveform,
-                output_path,
-                sr,
-            )
-            logger.info(f"Audio saved to {output_path}")
-
-        result = {
-            "waveform": waveform,
-            "sample_rate": self.config.audio.sample_rate,
-            "corrections_applied": int(corrections_applied),
-            "inference_time_ms": inference_time_ms,
-        }
-
-        # Optional gate analysis
-        if return_gate_info:
-            result["gate_info"] = self.refiner.get_gate_analysis(
-                text_embeddings.squeeze(0)
-            )
-
-        return result
-
-    def synthesize_baseline(
-        self,
-        text: str,
-        speaker_wav: str,
-        language: str = "en",
-        output_path: Optional[str] = None,
-    ) -> Dict:
-        """Synthesize WITHOUT corrections (baseline comparison).
-
-        Useful for A/B testing and verifying zero forgetting.
-
-        Args:
-            text: Input text
-            speaker_wav: Speaker reference
-            language: Language code
-            output_path: Optional output path
-
-        Returns:
-            Dict with waveform and metadata
-        """
-        self._ensure_ready()
-
-        start_time = time.time()
-
-        waveform = self.backbone.synthesize_direct(
-            text=text,
-            speaker_wav=speaker_wav,
-            language=language,
-        )
-
-        inference_time_ms = (time.time() - start_time) * 1000
+        waveform = refine_res.waveform
+        sr = refine_res.sample_rate
 
         if output_path:
-            self.audio_processor.save_audio(
-                waveform, output_path, self.config.audio.sample_rate
-            )
+            sf.write(output_path, waveform.squeeze().cpu().numpy(), sr)
+            logger.info(f"Saved synthesized audio to {output_path}")
+
+        elapsed_ms = (time.time() - t0) * 1000.0
 
         return {
             "waveform": waveform,
-            "sample_rate": self.config.audio.sample_rate,
-            "corrections_applied": 0,
-            "inference_time_ms": inference_time_ms,
+            "sample_rate": sr,
+            "is_modified": refine_res.is_modified,
+            "inference_time_ms": elapsed_ms,
+            "diagnostics": refine_res.diagnostics,
         }
-
-    def compare(
-        self,
-        text: str,
-        speaker_wav: str,
-        language: str = "en",
-        output_dir: Optional[str] = None,
-    ) -> Dict:
-        """Generate both corrected and baseline audio for comparison.
-
-        Paper Table 1 compares these to show zero forgetting on general speech.
-
-        Args:
-            text: Input text
-            speaker_wav: Speaker reference
-            language: Language code
-            output_dir: Optional directory to save both versions
-
-        Returns:
-            Dict with both 'corrected' and 'baseline' results
-        """
-        corrected_path = None
-        baseline_path = None
-
-        if output_dir:
-            output_dir = Path(output_dir)
-            output_dir.mkdir(parents=True, exist_ok=True)
-            corrected_path = str(output_dir / "corrected.wav")
-            baseline_path = str(output_dir / "baseline.wav")
-
-        corrected = self.synthesize(
-            text=text,
-            speaker_wav=speaker_wav,
-            language=language,
-            output_path=corrected_path,
-            return_gate_info=True,
-        )
-
-        baseline = self.synthesize_baseline(
-            text=text,
-            speaker_wav=speaker_wav,
-            language=language,
-            output_path=baseline_path,
-        )
-
-        return {
-            "corrected": corrected,
-            "baseline": baseline,
-            "text": text,
-        }
-
-    def reload_memory(self, memory_path: str) -> None:
-        """Hot-reload memory from disk without restarting.
-
-        Useful for adding corrections while the inference server is running.
-
-        Args:
-            memory_path: Path to updated memory file
-        """
-        self._ensure_ready()
-        self.memory.load(memory_path)
-        logger.info(f"Memory reloaded: {self.memory.size} corrections")
-
-    def _ensure_ready(self) -> None:
-        """Ensure pipeline is loaded and ready."""
-        if not self._is_ready:
-            raise RuntimeError(
-                "Inference pipeline not ready. Call inference.load() first."
-            )

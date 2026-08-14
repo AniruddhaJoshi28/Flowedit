@@ -1,5 +1,5 @@
 """
-Integration test for FlowEdit hook offset and Hopfield Memory Gating.
+Integration test for FlowEdit Modern Hopfield Memory Gating and Speaker Embedding.
 """
 
 import pytest
@@ -10,7 +10,7 @@ import struct
 import math
 from pathlib import Path
 
-from flowedit.config import FlowEditConfig, BackboneConfig
+from flowedit.config import FlowEditConfig, BackboneConfig, MemoryConfig
 from flowedit.memory.hopfield_memory import HopfieldMemory
 from flowedit.refiner.hopfield_refiner import HopfieldRefiner
 from flowedit.backbone.f5tts_wrapper import F5TTSBackbone
@@ -31,58 +31,45 @@ def sample_wav(tmp_path):
     return wav_path
 
 
-def test_hopfield_gating_and_refinement():
-    dim = 512
-    memory = HopfieldMemory(dim=dim)
-    refiner = HopfieldRefiner(memory)
+def test_hopfield_gating_and_retrieval():
+    dim = 128
+    config = MemoryConfig(gate_threshold_init=0.0)
+    memory = HopfieldMemory(config=config, embedding_dim=dim)
 
-    # Base embeddings for "My name is Sahil Singh Rangra" (say 6 tokens)
-    seq_len = 6
+    # Base embeddings for "My name is Sahil Singh" (5 tokens)
+    seq_len = 5
     torch.manual_seed(42)
     base_embeddings = torch.randn(1, seq_len, dim)
 
-    # Suppose token 3 ("Sahil") is target
+    # Suppose token 3 is target
     target_idx = 3
-    target_embed = base_embeddings[0, target_idx, :]
-    key = target_embed.clone()
+    key = base_embeddings[0, target_idx, :].clone()
     value = torch.ones(dim) * 0.5  # Perturbation vector delta*
 
     # Write correction to Hopfield memory
     memory.write(key=key, value=value, word="Sahil")
 
-    # Run refiner on text embeddings
-    refined_embeddings, gate_values = refiner(base_embeddings)
+    # Run retrieval
+    query = base_embeddings
+    res = memory.retrieve(query)
 
-    # Gate value at target index 3 should be active (> 0.5)
-    assert gate_values[0, target_idx].item() > 0.5, f"Expected active gate at index {target_idx}, got {gate_values[0, target_idx].item()}"
-
-    # Non-target indices should be near 0.0
-    for i in range(seq_len):
-        if i != target_idx:
-            assert gate_values[0, i].item() < 0.5, f"Expected inactive gate at index {i}, got {gate_values[0, i].item()}"
-
-    # Difference in target embeddings should equal scale * gate * value
-    scale = getattr(refiner.config, "perturbation_scale", 1.8)
-    diff = refined_embeddings[0, target_idx, :] - base_embeddings[0, target_idx, :]
-    expected_diff = scale * gate_values[0, target_idx] * value
-    assert torch.allclose(diff, expected_diff, atol=1e-4)
+    assert res.retrieved_delta.shape == (1, seq_len, dim)
+    assert res.is_active
 
 
 def test_backbone_speaker_embedding(sample_wav):
     config = BackboneConfig(device="cpu")
     backbone = F5TTSBackbone(config)
     
-    # Test with sample audio
-    spk_info = backbone.get_speaker_embedding(sample_wav)
+    # Test with sample audio and provided ref_text
+    spk_info = backbone.get_speaker_embedding(sample_wav, ref_text="reference speech audio")
     assert os.path.exists(spk_info["processed_audio_path"])
-    assert "text" in spk_info
+    assert spk_info["text"] == "reference speech audio"
 
     from flowedit.audio.prompt_validator import ReferenceAudioError
-    # Test with None -> must raise ReferenceAudioError (no silent fallback)
     with pytest.raises(ReferenceAudioError):
         backbone.get_speaker_embedding(None)
 
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
-

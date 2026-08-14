@@ -1,31 +1,23 @@
 """
-Correction Loop — Full FlowEdit Correction Pipeline.
+Correction Loop — Full FlowEdit Correction Pipeline (arXiv:2606.20518).
 
-Orchestrates the three stages of FlowEdit into a single workflow:
+Orchestrates the three stages of FlowEdit:
     Stage 1: Detection & Grounding (Whisper forced alignment)
-    Stage 2: Latent Input Optimization (optimize δ*)
-    Stage 3: Associative Memory Write (store in Hopfield memory)
-
-Paper Figure 1 (Right): "Correction loop. User reference audio triggers
-forced alignment, optimization of δ*, and a memory write to the Hopfield
-memory."
-
-Usage:
-    loop = CorrectionLoop(config)
-    loop.load_models()
-    result = loop.correct(
-        text="My friend Siobhan is visiting",
-        target_word="Siobhan",
-        ref_audio_path="./siobhan_correct.wav",
-    )
+    Stage 2: Latent Input Optimization (50-step Adam optimization of perturbation δ*)
+    Stage 3: Associative Memory Storage (Continuous Modern Hopfield Network)
 """
 
-import torch
-import logging
 import time
+import os
+import tempfile
+import logging
 from dataclasses import dataclass
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Any
 from pathlib import Path
+
+import torch
+import soundfile as sf
+import librosa
 
 from flowedit.config import FlowEditConfig
 from flowedit.backbone import create_backbone
@@ -33,13 +25,15 @@ from flowedit.backbone.base import TTSBackbone
 from flowedit.alignment.whisper_aligner import WhisperAligner, AlignmentResult
 from flowedit.optimizer.latent_optimizer import LatentOptimizer, OptimizationResult
 from flowedit.memory.hopfield_memory import HopfieldMemory
+from flowedit.memory.candidate_validator import CandidateValidator
+from flowedit.utils.indic_phonetics import normalize_indic_phonetics
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class CorrectionResult:
-    """Result of a complete correction operation."""
+    """Result of a complete FlowEdit correction operation."""
     success: bool
     word: str
     alignment: Optional[AlignmentResult]
@@ -51,150 +45,94 @@ class CorrectionResult:
 
 
 class CorrectionLoop:
-    """Orchestrates the full FlowEdit correction pipeline."""
+    """Orchestrates the end-to-end FlowEdit correction pipeline."""
 
     def __init__(self, config: Optional[FlowEditConfig] = None):
         self.config = config or FlowEditConfig()
-
-        # Component instances
         self.backbone: Optional[TTSBackbone] = None
-        self.backbones: Dict[str, TTSBackbone] = {}
         self.aligner: Optional[WhisperAligner] = None
         self.optimizer: Optional[LatentOptimizer] = None
         self.memory: Optional[HopfieldMemory] = None
-
         self._models_loaded = False
 
-    def get_backbone(self) -> TTSBackbone:
-        """Get or lazily load the F5-TTS backbone instance."""
-        key = "f5tts"
-        if key in self.backbones:
-            return self.backbones[key]
-
-        logger.info(f"Loading requested backbone: {key.upper()}...")
-        self.config.backbone.backbone_type = key
-        bb = create_backbone(self.config.backbone)
-        bb.load_model()
-        self.backbones[key] = bb
-
-        if self.backbone is None:
-            self.backbone = bb
-
-        return bb
-
-    def load_models(self, memory_path: Optional[str] = None) -> None:
-        """Load default models and initialize components."""
+    def load_models(self) -> None:
+        """Initialize and load all FlowEdit models."""
         logger.info("=" * 60)
-        logger.info("Loading FlowEdit correction pipeline...")
+        logger.info("Initializing FlowEdit Pipeline (arXiv:2606.20518)...")
         logger.info("=" * 60)
+        t0 = time.time()
 
-        start_time = time.time()
+        # 1. Flow-Matching DiT Backbone
+        self.backbone = create_backbone(self.config.backbone)
+        self.backbone.load_model()
 
-        # 1. Load primary backbone
-        primary_type = "f5tts"
-        logger.info(f"[1/4] Loading default backbone ({primary_type.upper()})...")
-        self.backbone = self.get_backbone()
-
-        # 2. Load Whisper aligner
-        logger.info("[2/4] Loading Whisper aligner...")
+        # 2. Whisper Aligner
         self.aligner = WhisperAligner(self.config.alignment)
         self.aligner.load_model()
 
-        # 3. Initialize optimizer
-        logger.info("[3/4] Initializing latent optimizer...")
-        self.optimizer = LatentOptimizer(
-            self.config.optimization,
-            self.config.audio,
-        )
+        # 3. Latent Optimizer
+        self.optimizer = LatentOptimizer(self.config.optimization, self.config.audio)
 
-        # 4. Initialize or load Hopfield memory
-        logger.info("[4/4] Initializing Hopfield memory...")
+        # 4. Modern Hopfield Memory
         embed_dim = self.backbone.embedding_dim
-        self.memory = HopfieldMemory(dim=embed_dim, config=self.config.memory)
+        self.memory = HopfieldMemory(self.config.memory, embedding_dim=embed_dim)
 
-        if memory_path and Path(memory_path).exists():
-            try:
-                self.memory.load(memory_path)
-                logger.info(f"Loaded existing memory: {self.memory.size} corrections")
-            except ValueError as e:
-                logger.warning(f"Failed to load memory: {e}. Starting fresh.")
-
-        elapsed = time.time() - start_time
         self._models_loaded = True
+        logger.info(f"✓ FlowEdit Pipeline ready in {time.time() - t0:.2f}s (Embedding dim d={embed_dim})")
 
-        logger.info("=" * 60)
-        logger.info(f"FlowEdit pipeline ready in {elapsed:.1f}s")
-        logger.info(f"  Primary Backbone: {primary_type.upper()} (dim={embed_dim})")
-        logger.info(f"  Memory: {self.memory.size}/{self.config.memory.max_entries}")
-        logger.info("=" * 60)
+    def _ensure_loaded(self) -> None:
+        if not self._models_loaded:
+            self.load_models()
 
     def correct(
         self,
         text: str,
         target_word: str,
         ref_audio_path: str,
-        speaker_wav: Optional[str] = None,
+        speaker_wav: str,
         language: str = "en",
+        user_ref_text: Optional[str] = None,
+        occurrence_index: int = 0,
     ) -> CorrectionResult:
-        """Learn a pronunciation correction from reference audio.
-
-        This runs the full FlowEdit correction loop:
-        1. Whisper forced alignment to find target word boundaries
-        2. Optimize perturbation δ* to match reference pronunciation
-        3. Store correction in Hopfield memory
-
-        Paper: "Corrections complete in approximately 15 seconds on a single GPU."
+        """Learn and store a pronunciation correction from reference audio.
 
         Args:
-            text: Text containing the target word (e.g., "My friend Siobhan")
-            target_word: The word to correct (e.g., "Siobhan")
-            ref_audio_path: Path to reference audio with correct pronunciation
-            speaker_wav: Optional speaker reference for F5-TTS voice conditioning.
-                         If None, uses the ref_audio as speaker reference too.
+            text: Full carrier sentence containing target word
+            target_word: Target word to correct
+            ref_audio_path: Path to audio with target pronunciation
+            speaker_wav: Speaker voice audio for conditioning
             language: Language code
+            user_ref_text: Optional reference text
+            occurrence_index: Index if target word occurs multiple times
 
         Returns:
-            CorrectionResult with all pipeline outputs
+            CorrectionResult
         """
         self._ensure_loaded()
-        bb = self.get_backbone()
+        t_start = time.time()
 
-        start_time = time.time()
-
-        # Apply Indic phonetic normalizer (e.g. Mrunmayee -> Mroonmayee to prevent BPE 'Mr.' abbreviation distortion)
-        from flowedit.utils.indic_phonetics import normalize_indic_phonetics
+        # Normalize text and target word
         text = normalize_indic_phonetics(text)
-        
-        # Isolate target_word if a multi-word string was passed (e.g. "Mrunmayee Sakharwade" -> "Mrunmayee")
-        target_words_list = target_word.strip().split()
-        primary_target_word = target_words_list[0] if target_words_list else target_word
+        clean_target = target_word.strip()
+        if not clean_target:
+            raise ValueError("target_word cannot be empty.")
+
+        primary_target_word = clean_target.split()[0]
+        if primary_target_word.lower() not in text.lower():
+            raise ValueError(f"Target word '{primary_target_word}' not found in sentence: '{text}'")
 
         logger.info(f"\n{'='*60}")
-        logger.info(f"CORRECTION: '{primary_target_word}' (full target: '{target_word}') in \"{text}\" (Backbone: F5TTS)")
-        logger.info(f"Reference: {ref_audio_path}")
+        logger.info(f"FlowEdit Correction: '{primary_target_word}' in \"{text}\"")
+        logger.info(f"Ref Audio: {ref_audio_path} | Speaker: {speaker_wav}")
         logger.info(f"{'='*60}")
 
         try:
-            # ════════════════════════════════════════════
-            # Stage 1: Detection & Grounding
-            # ════════════════════════════════════════════
-            logger.info("\n▶ STAGE 1: Detection & Grounding (Whisper Alignment)")
-
-            # Offload backbone to CPU while running Whisper aligner
-            if bb is not None and getattr(bb, 'model', None) is not None and hasattr(bb.model, 'to'):
-                bb.model.to("cpu")
-                    
-            whisper_device = "cuda" if torch.cuda.is_available() else "cpu"
-            if self.aligner is not None and getattr(self.aligner, '_model', None) is not None:
-                if hasattr(self.aligner._model, 'to'):
-                    self.aligner._model.to(whisper_device)
-            torch.cuda.empty_cache()
-
-            # Dynamically determine if the reference audio is just a single word
-            import librosa
-            audio_duration = librosa.get_duration(path=ref_audio_path)
-            is_word_only = audio_duration < 2.0
-            logger.info(f"Ref audio duration: {audio_duration:.2f}s, treating as word-only: {is_word_only}")
+            # ─────────────────────────────────────────────────────────────
+            # Stage 1: Detection & Grounding (Whisper Alignment)
+            # ─────────────────────────────────────────────────────────────
+            logger.info("▶ Stage 1: Whisper Forced Alignment")
+            ref_dur = librosa.get_duration(path=ref_audio_path)
+            is_word_only = ref_dur < 2.0
 
             alignment = self.aligner.align(
                 audio_path=ref_audio_path,
@@ -204,114 +142,68 @@ class CorrectionLoop:
                 ref_is_word_only=is_word_only,
             )
 
-            # Map word boundaries to token indices using requested backbone tokenizer
             alignment = self.aligner.map_to_token_indices(
                 alignment=alignment,
                 full_text=text,
                 target_word=primary_target_word,
-                tokenizer=getattr(bb, "tokenizer", None) or getattr(bb.model, "tokenizer", None),
+                tokenizer=self.backbone.tokenizer,
                 language=language,
+                occurrence_index=occurrence_index,
             )
 
             logger.info(
-                f"  ✓ Aligned '{primary_target_word}' → tokens {alignment.token_indices} "
-                f"({alignment.start_time:.2f}s - {alignment.end_time:.2f}s, "
-                f"conf={alignment.confidence:.2f})"
+                f"  ✓ Aligned '{primary_target_word}' → Tokens I: {alignment.token_indices} "
+                f"({alignment.start_time:.2f}s - {alignment.end_time:.2f}s, Conf={alignment.confidence:.2f})"
             )
 
             if not alignment.token_indices:
                 return CorrectionResult(
                     success=False,
-                    word=target_word,
+                    word=primary_target_word,
                     alignment=alignment,
                     optimization=None,
                     memory_index=None,
-                    wall_clock_seconds=time.time() - start_time,
-                    memory_size=self.memory.size,
-                    error_message="No token indices found for target word",
+                    wall_clock_seconds=time.time() - t_start,
+                    memory_size=self.memory.num_entries,
+                    error_message="Could not resolve token indices for target word",
                 )
 
-            # ════════════════════════════════════════════
-            # Stage 2: Latent Input Optimization
-            # ════════════════════════════════════════════
-            logger.info(f"\n▶ STAGE 2: Latent Input Optimization via {bb.optimization_mode}")
-
-            if self.aligner is not None and getattr(self.aligner, '_model', None) is not None:
-                if hasattr(self.aligner._model, 'to'):
-                    self.aligner._model.to("cpu")
-                
-            backbone_device = getattr(bb, 'device', "cuda" if torch.cuda.is_available() else "cpu")
-            if bb is not None and getattr(bb, 'model', None) is not None and hasattr(bb.model, 'to'):
-                bb.model.to(backbone_device)
-            torch.cuda.empty_cache()
-
-            if not speaker_wav:
-                logger.info("speaker_wav not provided; defaulting to ref_audio_path for speaker conditioning.")
-                speaker_path = ref_audio_path
-            else:
-                speaker_path = speaker_wav
-            provided_ref_text = None
-            
-            speaker_conditioning = bb.get_speaker_embedding(
-                speaker_path, 
-                language,
-                ref_text=provided_ref_text
+            # Extract speaker conditioning
+            speaker_conditioning = self.backbone.get_speaker_embedding(
+                speaker_wav, language=language, ref_text=user_ref_text
             )
 
-            # Phase 5a (Mandatory): Find fixed target sample indices from baseline synthesis
-            import tempfile
-            import os
-            import soundfile as sf
-            
-            logger.info("\n▶ STAGE 1b: Target Audio Extraction (Baseline Alignment)")
-            
+            # Align baseline synthesis to find target word sample boundaries in carrier audio
             with torch.no_grad():
-                baseline_wav, sr = bb.synthesize_direct(
+                baseline_wav, sr = self.backbone.synthesize_direct(
                     text=text,
                     speaker_conditioning=speaker_conditioning,
                     language=language,
-                    user_ref_text=provided_ref_text,
-                    cfg_strength=2.0, # Must use a normal CFG so WhisperX can actually understand and align the audio
+                    user_ref_text=user_ref_text,
                 )
-                
-            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_base:
-                tmp_base_path = tmp_base.name
-            sf.write(tmp_base_path, baseline_wav.squeeze().cpu().numpy(), sr)
-            
-            # Align baseline synthesis
-            whisper_device = "cuda" if torch.cuda.is_available() else "cpu"
-            if self.aligner is not None and getattr(self.aligner, '_model', None) is not None:
-                if hasattr(self.aligner._model, 'to'):
-                    self.aligner._model.to(whisper_device)
-            torch.cuda.empty_cache()
-            
-            baseline_alignment = self.aligner.align(
-                audio_path=tmp_base_path,
+
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_f:
+                tmp_path = tmp_f.name
+            sf.write(tmp_path, baseline_wav.squeeze().cpu().numpy(), sr)
+
+            baseline_align = self.aligner.align(
+                audio_path=tmp_path,
                 target_word=primary_target_word,
                 full_text=text,
                 language=language,
                 ref_is_word_only=False,
             )
-            
-            os.remove(tmp_base_path)
-            
-            # We only need start_time and end_time (sample boundaries) from baseline alignment, not token_indices.
-                
-            target_start_sample = int(baseline_alignment.start_time * sr)
-            target_end_sample = int(baseline_alignment.end_time * sr)
-            
-            logger.info(f"  ✓ Target word in baseline synthesis: {baseline_alignment.start_time:.2f}s - {baseline_alignment.end_time:.2f}s "
-                        f"(samples {target_start_sample}:{target_end_sample})")
+            os.remove(tmp_path)
 
-            if self.aligner is not None and getattr(self.aligner, '_model', None) is not None:
-                if hasattr(self.aligner._model, 'to'):
-                    self.aligner._model.to("cpu")
-            if bb is not None and getattr(bb, 'model', None) is not None and hasattr(bb.model, 'to'):
-                bb.model.to(backbone_device)
-            torch.cuda.empty_cache()
+            target_start_sample = int(baseline_align.start_time * sr)
+            target_end_sample = int(baseline_align.end_time * sr)
 
+            # ─────────────────────────────────────────────────────────────
+            # Stage 2: Latent Input Optimization
+            # ─────────────────────────────────────────────────────────────
+            logger.info("▶ Stage 2: Latent Input Optimization (50 Adam steps)")
             optimization = self.optimizer.optimize(
-                backbone=bb,
+                backbone=self.backbone,
                 text=text,
                 target_word=primary_target_word,
                 ref_audio_path=ref_audio_path,
@@ -320,138 +212,77 @@ class CorrectionLoop:
                 language=language,
                 target_word_start_sample=target_start_sample,
                 target_word_end_sample=target_end_sample,
+                ref_start_time=getattr(alignment, "start_time", None),
+                ref_end_time=getattr(alignment, "end_time", None),
             )
 
-            logger.info(
-                f"  ✓ Optimization complete: loss={optimization.final_loss:.4f}, "
-                f"converged={optimization.converged}, "
-                f"δ_target norm={optimization.delta_norm:.4f}, "
-                f"rel_ratio={optimization.relative_delta_ratio:.4f}"
-            )
-
-            # ════════════════════════════════════════════
             # Candidate Validation Gate
-            # ════════════════════════════════════════════
-            from flowedit.memory.candidate_validator import CandidateValidator
-            validator = CandidateValidator(max_relative_delta=0.15)
-            val_result = validator.validate(
+            validator = CandidateValidator(max_relative_delta=self.config.optimization.max_relative_delta)
+            val_res = validator.validate(
                 optimization_result=optimization,
                 word=primary_target_word,
                 initial_loss=optimization.initial_loss,
                 final_loss=optimization.final_loss,
             )
 
-            if not val_result.accepted:
-                logger.warning(f"  ✗ Candidate correction for '{primary_target_word}' REJECTED: {val_result.reason}")
+            if not val_res.accepted:
+                logger.warning(f"  ✗ Correction REJECTED: {val_res.reason}")
                 return CorrectionResult(
                     success=False,
                     word=primary_target_word,
                     alignment=alignment,
                     optimization=optimization,
                     memory_index=None,
-                    wall_clock_seconds=time.time() - start_time,
-                    memory_size=len(self.memory.keys),
-                    error_message=val_result.reason,
+                    wall_clock_seconds=time.time() - t_start,
+                    memory_size=self.memory.num_entries,
+                    error_message=val_res.reason,
                 )
 
-            # ════════════════════════════════════════════
-            # Stage 3: Memory Write
-            # ════════════════════════════════════════════
-            logger.info("\n▶ STAGE 3: Memory Write (Hopfield Network)")
-
-            # Compute key: pool(c_I) — average text embedding of target tokens
+            # ─────────────────────────────────────────────────────────────
+            # Stage 3: Associative Memory Storage (Modern Hopfield Network)
+            # ─────────────────────────────────────────────────────────────
+            logger.info("▶ Stage 3: Modern Hopfield Associative Memory Write")
             with torch.no_grad():
-                base_embeddings = bb.encode_text(text, language)
-                target_embeddings = base_embeddings[0, alignment.token_indices, :]
-                key = target_embeddings.mean(dim=0)
+                base_embeddings = self.backbone.encode_text(text, language)
+                key = self.memory.compute_context_key(base_embeddings, alignment.token_indices)
 
-                # Get context embeddings for homograph disambiguation
-                context_start = max(0, min(alignment.token_indices) - self.config.memory.context_window)
-                context_end = min(
-                    base_embeddings.shape[1],
-                    max(alignment.token_indices) + self.config.memory.context_window + 1
-                )
-                context_embeddings = base_embeddings[0, context_start:context_end, :]
-                
-                # The mean index of the target word within the context slice
-                target_mean_idx = sum(alignment.token_indices) // len(alignment.token_indices)
-                target_index_in_context = target_mean_idx - context_start
+            value = optimization.delta_pooled
 
-            # Value: pool(δ*_I) — pooled perturbation vector V_i ∈ R^d
-            value = optimization.delta_pooled.squeeze()
-
-            memory_index = self.memory.write(
+            mem_idx, action = self.memory.write(
                 key=key,
                 value=value,
                 word=primary_target_word,
-                context_embeddings=context_embeddings,
-                target_index_in_context=target_index_in_context,
+                carrier_text=text,
+                token_indices=alignment.token_indices,
+                language=language,
             )
 
-            logger.info(
-                f"  ✓ Stored at memory index {memory_index} "
-                f"({self.memory.size}/{self.config.memory.max_entries})"
-            )
-
-            # ════════════════════════════════════════════
-            # Summary
-            # ════════════════════════════════════════════
-            elapsed = time.time() - start_time
-
+            elapsed = time.time() - t_start
             logger.info(f"\n{'='*60}")
-            logger.info(f"CORRECTION COMPLETE: '{target_word}'")
-            logger.info(f"  Wall-clock time: {elapsed:.1f}s")
-            logger.info(f"  Final loss: {optimization.final_loss:.4f}")
-            logger.info(f"  Memory: {self.memory.size} corrections stored")
+            logger.info(f"✓ FLOWEDIT CORRECTION SUCCESS: '{primary_target_word}' in {elapsed:.2f}s")
+            logger.info(f"  Memory Action: {action.upper()} at index {mem_idx} | Total: {self.memory.num_entries}")
             logger.info(f"{'='*60}\n")
 
             return CorrectionResult(
                 success=True,
-                word=target_word,
+                word=primary_target_word,
                 alignment=alignment,
                 optimization=optimization,
-                memory_index=memory_index,
+                memory_index=mem_idx,
                 wall_clock_seconds=elapsed,
-                memory_size=self.memory.size,
+                memory_size=self.memory.num_entries,
             )
 
         except Exception as e:
-            elapsed = time.time() - start_time
-            logger.error(f"Correction failed for '{target_word}': {e}", exc_info=True)
-
+            elapsed = time.time() - t_start
+            logger.error(f"Correction failed for '{primary_target_word}': {e}", exc_info=True)
             return CorrectionResult(
                 success=False,
-                word=target_word,
+                word=primary_target_word,
                 alignment=None,
                 optimization=None,
                 memory_index=None,
                 wall_clock_seconds=elapsed,
-                memory_size=self.memory.size if self.memory else 0,
+                memory_size=self.memory.num_entries if self.memory else 0,
                 error_message=str(e),
-            )
-
-    def save_memory(self, path: str) -> None:
-        """Save current memory state to disk.
-
-        Args:
-            path: File path for memory persistence
-        """
-        self._ensure_loaded()
-        self.memory.save(path)
-
-    def list_corrections(self) -> List[Dict]:
-        """List all stored corrections.
-
-        Returns:
-            List of correction metadata dicts
-        """
-        if self.memory is None:
-            return []
-        return self.memory.list_corrections()
-
-    def _ensure_loaded(self) -> None:
-        """Ensure all models are loaded."""
-        if not self._models_loaded:
-            raise RuntimeError(
-                "Models not loaded. Call correction_loop.load_models() first."
             )

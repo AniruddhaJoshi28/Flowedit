@@ -97,12 +97,14 @@ class AudioProcessor:
         self,
         waveform: torch.Tensor,
         normalize: bool = True,
+        n_mels: Optional[int] = None,
     ) -> torch.Tensor:
         """Compute mel-spectrogram from waveform.
 
         Args:
             waveform: Audio tensor [batch, T] or [1, T]
             normalize: If True, apply log scaling and normalization.
+            n_mels: Optional override for number of mel channels.
 
         Returns:
             Mel-spectrogram tensor [batch, n_mels, time_frames]
@@ -110,7 +112,19 @@ class AudioProcessor:
         if waveform.dim() == 1:
             waveform = waveform.unsqueeze(0)
 
-        mel_transform = self.mel_transform.to(waveform.device)
+        n_mels_val = n_mels or self.config.n_mels
+        mel_transform = torchaudio.transforms.MelSpectrogram(
+            sample_rate=self.config.sample_rate,
+            n_fft=self.config.n_fft,
+            hop_length=self.config.hop_length,
+            win_length=self.config.win_length,
+            n_mels=n_mels_val,
+            f_min=self.config.fmin,
+            f_max=self.config.fmax,
+            power=2.0,
+            normalized=False,
+        ).to(waveform.device)
+
         mel = mel_transform(waveform)
 
         if normalize:

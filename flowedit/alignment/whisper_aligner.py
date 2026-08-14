@@ -39,6 +39,8 @@ class AlignmentResult:
         confidence: Alignment confidence score
         word: The matched word text
         full_transcript: Full whisper transcript for verification
+        char_start: Character start index of matched word in text
+        char_end: Character end index of matched word in text
     """
     token_indices: List[int]
     start_time: float
@@ -46,6 +48,8 @@ class AlignmentResult:
     confidence: float
     word: str
     full_transcript: str
+    char_start: Optional[int] = None
+    char_end: Optional[int] = None
 
     @property
     def duration(self) -> float:
@@ -282,6 +286,7 @@ class WhisperAligner:
         target_word: str,
         tokenizer,
         language: str = "en",
+        occurrence_index: int = 0,
     ) -> AlignmentResult:
         """Map word-level alignment to XTTS-2 token indices.
 
@@ -294,10 +299,13 @@ class WhisperAligner:
             target_word: The target word
             tokenizer: XTTS-2 tokenizer instance
             language: Language code
+            occurrence_index: 0-based occurrence index if multiple occurrences exist
 
         Returns:
             Updated AlignmentResult with token_indices populated
         """
+        import re
+
         # Tokenize the full text
         all_token_ids = tokenizer.encode(full_text, lang=language)
         if isinstance(all_token_ids, torch.Tensor):
@@ -310,20 +318,33 @@ class WhisperAligner:
         target_norm = normalize_indic_phonetics(target_word).lower()
         text_norm = normalize_indic_phonetics(full_text).lower()
 
-        # Primary search: normalized exact string match
-        char_start = text_norm.find(target_norm)
+        # Primary search: word boundary occurrences
+        wb_matches = [m.span() for m in re.finditer(r'\b' + re.escape(target_norm) + r'\b', text_norm)]
+        if not wb_matches:
+            # Substring occurrences
+            wb_matches = [m.span() for m in re.finditer(re.escape(target_norm), text_norm)]
 
-        if char_start == -1:
+        if wb_matches:
+            chosen_idx = min(occurrence_index, len(wb_matches) - 1)
+            char_start, char_end = wb_matches[chosen_idx]
+        else:
             # Secondary search: clean alphanumeric matching
             target_clean = self._normalize_word(target_word)
             text_clean = self._normalize_word(full_text)
-            char_start = text_clean.find(target_clean)
+            clean_matches = [m.span() for m in re.finditer(re.escape(target_clean), text_clean)]
+            if clean_matches:
+                chosen_idx = min(occurrence_index, len(clean_matches) - 1)
+                char_start, char_end = clean_matches[chosen_idx]
+            else:
+                char_start = -1
+                char_end = -1
 
         if char_start == -1:
             # Tertiary search: partial prefix match
             for i in range(len(text_norm)):
                 if text_norm[i:].startswith(target_norm[:3]):
                     char_start = i
+                    char_end = char_start + len(target_norm)
                     break
 
         if char_start == -1:
@@ -339,14 +360,16 @@ class WhisperAligner:
                 max(0, mid - num_target_tokens // 2),
                 min(total_tokens, mid + (num_target_tokens + 1) // 2)
             ))
+            alignment.char_start = None
+            alignment.char_end = None
         else:
-            char_end = char_start + len(target_norm)
-
             # Map character positions to token positions
             token_indices = self._chars_to_token_indices(
                 all_token_ids, tokenizer, full_text,
                 char_start, char_end, language
             )
+            alignment.char_start = char_start
+            alignment.char_end = char_end
 
         # Expand by ±1 token (paper specification)
         expand = self.config.token_expand
