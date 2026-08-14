@@ -13,3 +13,5 @@ def create_backbone(config=None) -> TTSBackbone:
     """
     return F5TTSBackbone(config)
 
+
+__all__ = ["TTSBackbone", "F5TTSBackbone", "create_backbone"]
