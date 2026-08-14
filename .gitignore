@@ -1,0 +1,52 @@
+# ==============================================================================
+# FlowEdit Git Ignore Rules for IIT Server Deployment
+# ==============================================================================
+
+# ── 1. Python Cache & Virtual Environments ────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+env/
+ENV/
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+.eggs/
+
+# ── 2. Training Artifacts & Large Checkpoint Outputs ──────────────────────────
+# Generated datasets and training output directories
+formatted_dataset/
+finetune_output/
+dataset_output/
+checkpoints/
+
+# Model checkpoint weight files (large binaries)
+*.pth
+*.pt
+*.ckpt
+*.bin
+*.safetensors
+*.onnx
+
+# Exception: keep lightweight XTTS JSON configuration & vocabulary files
+!flowedit/Xtts/*.json
+
+# ── 3. Audio Outputs & Logs ──────────────────────────────────────────────────
+*.wav
+*.mp3
+*.flac
+*.ogg
+*.log
+*.tmp
+
+# ── 4. OS & IDE Metadata ──────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+temp_packages/
