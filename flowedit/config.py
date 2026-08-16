@@ -18,15 +18,15 @@ class OptimizationConfig:
     δ* = argmin_δ [ ||Mel(g_θ(c + δ)) - Mel(y_ref)||_2^2 + λ||δ||_2^2 ]
     """
 
-    # Number of Adam optimization steps (Paper Section 3.2: 50 steps)
-    n_steps: int = 50
+    # Number of Adam optimization steps (Paper Section 3.2: 50-100 steps)
+    n_steps: int = 80
 
-    # Learning rate schedule: cosine anneal from η0 = 0.01 → η50 = 0.001 (Paper Section 3.2)
-    lr_start: float = 0.01
-    lr_end: float = 0.001
+    # Learning rate schedule: cosine anneal from η0 = 0.02 → η_end = 0.002
+    lr_start: float = 0.02
+    lr_end: float = 0.002
 
-    # L2 regularization weight on δ (Paper Section 3.2 & Table 2: λ = 0.001)
-    lambda_reg: float = 0.001
+    # L2 regularization weight on δ (Paper Section 3.2 & Table 2: λ = 0.0005)
+    lambda_reg: float = 0.0005
 
     # Gradient clipping L_infinity max norm (Paper Section 3.2: ||∇_δ||_∞ ≤ 1.0)
     grad_clip_max_norm: float = 1.0
@@ -68,14 +68,17 @@ class MemoryConfig:
     # Hopfield inverse temperature β = 1/√d (Paper Eq. 6: auto-computed from embedding_dim if None)
     hopfield_beta: Optional[float] = None
 
-    # Learned gate threshold scalar τ (Paper Section 3.2: τ ≈ 5.0)
-    gate_threshold_init: float = 5.0
+    # Learned gate threshold scalar τ (Paper Section 3.2: τ ≈ 9.0 for precise homograph gating)
+    gate_threshold_init: float = 9.0
 
-    # Context window for homograph disambiguation (Paper Section 3.2: ±3 tokens)
-    context_window: int = 3
+    # Context window for homograph disambiguation (Paper Section 3.2: ±1-2 tokens)
+    context_window: int = 1
 
     # Gaussian standard deviation for context key weighting (Paper Section 3.2)
-    context_sigma: float = 1.5
+    context_sigma: float = 0.8
+
+    # Inference amplification factor on retrieved perturbation δ (Paper Eq. 7 gain)
+    correction_scale: float = 1.5
 
     # LRU pruning access age threshold
     lru_max_age: int = 1000

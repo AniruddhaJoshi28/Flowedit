@@ -173,31 +173,6 @@ class CorrectionLoop:
                 speaker_wav, language=language, ref_text=user_ref_text
             )
 
-            # Align baseline synthesis to find target word sample boundaries in carrier audio
-            with torch.no_grad():
-                baseline_wav, sr = self.backbone.synthesize_direct(
-                    text=text,
-                    speaker_conditioning=speaker_conditioning,
-                    language=language,
-                    user_ref_text=user_ref_text,
-                )
-
-            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_f:
-                tmp_path = tmp_f.name
-            sf.write(tmp_path, baseline_wav.squeeze().cpu().numpy(), sr)
-
-            baseline_align = self.aligner.align(
-                audio_path=tmp_path,
-                target_word=primary_target_word,
-                full_text=text,
-                language=language,
-                ref_is_word_only=False,
-            )
-            os.remove(tmp_path)
-
-            target_start_sample = int(baseline_align.start_time * sr)
-            target_end_sample = int(baseline_align.end_time * sr)
-
             # ─────────────────────────────────────────────────────────────
             # Stage 2: Latent Input Optimization
             # ─────────────────────────────────────────────────────────────
@@ -210,8 +185,6 @@ class CorrectionLoop:
                 token_indices=alignment.token_indices,
                 speaker_conditioning=speaker_conditioning,
                 language=language,
-                target_word_start_sample=target_start_sample,
-                target_word_end_sample=target_end_sample,
                 ref_start_time=getattr(alignment, "start_time", None),
                 ref_end_time=getattr(alignment, "end_time", None),
             )
@@ -243,7 +216,11 @@ class CorrectionLoop:
             # ─────────────────────────────────────────────────────────────
             logger.info("▶ Stage 3: Modern Hopfield Associative Memory Write")
             with torch.no_grad():
-                base_embeddings = self.backbone.encode_text(text, language)
+                base_embeddings = (
+                    optimization.base_embeddings
+                    if getattr(optimization, "base_embeddings", None) is not None
+                    else self.backbone.encode_text(text, language)
+                )
                 key = self.memory.compute_context_key(base_embeddings, alignment.token_indices)
 
             value = optimization.delta_pooled
@@ -255,6 +232,7 @@ class CorrectionLoop:
                 carrier_text=text,
                 token_indices=alignment.token_indices,
                 language=language,
+                full_delta=optimization.delta,  # Full δ* [1, S, d] in pre-ConvNeXt space
             )
 
             elapsed = time.time() - t_start

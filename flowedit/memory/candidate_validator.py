@@ -39,16 +39,19 @@ class CandidateValidator:
         """Validate candidate correction."""
         reasons = []
 
-        # 1. Stability check: ||δ_I|| / ||c_I|| ≤ max_relative_delta
+        # 1. Stability check: 0 < ||δ_I|| / ||c_I|| ≤ max_relative_delta
         rel_ratio = getattr(optimization_result, "relative_delta_ratio", 0.0)
-        stability_passed = rel_ratio <= self.max_relative_delta
-        if not stability_passed:
+        delta_norm = getattr(optimization_result, "delta_norm", 0.0)
+        stability_passed = (delta_norm > 0.01) and (rel_ratio <= self.max_relative_delta)
+        if delta_norm <= 0.01:
+            reasons.append(f"Zero or negligible delta norm ({delta_norm:.4f})")
+        elif rel_ratio > self.max_relative_delta:
             reasons.append(f"Relative delta ratio {rel_ratio:.4f} > limit {self.max_relative_delta}")
 
-        # 2. Loss convergence check
-        loss_passed = final_loss <= initial_loss * 1.50
+        # 2. Loss convergence check: final_loss must improve upon initial_loss
+        loss_passed = (final_loss < initial_loss) and getattr(optimization_result, "converged", True)
         if not loss_passed:
-            reasons.append(f"Loss diverged ({initial_loss:.4f} → {final_loss:.4f})")
+            reasons.append(f"Loss failed to improve ({initial_loss:.4f} → {final_loss:.4f})")
 
         accepted = stability_passed and loss_passed
         reason = "Passed validation" if accepted else " | ".join(reasons)

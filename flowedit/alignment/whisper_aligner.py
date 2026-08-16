@@ -85,8 +85,17 @@ class WhisperAligner:
             )
             logger.info("Whisper model loaded successfully")
         except Exception as e:
-            logger.warning(f"Failed to load Whisper model from HuggingFace ({e}). Whisper alignment will operate in fallback mode.")
-            self._model = None
+            logger.warning(f"Failed to load Whisper model '{self.config.whisper_model}' ({e}). Attempting fallback to 'base'...")
+            try:
+                self._model = whisperx.load_model(
+                    "base",
+                    device=device,
+                    compute_type=compute_type
+                )
+                logger.info("Whisper 'base' model loaded successfully as fallback.")
+            except Exception as e2:
+                logger.warning(f"Failed to load fallback Whisper model ({e2}). Whisper alignment will operate in fallback mode.")
+                self._model = None
 
 
     def align(

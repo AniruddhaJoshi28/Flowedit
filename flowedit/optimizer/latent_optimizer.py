@@ -43,6 +43,7 @@ class OptimizationResult:
     relative_delta_ratio: float
     converged: bool
     grad_history: List[float]
+    base_embeddings: Optional[torch.Tensor] = None
 
 
 class LatentOptimizer:
@@ -162,6 +163,7 @@ class LatentOptimizer:
                 ref_end_time=ref_end_time,
                 seed=seed,
                 ode_steps=ode_steps,
+                token_indices=target_indices,
             )
 
             mel_loss = loss_dict["loss"]
@@ -204,7 +206,7 @@ class LatentOptimizer:
                 logger.info(
                     f"[Step {step:02d}/{n_steps}] Total Loss: {total_loss.item():.4f} | "
                     f"Mel Loss: {mel_loss.item():.4f} | ||δ||: {cur_norm:.4f} | "
-                    f"Rel Ratio: {rel_ratio:.4f} | LR: {current_lr:.6f}"
+                    f"∇δ: {grad_norm:.4f} | Rel Ratio: {rel_ratio:.4f} | LR: {current_lr:.6f}"
                 )
 
         # Final candidate perturbation δ*
@@ -240,4 +242,5 @@ class LatentOptimizer:
             relative_delta_ratio=final_rel_ratio,
             converged=converged,
             grad_history=grad_history,
+            base_embeddings=base_embeddings,
         )

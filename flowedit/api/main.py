@@ -28,7 +28,11 @@ from flowedit.audio.prompt_validator import ReferenceAudioError
 from flowedit.pipeline.correction_loop import CorrectionLoop
 from flowedit.pipeline.inference import FlowEditInference
 
-logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger("flowedit.api")
 
 # Global instances
 correction_pipeline: Optional[CorrectionLoop] = None
@@ -70,13 +74,19 @@ async def lifespan(app: FastAPI):
     correction_pipeline = CorrectionLoop(config)
     correction_pipeline.load_models()
 
+    if os.path.exists(MEMORY_PATH):
+        try:
+            correction_pipeline.memory.load(MEMORY_PATH)
+        except Exception as e:
+            logger.warning(f"Could not load memory from {MEMORY_PATH}: {e}")
+
     inference_pipeline = FlowEditInference(config)
     inference_pipeline.load(
         backbone=correction_pipeline.backbone,
         memory=correction_pipeline.memory,
     )
 
-    logger.info("FlowEdit API ready.")
+    logger.info(f"FlowEdit API ready. Loaded memory entries: {correction_pipeline.memory.num_entries}")
     yield
     logger.info("Shutting down FlowEdit API...")
 
@@ -164,6 +174,12 @@ async def correct_pronunciation(
 
         if not result.success:
             raise HTTPException(status_code=400, detail=result.error_message)
+
+        # Auto-persist memory to disk
+        try:
+            correction_pipeline.memory.save(MEMORY_PATH)
+        except Exception as e:
+            logger.warning(f"Could not auto-save memory to {MEMORY_PATH}: {e}")
 
         return JSONResponse({
             "success": True,

@@ -71,27 +71,41 @@ class F5TTSBackbone(TTSBackbone):
             vocab_file = getattr(self.config, 'f5tts_vocab_file', "")
             vocoder_local_path = getattr(self.config, 'vocoder_local_path', "")
 
-            f5_kwargs = {}
-            if ckpt_file: f5_kwargs["ckpt_file"] = ckpt_file
-            if vocab_file: f5_kwargs["vocab_file"] = vocab_file
-            if vocoder_local_path: f5_kwargs["vocoder_local_path"] = vocoder_local_path
+            import inspect
+            sig = inspect.signature(F5TTS.__init__)
+            params = sig.parameters
+
+            init_kwargs = {}
+            if "model_type" in params:
+                init_kwargs["model_type"] = "F5-TTS"
+            if "ode_method" in params:
+                init_kwargs["ode_method"] = "euler"
+            if "use_ema" in params:
+                init_kwargs["use_ema"] = True
+            if "device" in params:
+                init_kwargs["device"] = self.device
+            if ckpt_file and os.path.exists(ckpt_file) and "ckpt_file" in params:
+                init_kwargs["ckpt_file"] = ckpt_file
+            if vocab_file and os.path.exists(vocab_file) and "vocab_file" in params:
+                init_kwargs["vocab_file"] = vocab_file
+            if vocoder_local_path and os.path.exists(os.path.join(vocoder_local_path, "config.yaml")) and "vocoder_local_path" in params:
+                init_kwargs["vocoder_local_path"] = vocoder_local_path
+            elif vocoder_local_path:
+                logger.info(f"Local vocoder directory '{vocoder_local_path}' missing config.yaml. F5-TTS will load Vocos from Hugging Face.")
+            if "vocoder_name" in params:
+                init_kwargs["vocoder_name"] = "vocos"
 
             try:
-                self.tts_api = F5TTS(
-                    model_type="F5-TTS",
-                    ode_method="euler",
-                    use_ema=True,
-                    vocoder_name="vocos",
-                    device=self.device,
-                    **f5_kwargs
-                )
-            except TypeError:
-                self.tts_api = F5TTS(
-                    ode_method="euler",
-                    use_ema=True,
-                    vocoder_name="vocos",
-                    **f5_kwargs
-                )
+                self.tts_api = F5TTS(**init_kwargs)
+            except Exception as e_first:
+                logger.warning(f"F5TTS initialization with custom paths failed ({e_first}). Retrying with default Hugging Face download...")
+                # Remove custom local paths and retry
+                fallback_kwargs = {k: v for k, v in init_kwargs.items() if k not in ("vocoder_local_path", "ckpt_file", "vocab_file")}
+                if ckpt_file and os.path.exists(ckpt_file):
+                    fallback_kwargs["ckpt_file"] = ckpt_file
+                if vocab_file and os.path.exists(vocab_file):
+                    fallback_kwargs["vocab_file"] = vocab_file
+                self.tts_api = F5TTS(**fallback_kwargs)
 
             self.model = getattr(self.tts_api, "ema_model", getattr(self.tts_api, "model", None))
             self.vocoder = getattr(self.tts_api, "vocoder", None)
@@ -220,7 +234,10 @@ class F5TTSBackbone(TTSBackbone):
                 device = "cuda" if self.device == "cuda" and torch.cuda.is_available() else "cpu"
                 compute_type = "float16" if device == "cuda" else "int8"
                 whisper_model_path = os.environ.get("FLOWEDIT_WHISPER_MODEL", "base")
-                _whisper = whisperx.load_model(whisper_model_path, device=device, compute_type=compute_type)
+                try:
+                    _whisper = whisperx.load_model(whisper_model_path, device=device, compute_type=compute_type)
+                except Exception:
+                    _whisper = whisperx.load_model("base", device=device, compute_type=compute_type)
                 audio_np = whisperx.load_audio(prepared_audio.source_path)
                 ref_result = _whisper.transcribe(audio_np, language=language)
                 if "segments" in ref_result and ref_result["segments"]:
@@ -306,30 +323,45 @@ class F5TTSBackbone(TTSBackbone):
         processor = AudioProcessor()
         ref_mel = processor.compute_mel(ref_wav, normalize=True, n_mels=pred_mel.shape[1]).float()
 
-        # 3. Extract target word frames from predicted mel
-        hop_length = 256
-        if target_word_start_sample is not None and target_word_end_sample is not None:
-            start_frame = max(0, target_word_start_sample // hop_length)
-            end_frame = min(pred_mel.shape[-1], target_word_end_sample // hop_length)
-            if end_frame > start_frame:
-                pred_target_mel = pred_mel[..., start_frame:end_frame]
-            else:
-                pred_target_mel = pred_mel
+        # 3. Extract target word frames from predicted mel (Section 3.2 & Eq. 3)
+        T_mel = pred_mel.shape[-1]
+        token_indices = kwargs.get("token_indices", [])
+
+        start_frame = None
+        end_frame = None
+
+        if token_indices and len(text) > 0:
+            # Token-relative temporal framing based on target word position in sentence
+            t_min = min(token_indices)
+            t_max = max(token_indices) + 1
+            start_frame = max(0, int((t_min / len(text)) * T_mel))
+            end_frame = min(T_mel, max(start_frame + 2, int((t_max / len(text)) * T_mel)))
+        elif target_word_start_sample is not None and target_word_end_sample is not None:
+            # Time-aligned framing
+            hop_length = 256
+            s_f = target_word_start_sample // hop_length
+            e_f = target_word_end_sample // hop_length
+            if s_f < T_mel:
+                start_frame = max(0, s_f)
+                end_frame = min(T_mel, max(start_frame + 2, e_f))
+
+        if start_frame is not None and end_frame is not None and end_frame > start_frame:
+            pred_target_mel = pred_mel[..., start_frame:end_frame]
         else:
             pred_target_mel = pred_mel
 
         # 4. Mel-Spectrogram MSE Loss (Paper Eq. 3)
         if pred_target_mel.shape[-1] != ref_mel.shape[-1]:
             pred_target_mel_aligned = F.interpolate(
-                pred_target_mel,
+                pred_target_mel.float(),
                 size=ref_mel.shape[-1],
                 mode='linear',
                 align_corners=False,
             )
         else:
-            pred_target_mel_aligned = pred_target_mel
+            pred_target_mel_aligned = pred_target_mel.float()
 
-        mel_loss = F.mse_loss(pred_target_mel_aligned, ref_mel)
+        mel_loss = F.mse_loss(pred_target_mel_aligned, ref_mel.float())
         return {"loss": mel_loss}
 
     def _differentiable_euler_mel(
@@ -350,25 +382,65 @@ class F5TTSBackbone(TTSBackbone):
             sim_mel = torch.sin(c_pert[:, :, :100].transpose(1, 2))
             return sim_mel
 
-        dit_model = getattr(self.model, "transformer", self.model)
+        # Select the raw trainable PyTorch model for Stage 2 optimization (not the EMA wrapper)
+        opt_model = None
+        if self.tts_api is not None:
+            opt_model = getattr(self.tts_api, "model", None)
+            if opt_model is None and hasattr(self.tts_api, "ema_model"):
+                ema = self.tts_api.ema_model
+                opt_model = getattr(ema, "ema_model", getattr(ema, "model", getattr(ema, "module", ema)))
+        if opt_model is None:
+            opt_model = self.model
+            if hasattr(opt_model, "ema_model"):
+                opt_model = opt_model.ema_model
+            elif hasattr(opt_model, "module"):
+                opt_model = opt_model.module
+
+        dit_model = getattr(opt_model, "transformer", opt_model)
         gen_tokens = self.get_token_ids(text, language)
         seq_len = gen_tokens.shape[1]
 
-        # Calculate base text embeddings
-        target_embed_module = getattr(dit_model, "text_embed", None)
-        hook_target = getattr(target_embed_module, "text_embed", target_embed_module) if target_embed_module is not None else None
+        # Match model parameter dtype (e.g. float16 on GPU vs float32)
+        model_dtype = next(dit_model.parameters()).dtype if list(dit_model.parameters()) else torch.float32
 
-        hook_handle = None
-        if hook_target is not None:
+        # Collect all active model candidates in self and self.tts_api
+        hook_targets = []
+        candidates = [
+            dit_model,
+            self.model,
+            getattr(self.tts_api, "ema_model", None),
+            getattr(self.tts_api, "model", None),
+        ]
+        for cand in candidates:
+            if cand is None:
+                continue
+            transformer = getattr(cand, "transformer", cand)
+            if hasattr(transformer, "clear_cache"):
+                transformer.clear_cache()
+            te = getattr(transformer, "text_embed", None)
+            target_mod = getattr(te, "text_embed", te) if te is not None else None
+            if target_mod is not None and target_mod not in hook_targets:
+                hook_targets.append(target_mod)
+
+        hook_handles = []
+        if hook_targets and text_embedding_delta is not None:
             def embedding_hook(module, inputs, output):
-                out = output.clone()
-                delta_cast = text_embedding_delta.to(device=out.device, dtype=out.dtype)
-                L = min(delta_cast.shape[1], out.shape[1])
-                out[0:1, :L, :] = out[0:1, :L, :] + delta_cast[:, :L, :]
-                if isinstance(output, tuple):
+                is_tuple = isinstance(output, tuple)
+                raw_out = output[0] if is_tuple else output
+                delta_cast = text_embedding_delta.to(device=raw_out.device, dtype=raw_out.dtype)
+                L_delta = delta_cast.shape[1]
+                L_out = raw_out.shape[1]
+
+                out = raw_out.clone()
+                actual_len = min(L_out, L_delta)
+                out[:, :actual_len, :] = out[:, :actual_len, :] + delta_cast[:, :actual_len, :]
+
+                if is_tuple:
                     return (out,) + output[1:]
                 return out
-            hook_handle = hook_target.register_forward_hook(embedding_hook)
+
+            for target in hook_targets:
+                hook_handles.append(target.register_forward_hook(embedding_hook))
 
         try:
             # Determine target mel length based on planned duration
@@ -389,42 +461,45 @@ class F5TTSBackbone(TTSBackbone):
 
             if seed is not None:
                 g = torch.Generator(device=device).manual_seed(seed)
-                x0 = torch.randn(batch_size, total_mel_frames, mel_dim, device=device, generator=g, dtype=torch.float32)
+                x0 = torch.randn(batch_size, total_mel_frames, mel_dim, device=device, generator=g, dtype=model_dtype)
             else:
-                x0 = torch.randn(batch_size, total_mel_frames, mel_dim, device=device, dtype=torch.float32)
+                x0 = torch.randn(batch_size, total_mel_frames, mel_dim, device=device, dtype=model_dtype)
 
-            cond_mel = torch.zeros(batch_size, total_mel_frames, mel_dim, device=device, dtype=torch.float32)
+            cond_mel = torch.zeros(batch_size, total_mel_frames, mel_dim, device=device, dtype=model_dtype)
             mask = torch.ones(batch_size, total_mel_frames, dtype=torch.bool, device=device)
 
             # Euler integration from t=0 to t=1 (Paper Section 3.1 & Eq. 2)
             x_t = x0
-            t_eval = torch.linspace(0, 1, steps + 1, device=device)
+            t_eval = torch.linspace(0, 1, steps + 1, device=device, dtype=model_dtype)
 
-            for step_idx in range(steps):
-                t_val = t_eval[step_idx]
-                dt = t_eval[step_idx + 1] - t_eval[step_idx]
-                t_tensor = t_val.expand(batch_size)
+            with torch.enable_grad():
+                for step_idx in range(steps):
+                    t_val = t_eval[step_idx]
+                    dt = t_eval[step_idx + 1] - t_eval[step_idx]
+                    t_tensor = t_val.expand(batch_size)
 
-                # Evaluate learned vector field v_t(x_t, t; θ, c + δ)
-                v_t = dit_model(
-                    x=x_t,
-                    cond=cond_mel,
-                    text=gen_tokens,
-                    time=t_tensor,
-                    mask=mask,
-                    drop_audio_cond=False,
-                    drop_text=False,
-                    cache=False,
-                )
-                x_t = x_t + v_t * dt
+                    # Evaluate learned vector field v_t(x_t, t; θ, c + δ)
+                    v_t = dit_model(
+                        x=x_t,
+                        cond=cond_mel,
+                        text=gen_tokens,
+                        time=t_tensor,
+                        mask=mask,
+                        drop_audio_cond=False,
+                        drop_text=False,
+                        cache=False,
+                    )
+                    if step_idx == 0:
+                        logger.info(f"[Euler Check Step 0] v_t requires_grad={v_t.requires_grad}, grad_fn={v_t.grad_fn}, delta requires_grad={text_embedding_delta.requires_grad}")
+                    x_t = x_t + v_t * dt
 
             # Transpose to [batch, mel_dim, time_frames]
             pred_mel = x_t.transpose(1, 2)
             return pred_mel
 
         finally:
-            if hook_handle is not None:
-                hook_handle.remove()
+            for h in hook_handles:
+                h.remove()
 
     def synthesize_from_embeddings(
         self,
@@ -479,34 +554,102 @@ class F5TTSBackbone(TTSBackbone):
             language=language,
         )
 
-        dit_model = getattr(self.model, "transformer", self.model)
-        target_embed_module = getattr(dit_model, "text_embed", None)
-        hook_target = getattr(target_embed_module, "text_embed", target_embed_module) if target_embed_module is not None else None
+        # Collect all active model candidates in self and self.tts_api
+        hook_targets = []
+        raw_candidates = [
+            getattr(self.tts_api, "ema_model", None),
+            self.model,
+            getattr(self.tts_api, "model", None),
+        ]
+        candidates = []
+        for cand in raw_candidates:
+            if cand is None:
+                continue
+            candidates.append(cand)
+            if hasattr(cand, "ema_model"):
+                candidates.append(getattr(cand, "ema_model"))
+            if hasattr(cand, "model"):
+                candidates.append(getattr(cand, "model"))
+            if hasattr(cand, "module"):
+                candidates.append(getattr(cand, "module"))
 
-        hook_handle = None
-        if text_embedding_delta is not None and hook_target is not None:
+        for cand in candidates:
+            transformer = getattr(cand, "transformer", cand)
+            if hasattr(transformer, "clear_cache"):
+                transformer.clear_cache()
+            te = getattr(transformer, "text_embed", None)
+            target_mod = getattr(te, "text_embed", te) if te is not None else None
+            if target_mod is not None and target_mod not in hook_targets:
+                hook_targets.append(target_mod)
+
+        hook_handles = []
+        if text_embedding_delta is not None and hook_targets:
             def hook(module, inputs, output):
+                # Detect unconditional CFG pass: when drop_text=True in F5-TTS, input text tokens are all zeros
+                if len(inputs) > 0 and isinstance(inputs[0], torch.Tensor):
+                    if (inputs[0] == 0).all().item():
+                        logger.info(f"[F5TTS Forward Hook] (uncond branch skipped, all-zero tokens) on {module.__class__.__name__}")
+                        return output
+
                 with torch.set_grad_enabled(False):
-                    out = output.clone()
-                    t_delta = text_embedding_delta.to(device=out.device, dtype=out.dtype)
-                    L = min(t_delta.shape[1], out.shape[1])
-                    out[0:1, :L, :] = out[0:1, :L, :] + t_delta[:, :L, :]
-                    if isinstance(output, tuple):
+                    is_tuple = isinstance(output, tuple)
+                    raw_out = output[0] if is_tuple else output
+                    t_delta = text_embedding_delta.to(device=raw_out.device, dtype=raw_out.dtype)
+                    L_delta = t_delta.shape[1]
+                    L_out = raw_out.shape[1]
+
+                    # Calculate exact ref_text token offset (characters prepended by F5-TTS)
+                    if ref_text and ref_text != ".":
+                        prefix_str = ref_text if ref_text.endswith(" ") else f"{ref_text} "
+                        try:
+                            from f5_tts.model.utils import convert_char_to_pinyin
+                            ref_tokens = len(convert_char_to_pinyin([prefix_str])[0])
+                        except Exception:
+                            ref_tokens = len(prefix_str)
+                    else:
+                        ref_tokens = 0
+                        prefix_str = ""
+
+                    start_pos = min(L_out, ref_tokens)
+                    end_pos = min(L_out, start_pos + L_delta)
+                    actual_delta_len = end_pos - start_pos
+
+                    out = raw_out.clone()
+                    if actual_delta_len > 0:
+                        out[:, start_pos:end_pos, :] = out[:, start_pos:end_pos, :] + t_delta[:, :actual_delta_len, :]
+
+                    logger.info(
+                        f"✓ [F5TTS Token-Level Injection] (cond branch only) Prefix: '{prefix_str}' ({ref_tokens} tokens) → "
+                        f"Injected δ* on {module.__class__.__name__} at character tokens [{start_pos}:{end_pos}] "
+                        f"(delta_len={L_delta}, delta_norm={t_delta.norm().item():.4f})"
+                    )
+                    if is_tuple:
                         return (out,) + output[1:]
                     return out
-            hook_handle = hook_target.register_forward_hook(hook)
+
+            for target in hook_targets:
+                hook_handles.append(target.register_forward_hook(hook))
+            logger.info(f"[F5TTS Injection] Registered forward hook across {len(hook_targets)} target module(s).")
+
+        infer_kwargs = {
+            "ref_file": temp_ref,
+            "ref_text": ref_text,
+            "gen_text": text,
+            "speed": planned.dynamic_speed_factor,
+            "nfe_step": 32,
+            "cfg_strength": 2.0,
+            "target_rms": 0.1,
+        }
+
+        import inspect
+        sig = inspect.signature(self.tts_api.infer)
+        params = sig.parameters
+        has_var_kw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in params.values())
+        if not has_var_kw:
+            infer_kwargs = {k: v for k, v in infer_kwargs.items() if k in params}
 
         try:
-            result = self.tts_api.infer(
-                ref_file=temp_ref,
-                ref_text=ref_text,
-                gen_text=text,
-                speed=planned.dynamic_speed_factor,
-                nfe_step=32,
-                cfg_strength=2.0,
-                target_rms=0.1,
-                remove_ref=True,
-            )
+            result = self.tts_api.infer(**infer_kwargs)
             if isinstance(result, tuple) and len(result) >= 2:
                 wav = result[0]
                 sr = result[1]
@@ -518,8 +661,8 @@ class F5TTSBackbone(TTSBackbone):
             return torch.zeros(1, 24000), 24000
 
         finally:
-            if hook_handle is not None:
-                hook_handle.remove()
+            for h in hook_handles:
+                h.remove()
 
     def synthesize_baseline(
         self,
