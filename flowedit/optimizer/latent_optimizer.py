@@ -90,6 +90,7 @@ class LatentOptimizer:
         torch.manual_seed(seed)
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(seed)
+            torch.cuda.empty_cache()
 
         # Step 1: Encode baseline text embeddings c = E(x) ∈ R^[1, S, d]
         base_embeddings = backbone.encode_text(text, language)  # [1, S, d]
@@ -123,7 +124,7 @@ class LatentOptimizer:
         lr_final = getattr(self.config, "lr_end", 0.001)
         lambda_reg = getattr(self.config, "lambda_reg", 0.001)
         max_grad_norm = getattr(self.config, "grad_clip_max_norm", 1.0)
-        ode_steps = getattr(self.config, "ode_steps", 32)
+        ode_steps = getattr(self.config, "ode_steps", 16)
         alpha_max = getattr(self.config, "max_relative_delta", 3.0)
 
         optimizer = torch.optim.Adam([delta], lr=lr_init)
@@ -230,6 +231,9 @@ class LatentOptimizer:
             f"Final Loss={final_loss:.4f}, δ* Norm={final_norm:.4f}, Rel Ratio={final_rel_ratio:.4f}"
         )
 
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
         return OptimizationResult(
             delta=final_delta,
             delta_pooled=value_pooled,
@@ -244,3 +248,4 @@ class LatentOptimizer:
             grad_history=grad_history,
             base_embeddings=base_embeddings,
         )
+

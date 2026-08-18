@@ -390,6 +390,31 @@ class HopfieldMemory(nn.Module):
             self.gate_threshold.data = data["gate_threshold"].to(self.gate_threshold.device)
         logger.info(f"✓ Loaded {len(self.entries)} Hopfield Memory entries from {filepath}")
 
+    def delete_entry(self, word: str) -> bool:
+        """Delete an entry or entries matching target word from memory.
+
+        Args:
+            word: Target word string to remove (matched case-insensitively).
+
+        Returns:
+            bool: True if one or more entries were deleted, False if not found.
+        """
+        initial_len = len(self.entries)
+        target_norm = word.strip().lower()
+        self.entries = [
+            e for e in self.entries
+            if e.word.strip().lower() != target_norm
+        ]
+        deleted = len(self.entries) < initial_len
+        if deleted:
+            logger.info(
+                f"✓ Hopfield Memory: Deleted correction for '{word}' "
+                f"({initial_len - len(self.entries)} removed, {len(self.entries)} remaining)"
+            )
+        else:
+            logger.warning(f"Hopfield Memory: No entry found to delete for word '{word}'")
+        return deleted
+
     def clear(self) -> None:
         """Clear all stored memory entries."""
         self.entries.clear()
@@ -400,3 +425,4 @@ class HopfieldMemory(nn.Module):
             except Exception:
                 pass
         logger.info("Hopfield Memory cleared.")
+

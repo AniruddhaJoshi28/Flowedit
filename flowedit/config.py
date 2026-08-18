@@ -19,7 +19,7 @@ class OptimizationConfig:
     """
 
     # Number of Adam optimization steps (Paper Section 3.2: 50-100 steps)
-    n_steps: int = 80
+    n_steps: int = 50
 
     # Learning rate schedule: cosine anneal from η0 = 0.02 → η_end = 0.002
     lr_start: float = 0.02
@@ -31,8 +31,8 @@ class OptimizationConfig:
     # Gradient clipping L_infinity max norm (Paper Section 3.2: ||∇_δ||_∞ ≤ 1.0)
     grad_clip_max_norm: float = 1.0
 
-    # Number of Euler ODE solver steps (Paper Section 3.1 & 3.2: N = 32 steps)
-    ode_steps: int = 32
+    # Number of Euler ODE solver steps (Paper Section 3.1 & 3.2: N = 16 steps for fast/memory-efficient differentiation)
+    ode_steps: int = 16
 
     # Relative perturbation norm constraint: ||δ_I|| / ||c_I|| ≤ max_relative_delta
     max_relative_delta: float = 3.0

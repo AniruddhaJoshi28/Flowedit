@@ -177,6 +177,8 @@ class CorrectionLoop:
             # Stage 2: Latent Input Optimization
             # ─────────────────────────────────────────────────────────────
             logger.info("▶ Stage 2: Latent Input Optimization (50 Adam steps)")
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
             optimization = self.optimizer.optimize(
                 backbone=self.backbone,
                 text=text,
@@ -188,6 +190,9 @@ class CorrectionLoop:
                 ref_start_time=getattr(alignment, "start_time", None),
                 ref_end_time=getattr(alignment, "end_time", None),
             )
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
 
             # Candidate Validation Gate
             validator = CandidateValidator(max_relative_delta=self.config.optimization.max_relative_delta)

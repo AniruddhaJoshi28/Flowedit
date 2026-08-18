@@ -297,6 +297,30 @@ async def get_memory_entries():
     return {"size": len(entries_info), "corrections": entries_info}
 
 
+@app.delete("/api/memory/{word}")
+async def delete_memory_entry(word: str):
+    """Delete a single Hopfield memory correction by word."""
+    global correction_pipeline
+    if not correction_pipeline or not correction_pipeline.memory:
+        raise HTTPException(status_code=503, detail="Pipeline not initialized.")
+
+    deleted = correction_pipeline.memory.delete_entry(word)
+    if not deleted:
+        raise HTTPException(status_code=404, detail=f"No memory entry found for word '{word}'.")
+
+    # Auto-persist after deletion
+    try:
+        correction_pipeline.memory.save(MEMORY_PATH)
+    except Exception as e:
+        logger.warning(f"Could not auto-save memory after deletion: {e}")
+
+    return {
+        "success": True,
+        "message": f"Deleted correction for '{word}'.",
+        "size": correction_pipeline.memory.num_entries,
+    }
+
+
 @app.post("/api/memory/clear")
 async def clear_memory():
     """Clear all stored Hopfield memory corrections."""

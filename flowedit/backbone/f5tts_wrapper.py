@@ -422,6 +422,16 @@ class F5TTSBackbone(TTSBackbone):
             if target_mod is not None and target_mod not in hook_targets:
                 hook_targets.append(target_mod)
 
+        # Enable gradient checkpointing across all transformer candidates to prevent OOM
+        saved_ckpts = []
+        for cand in candidates:
+            if cand is None:
+                continue
+            transformer = getattr(cand, "transformer", cand)
+            if hasattr(transformer, "checkpoint_activations"):
+                saved_ckpts.append((transformer, transformer.checkpoint_activations))
+                transformer.checkpoint_activations = True
+
         hook_handles = []
         if hook_targets and text_embedding_delta is not None:
             def embedding_hook(module, inputs, output):
@@ -443,6 +453,11 @@ class F5TTSBackbone(TTSBackbone):
                 hook_handles.append(target.register_forward_hook(embedding_hook))
 
         try:
+            # Enable TF32 for speed and tensor core memory efficiency
+            if torch.cuda.is_available():
+                torch.backends.cuda.matmul.allow_tf32 = True
+                torch.backends.cudnn.allow_tf32 = True
+
             # Determine target mel length based on planned duration
             ref_dur = speaker_conditioning.get("duration_seconds", 2.0)
             planner = DurationPlanner()
@@ -472,7 +487,12 @@ class F5TTSBackbone(TTSBackbone):
             x_t = x0
             t_eval = torch.linspace(0, 1, steps + 1, device=device, dtype=model_dtype)
 
-            with torch.enable_grad():
+            # Automatic Mixed Precision for memory efficiency
+            dev_str = str(device)
+            use_amp = "cuda" in dev_str or (isinstance(device, torch.device) and device.type == "cuda")
+            amp_dtype = torch.bfloat16 if (use_amp and torch.cuda.is_bf16_supported()) else torch.float16
+
+            with torch.enable_grad(), torch.autocast(device_type="cuda" if use_amp else "cpu", dtype=amp_dtype, enabled=use_amp):
                 for step_idx in range(steps):
                     t_val = t_eval[step_idx]
                     dt = t_eval[step_idx + 1] - t_eval[step_idx]
@@ -500,6 +520,9 @@ class F5TTSBackbone(TTSBackbone):
         finally:
             for h in hook_handles:
                 h.remove()
+            for tr, orig_val in saved_ckpts:
+                tr.checkpoint_activations = orig_val
+
 
     def synthesize_from_embeddings(
         self,
@@ -584,6 +607,8 @@ class F5TTSBackbone(TTSBackbone):
 
         hook_handles = []
         if text_embedding_delta is not None and hook_targets:
+            target_ids = self.get_token_ids(text, language)[0].tolist()
+
             def hook(module, inputs, output):
                 # Detect unconditional CFG pass: when drop_text=True in F5-TTS, input text tokens are all zeros
                 if len(inputs) > 0 and isinstance(inputs[0], torch.Tensor):
@@ -598,19 +623,33 @@ class F5TTSBackbone(TTSBackbone):
                     L_delta = t_delta.shape[1]
                     L_out = raw_out.shape[1]
 
-                    # Calculate exact ref_text token offset (characters prepended by F5-TTS)
-                    if ref_text and ref_text != ".":
-                        prefix_str = ref_text if ref_text.endswith(" ") else f"{ref_text} "
-                        try:
-                            from f5_tts.model.utils import convert_char_to_pinyin
-                            ref_tokens = len(convert_char_to_pinyin([prefix_str])[0])
-                        except Exception:
-                            ref_tokens = len(prefix_str)
-                    else:
-                        ref_tokens = 0
-                        prefix_str = ""
+                    # Exact sub-sequence matching to find where 'gen_text' begins in the input tokens
+                    start_pos = -1
+                    if len(inputs) > 0 and isinstance(inputs[0], torch.Tensor):
+                        input_ids = inputs[0][0].tolist()
+                        match_len = min(len(target_ids), 16)
+                        if match_len > 0:
+                            prefix_to_find = target_ids[:match_len]
+                            prefix_to_find_shifted = [t + 1 for t in prefix_to_find]
+                            for i in range(len(input_ids) - match_len + 1):
+                                sub = input_ids[i : i + match_len]
+                                if sub == prefix_to_find or sub == prefix_to_find_shifted:
+                                    start_pos = i
+                                    break
 
-                    start_pos = min(L_out, ref_tokens)
+                    # Fallback if pattern matching did not find exact match
+                    if start_pos < 0:
+                        if ref_text and ref_text != ".":
+                            prefix_str = ref_text if ref_text.endswith(" ") else f"{ref_text} "
+                            try:
+                                from f5_tts.model.utils import convert_char_to_pinyin
+                                ref_tokens = len(convert_char_to_pinyin([prefix_str])[0])
+                            except Exception:
+                                ref_tokens = len(prefix_str)
+                        else:
+                            ref_tokens = 0
+                        start_pos = min(L_out, ref_tokens)
+
                     end_pos = min(L_out, start_pos + L_delta)
                     actual_delta_len = end_pos - start_pos
 
@@ -619,7 +658,7 @@ class F5TTSBackbone(TTSBackbone):
                         out[:, start_pos:end_pos, :] = out[:, start_pos:end_pos, :] + t_delta[:, :actual_delta_len, :]
 
                     logger.info(
-                        f"✓ [F5TTS Token-Level Injection] (cond branch only) Prefix: '{prefix_str}' ({ref_tokens} tokens) → "
+                        f"✓ [F5TTS Token-Level Injection] (cond branch) Exact matched start_pos={start_pos} → "
                         f"Injected δ* on {module.__class__.__name__} at character tokens [{start_pos}:{end_pos}] "
                         f"(delta_len={L_delta}, delta_norm={t_delta.norm().item():.4f})"
                     )
