@@ -317,6 +317,14 @@ class F5TTSBackbone(TTSBackbone):
             r_e = min(ref_wav.shape[-1], r_e)
             if r_e > r_s:
                 ref_wav = ref_wav[:, r_s:r_e]
+        else:
+            # Automatic energy-based silence trimming to focus on active speech
+            non_silent = (ref_wav.abs() > 0.01).nonzero(as_tuple=True)
+            if len(non_silent[1]) > 0:
+                s_trim = max(0, non_silent[1].min().item() - 240)
+                e_trim = min(ref_wav.shape[-1], non_silent[1].max().item() + 240)
+                if e_trim > s_trim:
+                    ref_wav = ref_wav[:, s_trim:e_trim]
 
         # Compute log-mel spectrogram for reference
         from flowedit.utils.audio import AudioProcessor
@@ -325,13 +333,19 @@ class F5TTSBackbone(TTSBackbone):
 
         # 3. Extract target word frames from predicted mel (Section 3.2 & Eq. 3)
         T_mel = pred_mel.shape[-1]
-        token_indices = kwargs.get("token_indices", [])
+        target_word = kwargs.get("target_word", "")
 
         start_frame = None
         end_frame = None
 
-        if token_indices and len(text) > 0:
-            # Token-relative temporal framing based on target word position in sentence
+        if target_word and target_word.lower() in text.lower() and len(text) > 0:
+            # Exact target word character boundaries in carrier sentence for precise acoustic alignment
+            w_start = text.lower().find(target_word.lower())
+            w_end = w_start + len(target_word)
+            start_frame = max(0, int((w_start / len(text)) * T_mel))
+            end_frame = min(T_mel, max(start_frame + 2, int((w_end / len(text)) * T_mel)))
+        elif kwargs.get("token_indices") and len(text) > 0:
+            token_indices = kwargs.get("token_indices", [])
             t_min = min(token_indices)
             t_max = max(token_indices) + 1
             start_frame = max(0, int((t_min / len(text)) * T_mel))
@@ -350,7 +364,7 @@ class F5TTSBackbone(TTSBackbone):
         else:
             pred_target_mel = pred_mel
 
-        # 4. Mel-Spectrogram MSE Loss (Paper Eq. 3)
+        # 4. Composite Spectral Loss for crystal-clear phoneme pronunciation (Paper Section 3.2 & Eq. 3)
         if pred_target_mel.shape[-1] != ref_mel.shape[-1]:
             pred_target_mel_aligned = F.interpolate(
                 pred_target_mel.float(),
@@ -361,8 +375,13 @@ class F5TTSBackbone(TTSBackbone):
         else:
             pred_target_mel_aligned = pred_target_mel.float()
 
-        mel_loss = F.mse_loss(pred_target_mel_aligned, ref_mel.float())
-        return {"loss": mel_loss}
+        ref_target_mel = ref_mel.float()
+        l1_loss = F.l1_loss(pred_target_mel_aligned, ref_target_mel)
+        mse_loss = F.mse_loss(pred_target_mel_aligned, ref_target_mel)
+        spec_conv_loss = torch.norm(ref_target_mel - pred_target_mel_aligned, p='fro') / (torch.norm(ref_target_mel, p='fro') + 1e-6)
+
+        composite_spectral_loss = 1.0 * l1_loss + 0.5 * mse_loss + 0.2 * spec_conv_loss
+        return {"loss": composite_spectral_loss, "l1_loss": l1_loss, "mse_loss": mse_loss}
 
     def _differentiable_euler_mel(
         self,

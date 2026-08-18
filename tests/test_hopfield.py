@@ -80,13 +80,65 @@ class TestHopfieldMemory:
         assert self.memory.entries[-1].word == "w_new"
 
     def test_context_key_computation(self):
-        seq_len = 8
+        seq_len = 24
         emb = torch.randn(1, seq_len, self.dim)
-        indices = [3, 4]
+        indices = [10, 11, 12, 13]  # target word in middle
         key = self.memory.compute_context_key(emb, indices)
 
         assert key.shape == (self.dim,)
         assert torch.isclose(torch.norm(key), torch.tensor(1.0), atol=1e-4)
+
+    def test_contextual_homograph_storage_and_disambiguation(self):
+        """Verify that identical words with distinct contexts are stored as separate entries."""
+        # 1. Simulate embeddings for Sentence A: "The pipe was made of lead"
+        torch.manual_seed(42)
+        seq_len = 20
+        emb_metal = torch.randn(1, seq_len, self.dim)
+        lead_indices_a = [16, 17, 18, 19] # "lead"
+        key_metal = self.memory.compute_context_key(emb_metal, lead_indices_a)
+        val_metal = torch.ones(self.dim) * 1.5
+
+        idx1, action1 = self.memory.write(
+            key=key_metal,
+            value=val_metal,
+            word="lead",
+            carrier_text="The pipe was made of lead",
+            token_indices=lead_indices_a,
+        )
+        assert action1 == "inserted"
+        assert self.memory.num_entries == 1
+
+        # 2. Simulate embeddings for Sentence B: "She will lead the team" (different context)
+        emb_leader = torch.randn(1, seq_len, self.dim)
+        # Same word letters, different surrounding context
+        emb_leader[0, 9:13, :] = emb_metal[0, 16:20, :] # exact same word embedding
+        lead_indices_b = [9, 10, 11, 12]
+        key_leader = self.memory.compute_context_key(emb_leader, lead_indices_b)
+        val_leader = torch.ones(self.dim) * -1.5
+
+        idx2, action2 = self.memory.write(
+            key=key_leader,
+            value=val_leader,
+            word="lead",
+            carrier_text="She will lead the team",
+            token_indices=lead_indices_b,
+        )
+        # Must be stored as a distinct contextual homograph entry!
+        assert action2 == "inserted"
+        assert self.memory.num_entries == 2
+        assert idx1 != idx2
+
+        # 3. Retrieve on query matching metal context
+        query_metal = emb_metal
+        res_metal = self.memory.retrieve(query_metal)
+        assert res_metal.top_matches[0][0] == "lead"
+        assert res_metal.matched_carrier_text == "The pipe was made of lead"
+
+        # 4. Retrieve on query matching leader context
+        query_leader = emb_leader
+        res_leader = self.memory.retrieve(query_leader)
+        assert res_leader.top_matches[0][0] == "lead"
+        assert res_leader.matched_carrier_text == "She will lead the team"
 
 
 class TestHopfieldRefiner:

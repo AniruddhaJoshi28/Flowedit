@@ -226,7 +226,11 @@ class CorrectionLoop:
                     if getattr(optimization, "base_embeddings", None) is not None
                     else self.backbone.encode_text(text, language)
                 )
-                key = self.memory.compute_context_key(base_embeddings, alignment.token_indices)
+                key = self.memory.compute_context_key(
+                    base_embeddings,
+                    alignment.token_indices,
+                    carrier_text=text,
+                )
 
             value = optimization.delta_pooled
 

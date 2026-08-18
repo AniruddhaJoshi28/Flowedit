@@ -190,12 +190,21 @@ class HopfieldRefiner(nn.Module):
         aligned = torch.zeros(1, new_len, d, device=device, dtype=dtype)
 
         for occ_start in target_occurrences:
+            span_len = word_len + pre_expansion + post_expansion
+            # Optional smooth Hann boundary taper to avoid edge discontinuities
+            taper = torch.ones(span_len, device=device, dtype=dtype)
+            if span_len > 4:
+                taper[0] = 0.3
+                taper[1] = 0.7
+                taper[-2] = 0.7
+                taper[-1] = 0.3
+
             # Map each character offset relative to word start
-            for p in range(-pre_expansion, word_len + post_expansion):
+            for idx_p, p in enumerate(range(-pre_expansion, word_len + post_expansion)):
                 orig_pos = w_start_orig + p
                 new_pos = occ_start + p
                 if 0 <= orig_pos < full_delta.shape[1] and 0 <= new_pos < new_len:
-                    aligned[0, new_pos, :] = full_delta[0, orig_pos, :].to(device=device, dtype=dtype)
+                    aligned[0, new_pos, :] = (full_delta[0, orig_pos, :].to(device=device, dtype=dtype)) * taper[idx_p]
 
         logger.info(
             f"[Delta Alignment] Successfully aligned δ* for '{stored_word}' across {len(target_occurrences)} occurrence(s). "
@@ -250,7 +259,7 @@ class HopfieldRefiner(nn.Module):
             )
 
             if aligned_delta is not None:
-                scale = getattr(self.config, "correction_scale", 1.5)
+                scale = getattr(self.config, "correction_scale", 1.0)
                 scaled_delta = aligned_delta * scale
 
                 logger.info(

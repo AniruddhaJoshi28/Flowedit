@@ -35,3 +35,13 @@ def test_root_endpoint():
     assert response.status_code == 200
     data = response.json()
     assert "FlowEdit API" in data.get("message", "")
+
+
+def test_memory_endpoint_structure():
+    """Verify /api/memory endpoint returns correct schema."""
+    response = client.get("/api/memory")
+    assert response.status_code == 200
+    data = response.json()
+    assert "corrections" in data
+    assert "size" in data
+    assert isinstance(data["corrections"], list)

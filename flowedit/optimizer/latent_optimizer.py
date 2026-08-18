@@ -157,6 +157,7 @@ class LatentOptimizer:
                 ref_audio_path=ref_audio_path,
                 speaker_conditioning=speaker_conditioning,
                 text=text,
+                target_word=target_word,
                 language=language,
                 target_word_start_sample=target_word_start_sample,
                 target_word_end_sample=target_word_end_sample,

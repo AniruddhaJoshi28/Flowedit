@@ -46,6 +46,12 @@ class OptimizationConfig:
     use_f0_loss: bool = False
     f0_loss_alpha: float = 0.3
 
+    # Composite Spectral Loss Weights for crystal-clear phoneme pronunciation
+    mel_l1_loss_weight: float = 1.0
+    mel_mse_loss_weight: float = 0.5
+    spectral_convergence_loss_weight: float = 0.2
+    smooth_boundary_taper: bool = True
+
 
 @dataclass
 class MemoryConfig:
@@ -59,8 +65,11 @@ class MemoryConfig:
     # Maximum number of stored corrections (Paper Section 3.2 & 4.5: M_max = 500)
     max_entries: int = 500
 
-    # Deduplication: cosine similarity > 0.95 triggers EMA update (Paper Section 3.2)
+    # Deduplication: cosine similarity > 0.95 triggers EMA update for same context (Paper Section 3.2)
     dedup_cosine_threshold: float = 0.95
+
+    # Contextual homograph threshold: similarity below this for the same word creates a distinct contextual entry
+    homograph_sim_threshold: float = 0.88
 
     # EMA decay α for deduplication merges (Paper Section 3.2: α = 0.90)
     dedup_ema_decay: float = 0.90
@@ -68,17 +77,20 @@ class MemoryConfig:
     # Hopfield inverse temperature β = 1/√d (Paper Eq. 6: auto-computed from embedding_dim if None)
     hopfield_beta: Optional[float] = None
 
-    # Learned gate threshold scalar τ (Paper Section 3.2: τ ≈ 9.0 for precise homograph gating)
-    gate_threshold_init: float = 9.0
+    # Learned gate threshold scalar τ (Paper Section 3.2: τ ≈ 5.0 for precise homograph & out-of-domain gating)
+    gate_threshold_init: float = 5.0
 
-    # Context window for homograph disambiguation (Paper Section 3.2: ±1-2 tokens)
-    context_window: int = 1
+    # Context window in words for homograph disambiguation (Paper Section 3.2: ±1-3 words)
+    context_window: int = 3
 
-    # Gaussian standard deviation for context key weighting (Paper Section 3.2)
-    context_sigma: float = 0.8
+    # Context character radius for character-level tokenizers (encompassing surrounding words)
+    context_char_radius: int = 18
 
-    # Inference amplification factor on retrieved perturbation δ (Paper Eq. 7 gain)
-    correction_scale: float = 1.5
+    # Gaussian standard deviation for context key weighting across neighbouring tokens
+    context_sigma: float = 8.0
+
+    # Inference amplification factor on retrieved perturbation δ (Paper Eq. 7: calibrated 1.0 for fidelity)
+    correction_scale: float = 1.0
 
     # LRU pruning access age threshold
     lru_max_age: int = 1000

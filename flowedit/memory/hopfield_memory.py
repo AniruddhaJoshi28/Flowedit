@@ -68,13 +68,15 @@ class HopfieldMemory(nn.Module):
         self.beta = self.config.hopfield_beta or (1.0 / math.sqrt(self.d))
         self.max_entries = getattr(self.config, "max_entries", 500)
         self.dedup_threshold = getattr(self.config, "dedup_cosine_threshold", 0.95)
+        self.homograph_threshold = getattr(self.config, "homograph_sim_threshold", 0.88)
         self.dedup_ema = getattr(self.config, "dedup_ema_decay", 0.90)
-        self.context_window = getattr(self.config, "context_window", 1)
-        self.context_sigma = getattr(self.config, "context_sigma", 0.8)
+        self.context_window = getattr(self.config, "context_window", 3)
+        self.context_char_radius = getattr(self.config, "context_char_radius", 18)
+        self.context_sigma = getattr(self.config, "context_sigma", 8.0)
 
-        # Gate threshold τ (Paper Section 3.2: τ ≈ 9.0 for precise homograph gating)
+        # Gate threshold τ (Paper Section 3.2: τ ≈ 5.0 for precise homograph & out-of-domain gating)
         self.gate_threshold = nn.Parameter(
-            torch.tensor(float(getattr(self.config, "gate_threshold_init", 9.0)), dtype=torch.float32)
+            torch.tensor(float(getattr(self.config, "gate_threshold_init", 5.0)), dtype=torch.float32)
         )
 
         self.entries: List[MemoryEntry] = []
@@ -91,11 +93,13 @@ class HopfieldMemory(nn.Module):
         self,
         embeddings: torch.Tensor,
         token_indices: List[int],
+        carrier_text: Optional[str] = None,
     ) -> torch.Tensor:
-        """Compute Gaussian context-weighted key K_i ∈ R^d (Paper Section 3.2).
+        """Compute Gaussian context-conditioned key K_i ∈ R^d (Paper Section 3.2).
 
-        K_i incorporates surrounding context window ±1-2 tokens:
-            w_k = exp(-k^2 / (2 * σ^2))
+        K_i incorporates surrounding context window ±3 words / ±16-24 tokens:
+            w_k = 1.0 for target word span tokens
+            w_k = exp(-dist_to_target^2 / (2 * σ^2)) for surrounding neighbouring words
         """
         if embeddings.dim() == 3:
             emb = embeddings[0]  # [S, d]
@@ -107,23 +111,27 @@ class HopfieldMemory(nn.Module):
         if not token_indices:
             return F.normalize(emb.mean(dim=0), p=2, dim=-1)
 
-        # Target span mean
-        target_center = sum(token_indices) / len(token_indices)
+        # Target span
+        min_idx = max(0, min(token_indices))
+        max_idx = min(seq_len - 1, max(token_indices))
         weights = torch.zeros(seq_len, device=emb.device, dtype=emb.dtype)
 
-        char_radius = max(2, int(self.context_window * 2))
-        char_sigma = max(0.5, float(self.context_sigma * 1.5))
+        char_radius = max(6, int(self.context_char_radius))
+        char_sigma = max(1.0, float(self.context_sigma))
 
         for i in range(seq_len):
-            if i in token_indices:
+            if min_idx <= i <= max_idx:
                 weights[i] = 1.0
             else:
-                dist = abs(i - target_center)
+                if i < min_idx:
+                    dist = min_idx - i
+                else:
+                    dist = i - max_idx
                 if dist <= char_radius:
                     weights[i] = math.exp(-(dist ** 2) / (2.0 * (char_sigma ** 2)))
 
         weights = weights / (weights.sum() + 1e-8)
-        context_key = torch.sum(emb * weights.unsqueeze(-1), dim=0) # [d]
+        context_key = torch.sum(emb * weights.unsqueeze(-1), dim=0)  # [d]
         return F.normalize(context_key, p=2, dim=-1)
 
     def write(
@@ -139,9 +147,9 @@ class HopfieldMemory(nn.Module):
     ) -> Tuple[int, str]:
         """Store or update a correction in Modern Hopfield Memory (Paper Section 3.2).
 
-        If cosine similarity with existing entry > 0.95, perform EMA update:
-            K_i ← α K_i + (1-α) K_new
-            V_i ← α V_i + (1-α) V_new  (α = 0.90)
+        Handles Contextual Homographs:
+        - If the exact same word matches with high context similarity (> 0.95), merge via EMA.
+        - If the exact same word appears with different context (< 0.90), store as a distinct contextual entry!
         """
         self.current_step += 1
         key_1d = key.squeeze().detach().float()
@@ -154,26 +162,36 @@ class HopfieldMemory(nn.Module):
 
         key_norm = F.normalize(key_1d, p=2, dim=-1)
 
-        # Check for deduplication
+        # Check for deduplication vs contextual homographs
         if self.entries:
             keys_stacked = torch.stack([F.normalize(e.key, p=2, dim=-1) for e in self.entries]).to(key_norm.device)
             sims = torch.mv(keys_stacked, key_norm)
             max_sim, best_idx = torch.max(sims, dim=0)
 
-            if max_sim.item() >= self.dedup_threshold:
-                # EMA Merge (Paper Section 3.2: α = 0.90)
-                matched = self.entries[best_idx.item()]
-                matched_key = matched.key.to(device=key_1d.device, dtype=key_1d.dtype)
-                matched_val = matched.value.to(device=val_1d.device, dtype=val_1d.dtype)
-                matched.key = F.normalize(self.dedup_ema * matched_key + (1.0 - self.dedup_ema) * key_1d, p=2, dim=-1)
-                matched.value = self.dedup_ema * matched_val + (1.0 - self.dedup_ema) * val_1d
-                matched.access_count += 1
-                matched.last_access_step = self.current_step
-                matched.metadata.update(metadata or {})
+            matched_entry = self.entries[best_idx.item()]
+            is_same_word = (matched_entry.word.strip().lower() == word.strip().lower())
+
+            if is_same_word and max_sim.item() >= self.dedup_threshold:
+                # Same word in matching context -> EMA Merge (Paper Section 3.2: α = 0.90)
+                matched_key = matched_entry.key.to(device=key_1d.device, dtype=key_1d.dtype)
+                matched_val = matched_entry.value.to(device=val_1d.device, dtype=val_1d.dtype)
+                matched_entry.key = F.normalize(self.dedup_ema * matched_key + (1.0 - self.dedup_ema) * key_1d, p=2, dim=-1)
+                matched_entry.value = self.dedup_ema * matched_val + (1.0 - self.dedup_ema) * val_1d
+                matched_entry.access_count += 1
+                matched_entry.last_access_step = self.current_step
+                matched_entry.metadata.update(metadata or {})
+                if full_delta is not None:
+                    matched_entry.full_delta = full_delta.detach().cpu().float()
                 logger.info(
-                    f"✓ Hopfield Memory EMA Merge: '{word}' matched entry {best_idx} (sim={max_sim.item():.4f} ≥ {self.dedup_threshold})"
+                    f"✓ Hopfield Memory EMA Merge: '{word}' in matching context (sim={max_sim.item():.4f} ≥ {self.dedup_threshold})"
                 )
                 return best_idx.item(), "merged"
+            elif is_same_word:
+                # Same word in DIFFERENT context -> Store as distinct Contextual Homograph entry!
+                logger.info(
+                    f"✓ Hopfield Memory: Distinct Contextual Homograph detected for '{word}' "
+                    f"(context sim={max_sim.item():.4f} < {self.dedup_threshold}). Storing as separate entry."
+                )
 
         # LRU Pruning if capacity exceeded (Paper Section 3.2: M_max = 500)
         if len(self.entries) >= self.max_entries:
@@ -242,8 +260,8 @@ class HopfieldMemory(nn.Module):
         V = torch.stack([e.value.to(device=device, dtype=dtype) for e in self.entries])     # [M, d]
 
         # 2. Compute contextual query vectors Q_ctx across sequence using Gaussian smoothing
-        char_radius = max(2, int(self.context_window * 2))
-        char_sigma = max(0.5, float(self.context_sigma * 1.5))
+        char_radius = max(4, min(int(self.context_char_radius), max(2, seq_len - 1)))
+        char_sigma = max(1.0, float(self.context_sigma))
         kernel_size = 2 * char_radius + 1
         x_grid = torch.arange(-char_radius, char_radius + 1, device=device, dtype=dtype)
         gaussian_kernel = torch.exp(- (x_grid ** 2) / (2.0 * (char_sigma ** 2)))
@@ -274,12 +292,12 @@ class HopfieldMemory(nn.Module):
         tau = self.gate_threshold.to(device=device, dtype=dtype)
         gate = torch.sigmoid(max_scores - tau)                                # [S]
 
-        # Suppress noise below threshold (gate > 0.25)
+        # Suppress noise below threshold
         gate_final = torch.where(gate > 0.25, gate, torch.zeros_like(gate))
 
-        # Normalize active gate so peak reaches 1.0 (delivering full learned delta norm)
+        # Normalize active gate so peak reaches 1.0 when confident match exists (peak > 0.50)
         max_g = gate_final.max()
-        if max_g > 0.05:
+        if max_g > 0.50:
             gate_final = gate_final / max_g
 
         active_idx = (gate_final > 0).nonzero(as_tuple=True)[0].tolist()

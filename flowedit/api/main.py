@@ -234,6 +234,10 @@ async def synthesize_text(
             path=output_path,
             media_type="audio/wav",
             filename="synthesized_flowedit.wav",
+            headers={
+                "X-FlowEdit-Mode": "corrected",
+                "X-Memory-Active": str(result.get("is_modified", False)),
+            },
         )
     finally:
         if os.path.exists(temp_speaker_path):
@@ -247,12 +251,15 @@ async def synthesize_baseline(
     speaker_wav: UploadFile = File(..., description="Speaker reference audio for voice conditioning"),
     ref_text: Optional[str] = Form(None, description="Optional transcription of speaker audio"),
 ):
-    """Pure baseline synthesis without any Hopfield memory modifications."""
+    """Pure baseline synthesis without any Hopfield memory modifications (uncorrected base pronunciation)."""
     global correction_pipeline
     if not correction_pipeline:
         raise HTTPException(status_code=503, detail="Pipeline not initialized.")
 
     text = text.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="text cannot be empty.")
+
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_speaker:
         temp_speaker_path = temp_speaker.name
     await speaker_wav.seek(0)
@@ -265,11 +272,13 @@ async def synthesize_baseline(
     try:
         bb = correction_pipeline.backbone
         speaker_cond = bb.get_speaker_embedding(temp_speaker_path, language, ref_text=ref_text)
+        # Synthesize pure baseline (text_embedding_delta=None, no memory hooks)
         wav, sr = bb.synthesize_direct(
             text=text,
             speaker_conditioning=speaker_cond,
             language=language,
             user_ref_text=ref_text,
+            text_embedding_delta=None,
         )
         sf.write(output_path, wav.squeeze().cpu().numpy(), sr)
 
@@ -277,6 +286,10 @@ async def synthesize_baseline(
             path=output_path,
             media_type="audio/wav",
             filename="synthesized_baseline.wav",
+            headers={
+                "X-FlowEdit-Mode": "baseline",
+                "X-Pronunciation-Status": "uncorrected",
+            },
         )
     finally:
         if os.path.exists(temp_speaker_path):
@@ -285,13 +298,18 @@ async def synthesize_baseline(
 
 @app.get("/api/memory")
 async def get_memory_entries():
-    """List all stored Hopfield memory corrections."""
+    """List all stored Hopfield memory corrections with contextual metadata."""
     global correction_pipeline
     if not correction_pipeline or not correction_pipeline.memory:
         return {"corrections": [], "size": 0}
     
     entries_info = [
-        {"word": e.word, "carrier": e.carrier_text, "access_count": e.access_count}
+        {
+            "word": e.word,
+            "carrier": e.carrier_text,
+            "access_count": e.access_count,
+            "language": e.language,
+        }
         for e in correction_pipeline.memory.entries
     ]
     return {"size": len(entries_info), "corrections": entries_info}
