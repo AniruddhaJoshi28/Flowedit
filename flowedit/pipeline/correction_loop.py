@@ -4,7 +4,7 @@ Correction Loop — Full FlowEdit Correction Pipeline (arXiv:2606.20518).
 Orchestrates the three stages of FlowEdit:
     Stage 1: Detection & Grounding (Whisper forced alignment)
     Stage 2: Latent Input Optimization (50-step Adam optimization of perturbation δ*)
-    Stage 3: Associative Memory Storage (Continuous Modern Hopfield Network)
+    Stage 3: Associative Memory Storage (Continuous Modern Hopfield Network with cluster averaging)
 """
 
 import time
@@ -12,7 +12,7 @@ import os
 import tempfile
 import logging
 from dataclasses import dataclass
-from typing import Optional, Dict, List, Any
+from typing import Optional, Dict, List, Any, Union
 from pathlib import Path
 
 import torch
@@ -89,10 +89,12 @@ class CorrectionLoop:
         text: str,
         target_word: str,
         ref_audio_path: str,
-        speaker_wav: str,
+        speaker_wav: Union[str, List[str]],
         language: str = "en",
         user_ref_text: Optional[str] = None,
         occurrence_index: int = 0,
+        extra_speaker_wavs: Optional[List[str]] = None,
+        phonetic_hint: Optional[str] = None,
     ) -> CorrectionResult:
         """Learn and store a pronunciation correction from reference audio.
 
@@ -100,10 +102,11 @@ class CorrectionLoop:
             text: Full carrier sentence containing target word
             target_word: Target word to correct
             ref_audio_path: Path to audio with target pronunciation
-            speaker_wav: Speaker voice audio for conditioning
+            speaker_wav: Speaker voice audio for conditioning (single path or list of paths)
             language: Language code
             user_ref_text: Optional reference text
             occurrence_index: Index if target word occurs multiple times
+            extra_speaker_wavs: Optional additional speaker audio paths for multi-speaker joint optimization
 
         Returns:
             CorrectionResult
@@ -131,13 +134,14 @@ class CorrectionLoop:
             # Stage 1: Detection & Grounding (Whisper Alignment)
             # ─────────────────────────────────────────────────────────────
             logger.info("▶ Stage 1: Whisper Forced Alignment")
+            # Determine if reference audio is word-level (≤ 6.0s or short ref text)
             ref_dur = librosa.get_duration(path=ref_audio_path)
-            is_word_only = ref_dur < 2.0
+            is_word_only = (user_ref_text is None or len(user_ref_text.split()) <= 2) and (ref_dur < 6.0)
 
             alignment = self.aligner.align(
                 audio_path=ref_audio_path,
                 target_word=primary_target_word,
-                full_text=None,
+                full_text=user_ref_text if not is_word_only else None,
                 language=language,
                 ref_is_word_only=is_word_only,
             )
@@ -149,7 +153,9 @@ class CorrectionLoop:
                 tokenizer=self.backbone.tokenizer,
                 language=language,
                 occurrence_index=occurrence_index,
+                target_phrase=clean_target if clean_target != primary_target_word else None,
             )
+
 
             logger.info(
                 f"  ✓ Aligned '{primary_target_word}' → Tokens I: {alignment.token_indices} "
@@ -168,10 +174,27 @@ class CorrectionLoop:
                     error_message="Could not resolve token indices for target word",
                 )
 
-            # Extract speaker conditioning
-            speaker_conditioning = self.backbone.get_speaker_embedding(
-                speaker_wav, language=language, ref_text=user_ref_text
-            )
+            # Explicit user phonetic hint (Whisper auto-hallucinations disabled)
+            if phonetic_hint:
+                logger.info(f"  o- Using explicit user phonetic hint: '{phonetic_hint}'")
+
+            # Collect speaker conditionings for multi-speaker joint optimization
+            speaker_paths: List[str] = []
+            if isinstance(speaker_wav, list):
+                speaker_paths.extend(speaker_wav)
+            elif speaker_wav:
+                speaker_paths.append(speaker_wav)
+
+            if extra_speaker_wavs:
+                for p in extra_speaker_wavs:
+                    if p and p not in speaker_paths:
+                        speaker_paths.append(p)
+
+            speaker_cond_list = [
+                self.backbone.get_speaker_embedding(p, language=language, ref_text=user_ref_text)
+                for p in speaker_paths
+            ]
+            speaker_conditioning = speaker_cond_list if len(speaker_cond_list) > 1 else speaker_cond_list[0]
 
             # ─────────────────────────────────────────────────────────────
             # Stage 2: Latent Input Optimization
@@ -188,11 +211,11 @@ class CorrectionLoop:
                 speaker_conditioning=speaker_conditioning,
                 language=language,
                 ref_start_time=getattr(alignment, "start_time", None),
+                phonetic_hint=phonetic_hint,
                 ref_end_time=getattr(alignment, "end_time", None),
             )
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
-
 
             # Candidate Validation Gate
             validator = CandidateValidator(max_relative_delta=self.config.optimization.max_relative_delta)
@@ -217,9 +240,13 @@ class CorrectionLoop:
                 )
 
             # ─────────────────────────────────────────────────────────────
-            # Stage 3: Associative Memory Storage (Modern Hopfield Network)
+            # Stage 3: Associative Memory Storage & Cluster Averaging
             # ─────────────────────────────────────────────────────────────
-            logger.info("▶ Stage 3: Modern Hopfield Associative Memory Write")
+            logger.info("▶ Stage 3: Modern Hopfield Associative Memory Write / Cluster Average")
+            effective_phonetic = phonetic_hint or getattr(alignment, "auto_phonetic_hint", None) or clean_target
+            if effective_phonetic and effective_phonetic.strip().lower() != primary_target_word.lower():
+                logger.info(f"  ✓ Reference audio pronunciation representation: '{effective_phonetic}'")
+
             with torch.no_grad():
                 base_embeddings = (
                     optimization.base_embeddings
@@ -241,13 +268,15 @@ class CorrectionLoop:
                 carrier_text=text,
                 token_indices=alignment.token_indices,
                 language=language,
-                full_delta=optimization.delta,  # Full δ* [1, S, d] in pre-ConvNeXt space
+                full_delta=optimization.delta,
+                word_delta=getattr(optimization, "word_delta", None),
+                phonetic_text=effective_phonetic,
             )
 
             elapsed = time.time() - t_start
             logger.info(f"\n{'='*60}")
             logger.info(f"✓ FLOWEDIT CORRECTION SUCCESS: '{primary_target_word}' in {elapsed:.2f}s")
-            logger.info(f"  Memory Action: {action.upper()} at index {mem_idx} | Total: {self.memory.num_entries}")
+            logger.info(f"  Memory Action: {action.upper()} at index {mem_idx} | Total Entries: {self.memory.num_entries}")
             logger.info(f"{'='*60}\n")
 
             return CorrectionResult(

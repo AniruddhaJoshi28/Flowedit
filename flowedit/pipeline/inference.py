@@ -16,7 +16,7 @@ import torch
 import soundfile as sf
 
 from flowedit.config import FlowEditConfig
-from flowedit.backbone import create_backbone, F5TTSBackbone
+from flowedit.backbone import create_backbone, TTSBackbone
 from flowedit.memory.hopfield_memory import HopfieldMemory
 from flowedit.refiner.hopfield_refiner import HopfieldRefiner
 from flowedit.utils.indic_phonetics import normalize_indic_phonetics
@@ -29,14 +29,14 @@ class FlowEditInference:
 
     def __init__(self, config: Optional[FlowEditConfig] = None):
         self.config = config or FlowEditConfig()
-        self.backbone: Optional[F5TTSBackbone] = None
+        self.backbone: Optional[TTSBackbone] = None
         self.memory: Optional[HopfieldMemory] = None
         self.refiner: Optional[HopfieldRefiner] = None
         self._is_ready = False
 
     def load(
         self,
-        backbone: Optional[F5TTSBackbone] = None,
+        backbone: Optional[TTSBackbone] = None,
         memory: Optional[HopfieldMemory] = None,
     ) -> None:
         """Initialize inference pipeline."""
@@ -70,6 +70,7 @@ class FlowEditInference:
         language: str = "en",
         user_ref_text: Optional[str] = None,
         output_path: Optional[str] = None,
+        **kwargs,
     ) -> Dict[str, Any]:
         """Synthesize speech with automatic Hopfield memory pronunciation retrieval.
 
@@ -98,6 +99,7 @@ class FlowEditInference:
             speaker_conditioning=speaker_conditioning,
             language=language,
             user_ref_text=user_ref_text,
+            **kwargs,
         )
 
         waveform = refine_res.waveform

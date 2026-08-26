@@ -42,10 +42,10 @@ class CandidateValidator:
         # 1. Stability check: 0 < ||δ_I|| / ||c_I|| ≤ max_relative_delta
         rel_ratio = getattr(optimization_result, "relative_delta_ratio", 0.0)
         delta_norm = getattr(optimization_result, "delta_norm", 0.0)
-        stability_passed = (delta_norm > 0.01) and (rel_ratio <= self.max_relative_delta)
+        stability_passed = (delta_norm > 0.01) and (rel_ratio <= (self.max_relative_delta + 1e-3))
         if delta_norm <= 0.01:
             reasons.append(f"Zero or negligible delta norm ({delta_norm:.4f})")
-        elif rel_ratio > self.max_relative_delta:
+        elif rel_ratio > (self.max_relative_delta + 1e-3):
             reasons.append(f"Relative delta ratio {rel_ratio:.4f} > limit {self.max_relative_delta}")
 
         # 2. Loss convergence check: final_loss must improve upon initial_loss

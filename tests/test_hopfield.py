@@ -1,5 +1,6 @@
 """
 Unit tests for the Modern Hopfield Memory and Refiner modules (arXiv:2606.20518).
+Tests cluster averaging, contextual homograph disambiguation, multi-word retrieval, and cross-sentence transfer.
 """
 
 import torch
@@ -18,9 +19,10 @@ class TestHopfieldMemory:
         self.dim = 128
         self.config = MemoryConfig(
             max_entries=5,
-            dedup_cosine_threshold=0.95,
+            dedup_cosine_threshold=0.72,
+            homograph_sim_threshold=0.72,
             dedup_ema_decay=0.90,
-            gate_threshold_init=2.0,
+            gate_threshold_init=7.0,
         )
         self.memory = HopfieldMemory(config=self.config, embedding_dim=self.dim)
 
@@ -46,21 +48,45 @@ class TestHopfieldMemory:
         res = self.memory.retrieve(query)
         assert res.retrieved_delta.shape == (1, 1, self.dim)
 
-    def test_deduplication(self):
+    def test_cluster_averaging(self):
+        """Verify that multiple corrections for the same word in matching context are averaged."""
         key = F.normalize(torch.randn(self.dim), dim=0)
-        value1 = torch.randn(self.dim)
-        value2 = torch.randn(self.dim)
+        value1 = torch.ones(self.dim) * 2.0
+        word_delta1 = torch.ones(1, 5, self.dim) * 1.0
 
-        self.memory.write(key, value1, word="test")
+        idx1, action1 = self.memory.write(
+            key=key,
+            value=value1,
+            word="pipes",
+            carrier_text="The pipes are made up of lead",
+            word_delta=word_delta1,
+        )
+        assert action1 == "inserted"
         assert self.memory.num_entries == 1
 
-        # Very similar key (cosine > 0.95)
-        key_similar = key + 0.01 * torch.randn(self.dim)
-        key_similar = F.normalize(key_similar, dim=0)
-        idx, action = self.memory.write(key_similar, value2, word="test")
+        # Second correction for same word with similar context (cosine > 0.72)
+        key2 = F.normalize(key + 0.05 * torch.randn(self.dim), dim=0)
+        value2 = torch.ones(self.dim) * 4.0
+        word_delta2 = torch.ones(1, 5, self.dim) * 3.0
 
-        assert action == "merged"
+        idx2, action2 = self.memory.write(
+            key=key2,
+            value=value2,
+            word="pipes",
+            carrier_text="These copper pipes are long",
+            word_delta=word_delta2,
+        )
+
+        assert action2 == "averaged"
+        assert idx2 == idx1
         assert self.memory.num_entries == 1
+        entry = self.memory.entries[0]
+        assert entry.access_count == 2
+        # Value should be average: (2.0 + 4.0)/2 = 3.0
+        assert torch.allclose(entry.value, torch.ones(self.dim) * 3.0, atol=1e-4)
+        # word_delta should be average: (1.0 + 3.0)/2 = 2.0
+        assert torch.allclose(entry.word_delta, torch.ones(1, 5, self.dim) * 2.0, atol=1e-4)
+        assert len(entry.carrier_texts) == 2
 
     def test_lru_pruning(self):
         # Fill capacity (max_entries=5)
@@ -89,14 +115,14 @@ class TestHopfieldMemory:
         assert torch.isclose(torch.norm(key), torch.tensor(1.0), atol=1e-4)
 
     def test_contextual_homograph_storage_and_disambiguation(self):
-        """Verify that identical words with distinct contexts are stored as separate entries."""
-        # 1. Simulate embeddings for Sentence A: "The pipe was made of lead"
+        """Verify that identical words with distinct contexts are stored as separate entries and disambiguated."""
         torch.manual_seed(42)
         seq_len = 20
         emb_metal = torch.randn(1, seq_len, self.dim)
-        lead_indices_a = [16, 17, 18, 19] # "lead"
+        lead_indices_a = [16, 17, 18, 19]  # "lead" (metal)
         key_metal = self.memory.compute_context_key(emb_metal, lead_indices_a)
         val_metal = torch.ones(self.dim) * 1.5
+        w_delta_metal = torch.ones(1, 4, self.dim) * 2.0
 
         idx1, action1 = self.memory.write(
             key=key_metal,
@@ -104,17 +130,17 @@ class TestHopfieldMemory:
             word="lead",
             carrier_text="The pipe was made of lead",
             token_indices=lead_indices_a,
+            word_delta=w_delta_metal,
         )
         assert action1 == "inserted"
         assert self.memory.num_entries == 1
 
-        # 2. Simulate embeddings for Sentence B: "She will lead the team" (different context)
+        # Simulate Sentence B: "She will lead the team" (orthogonal context)
         emb_leader = torch.randn(1, seq_len, self.dim)
-        # Same word letters, different surrounding context
-        emb_leader[0, 9:13, :] = emb_metal[0, 16:20, :] # exact same word embedding
         lead_indices_b = [9, 10, 11, 12]
         key_leader = self.memory.compute_context_key(emb_leader, lead_indices_b)
         val_leader = torch.ones(self.dim) * -1.5
+        w_delta_leader = torch.ones(1, 4, self.dim) * -2.0
 
         idx2, action2 = self.memory.write(
             key=key_leader,
@@ -122,23 +148,57 @@ class TestHopfieldMemory:
             word="lead",
             carrier_text="She will lead the team",
             token_indices=lead_indices_b,
+            word_delta=w_delta_leader,
         )
         # Must be stored as a distinct contextual homograph entry!
         assert action2 == "inserted"
         assert self.memory.num_entries == 2
         assert idx1 != idx2
 
-        # 3. Retrieve on query matching metal context
+        # Retrieve on query matching metal context
         query_metal = emb_metal
-        res_metal = self.memory.retrieve(query_metal)
+        res_metal = self.memory.retrieve(query_metal, text="The pipe was made of lead")
         assert res_metal.top_matches[0][0] == "lead"
         assert res_metal.matched_carrier_text == "The pipe was made of lead"
 
-        # 4. Retrieve on query matching leader context
+        # Retrieve on query matching leader context
         query_leader = emb_leader
-        res_leader = self.memory.retrieve(query_leader)
+        res_leader = self.memory.retrieve(query_leader, text="She will lead the team")
         assert res_leader.top_matches[0][0] == "lead"
         assert res_leader.matched_carrier_text == "She will lead the team"
+
+    def test_multi_word_simultaneous_retrieval(self):
+        """Verify that a sentence containing multiple corrected words activates both corrections."""
+        torch.manual_seed(42)
+        text = "The pipes are made of lead"
+        seq_len = len(text)
+        emb = torch.randn(1, seq_len, self.dim)
+
+        # Entry 1: pipes at [4:9]
+        pipes_indices = list(range(4, 9))
+        k_pipes = self.memory.compute_context_key(emb, pipes_indices)
+        v_pipes = torch.ones(self.dim) * 1.0
+        w_pipes = torch.ones(1, 5, self.dim) * 1.5
+        self.memory.write(k_pipes, v_pipes, word="pipes", carrier_text=text, word_delta=w_pipes)
+
+        # Entry 2: lead at [22:26]
+        lead_indices = list(range(22, 26))
+        k_lead = self.memory.compute_context_key(emb, lead_indices)
+        v_lead = torch.ones(self.dim) * 2.0
+        w_lead = torch.ones(1, 4, self.dim) * 2.5
+        self.memory.write(k_lead, v_lead, word="lead", carrier_text=text, word_delta=w_lead)
+
+        assert self.memory.num_entries == 2
+
+        # Retrieve with the full sentence
+        res = self.memory.retrieve(emb, text=text)
+        assert res.is_active
+        words_found = [span.word for span in res.matched_spans]
+        assert "pipes" in words_found
+        assert "lead" in words_found
+        # Verify delta is injected at both word positions
+        assert res.retrieved_delta[0, 4:9, :].abs().sum() > 0
+        assert res.retrieved_delta[0, 22:26, :].abs().sum() > 0
 
 
 class TestHopfieldRefiner:
@@ -155,8 +215,11 @@ class TestHopfieldRefiner:
             embedding_dim = 128
             device = "cpu"
             def encode_text(self, text, lang="en"):
-                return torch.randn(1, 6, 128)
+                return torch.randn(1, len(text), 128)
             def synthesize_direct(self, text, speaker_conditioning, **kwargs):
+                delta = kwargs.get("text_embedding_delta", None)
+                if delta is not None:
+                    return torch.ones(1, 24000), 24000
                 return torch.zeros(1, 24000), 24000
             def synthesize_from_embeddings(self, text_embeddings, speaker_conditioning, **kwargs):
                 return torch.ones(1, 24000), 24000

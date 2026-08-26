@@ -19,23 +19,24 @@ class OptimizationConfig:
     """
 
     # Number of Adam optimization steps (Paper Section 3.2: 50-100 steps)
-    n_steps: int = 50
+    n_steps: int = 100
 
-    # Learning rate schedule: cosine anneal from η0 = 0.02 → η_end = 0.002
-    lr_start: float = 0.02
+    # Learning rate schedule: cosine anneal from η0 = 0.080 → η_end = 0.002
+    lr_start: float = 0.080
     lr_end: float = 0.002
 
-    # L2 regularization weight on δ (Paper Section 3.2 & Table 2: λ = 0.0005)
-    lambda_reg: float = 0.0005
+    # L2 regularization weight on δ (low to allow full phonetic override from reference audio)
+    lambda_reg: float = 0.0001
 
-    # Gradient clipping L_infinity max norm (Paper Section 3.2: ||∇_δ||_∞ ≤ 1.0)
+    # Gradient clipping L_2 max norm (Paper Section 3.2: ||∇_δ||_2 ≤ 1.0)
     grad_clip_max_norm: float = 1.0
 
-    # Number of Euler ODE solver steps (Paper Section 3.1 & 3.2: N = 16 steps for fast/memory-efficient differentiation)
+    # Number of Euler ODE solver steps (Paper Section 3.1 & 3.2: N = 16 steps)
     ode_steps: int = 16
 
-    # Relative perturbation norm constraint: ||δ_I|| / ||c_I|| ≤ max_relative_delta
-    max_relative_delta: float = 3.0
+    # Relative perturbation norm constraint: ||δ_I|| / ||c_I|| ≤ max_relative_delta (1.2 allows full phonetic override)
+    max_relative_delta: float = 1.20
+
 
     # Data augmentation on reference mel during optimization (Paper Section 3.2)
     enable_augmentation: bool = False
@@ -65,35 +66,36 @@ class MemoryConfig:
     # Maximum number of stored corrections (Paper Section 3.2 & 4.5: M_max = 500)
     max_entries: int = 500
 
-    # Deduplication: cosine similarity > 0.95 triggers EMA update for same context (Paper Section 3.2)
-    dedup_cosine_threshold: float = 0.95
+    # Deduplication & cluster averaging: cosine similarity >= 0.65 triggers running average for same contextual sense
+    dedup_cosine_threshold: float = 0.65
 
     # Contextual homograph threshold: similarity below this for the same word creates a distinct contextual entry
-    homograph_sim_threshold: float = 0.88
+    homograph_sim_threshold: float = 0.65
 
-    # EMA decay α for deduplication merges (Paper Section 3.2: α = 0.90)
-    dedup_ema_decay: float = 0.90
+    # EMA decay α for deduplication merges (α = 0.80 for smooth exponential moving average)
+    dedup_ema_decay: float = 0.80
 
     # Hopfield inverse temperature β = 1/√d (Paper Eq. 6: auto-computed from embedding_dim if None)
     hopfield_beta: Optional[float] = None
 
-    # Learned gate threshold scalar τ (Paper Section 3.2: τ ≈ 5.0 for precise homograph & out-of-domain gating)
-    gate_threshold_init: float = 5.0
+    # Learned gate threshold scalar τ (Calibrated to 4.0 for robust target word matching across sentences)
+    gate_threshold_init: float = 4.0
 
     # Context window in words for homograph disambiguation (Paper Section 3.2: ±1-3 words)
     context_window: int = 3
 
     # Context character radius for character-level tokenizers (encompassing surrounding words)
-    context_char_radius: int = 18
+    context_char_radius: int = 4
 
     # Gaussian standard deviation for context key weighting across neighbouring tokens
-    context_sigma: float = 8.0
+    context_sigma: float = 2.0
 
-    # Inference amplification factor on retrieved perturbation δ (Paper Eq. 7: calibrated 1.0 for fidelity)
+    # Inference amplification factor on retrieved perturbation δ (Paper Eq. 7: calibrated 1.0 for continuous natural prosody)
     correction_scale: float = 1.0
 
     # LRU pruning access age threshold
     lru_max_age: int = 1000
+
 
 
 @dataclass
@@ -103,8 +105,9 @@ class AlignmentConfig:
     # Whisper model for alignment (Paper Section 3.2: Whisper-Large-v3, fallback to base if large unavailable)
     whisper_model: str = "base"
 
-    # Token boundary expansion: ±1 token around detected target (Paper Section 3.2)
-    token_expand: int = 1
+    # Token boundary expansion: 0 for exact target word tokens (avoids bleeding into neighbor spaces/words)
+    token_expand: int = 0
+
 
     # Minimum alignment confidence threshold
     min_confidence: float = 0.5
@@ -135,11 +138,18 @@ class AudioConfig:
 
 @dataclass
 class BackboneConfig:
-    """F5-TTS Diffusion Transformer Backbone configuration."""
+    """TTS Backbone configuration supporting XTTS-v2 and F5-TTS."""
 
-    backbone_type: str = "f5tts"
+    backbone_type: str = "xtts"
 
-    # Model checkpoint & vocab paths (optional overrides, downloads automatically if empty)
+    # XTTS Model checkpoint & configuration paths
+    xtts_model_dir: str = ""
+    xtts_checkpoint: str = "model.pth"
+    xtts_config_file: str = "config.json"
+    xtts_vocab_file: str = "vocab.json"
+    xtts_dvae_file: str = "dvae.pth"
+
+    # F5-TTS Model checkpoint & vocab paths (optional overrides)
     f5tts_ckpt_file: str = ""
     f5tts_vocab_file: str = ""
     vocoder_local_path: str = ""

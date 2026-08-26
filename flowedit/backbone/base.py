@@ -146,3 +146,16 @@ class TTSBackbone(nn.Module, ABC):
             text, speaker_conditioning, language=language, user_ref_text=user_ref_text, **kwargs
         )
 
+    def synthesize_baseline(
+        self,
+        text: str,
+        speaker_conditioning: Dict[str, Any],
+        language: str = "en",
+        user_ref_text: Optional[str] = None,
+        **kwargs,
+    ) -> Tuple[torch.Tensor, int]:
+        """Synthesize pure baseline audio using raw base model without FlowEdit memory."""
+        return self.synthesize_direct(
+            text, speaker_conditioning, language=language, user_ref_text=user_ref_text, **kwargs
+        )
+

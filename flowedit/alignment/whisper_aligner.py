@@ -50,6 +50,7 @@ class AlignmentResult:
     full_transcript: str
     char_start: Optional[int] = None
     char_end: Optional[int] = None
+    auto_phonetic_hint: Optional[str] = None
 
     @property
     def duration(self) -> float:
@@ -141,7 +142,54 @@ class WhisperAligner:
         # Load audio using whisperx
         audio = whisperx.load_audio(audio_path)
         
+        # 1. Handle Isolated Word Fallback via VAD + Auto-Phonetic Transcription
+        if ref_is_word_only:
+            import librosa
+            import numpy as np
+            logger.info(f"Using Audio-Boundary VAD + Whisper acoustic transcription for target_word: '{target_word}'")
+            
+            # Load audio for boundary detection
+            y, sr = librosa.load(audio_path, sr=16000)
+            duration = float(len(y)) / sr
+            
+            # Use librosa.effects.split with generous threshold to avoid clipping plosives/fricatives
+            non_silent_intervals = librosa.effects.split(y, top_db=35)
+            if len(non_silent_intervals) > 0:
+                start_sample = non_silent_intervals[0][0]
+                end_sample = non_silent_intervals[-1][1]
+                start_time = max(0.0, float(start_sample) / sr - 0.08)
+                end_time = min(duration, float(end_sample) / sr + 0.08)
+            else:
+                start_time = 0.0
+                end_time = duration
+
+            auto_phonetic_hint = None
+            try:
+                if self._model is not None:
+                    trans_res = self._model.transcribe(audio, language=language)
+                    if "segments" in trans_res and trans_res["segments"]:
+                        raw_text = " ".join(s.get("text", "") for s in trans_res["segments"]).strip()
+                        cleaned_text = re.sub(r'[^\w\s-]', '', raw_text).strip()
+                        if cleaned_text:
+                            auto_phonetic_hint = cleaned_text
+                            logger.info(f"✓ Whisper acoustic transcription of ref audio: '{auto_phonetic_hint}'")
+            except Exception as e:
+                logger.warning(f"Acoustic transcription failed ({e}). Operating in acoustic boundary mode.")
+
+            return AlignmentResult(
+                token_indices=[],  # Will be mapped to XTTS tokens in map_to_token_indices
+                start_time=start_time,
+                end_time=end_time,
+                confidence=1.0,
+                word=target_word,
+                full_transcript=auto_phonetic_hint or target_word,
+                char_start=0,
+                char_end=len(target_word),
+                auto_phonetic_hint=auto_phonetic_hint,
+            )
+
         # 1. Transcribe with Whisper (or use full_text directly for forced alignment)
+
         if full_text:
             # Bypass free transcription to guarantee target_word matches perfectly
             import librosa
@@ -230,6 +278,7 @@ class WhisperAligner:
                 f"(confidence: {match.get('confidence', 0):.2f})"
             )
 
+            auto_hint = match["word"] if match["word"].lower() != target_word.lower() else None
             return AlignmentResult(
                 token_indices=[],  # Populated by map_to_token_indices()
                 start_time=match["start"],
@@ -237,6 +286,7 @@ class WhisperAligner:
                 confidence=match.get("confidence", 0.0),
                 word=match["word"],
                 full_transcript=full_transcript,
+                auto_phonetic_hint=auto_hint
             )
 
         # Extract word-level segments from the aligned result
@@ -279,6 +329,7 @@ class WhisperAligner:
             f"(confidence: {word_info.get('confidence', 0):.2f})"
         )
 
+        auto_hint = word_info["word"] if word_info["word"].lower() != target_word.lower() else None
         return AlignmentResult(
             token_indices=[],  # Populated by map_to_token_indices()
             start_time=word_info["start"],
@@ -286,6 +337,7 @@ class WhisperAligner:
             confidence=word_info.get("confidence", 0.0),
             word=word_info["word"],
             full_transcript=full_transcript,
+            auto_phonetic_hint=auto_hint
         )
 
     def map_to_token_indices(
@@ -296,6 +348,7 @@ class WhisperAligner:
         tokenizer,
         language: str = "en",
         occurrence_index: int = 0,
+        target_phrase: Optional[str] = None,
     ) -> AlignmentResult:
         """Map word-level alignment to XTTS-2 token indices.
 
@@ -308,7 +361,8 @@ class WhisperAligner:
             target_word: The target word
             tokenizer: XTTS-2 tokenizer instance
             language: Language code
-            occurrence_index: 0-based occurrence index if multiple occurrences exist
+            occurrence_index: 0-based occurrence index if multiple occurrences exist (supports negative indexing e.g. -1 for last)
+            target_phrase: Optional surrounding phrase (e.g. "lead pipes") to uniquely locate target word occurrence
 
         Returns:
             Updated AlignmentResult with token_indices populated
@@ -322,31 +376,63 @@ class WhisperAligner:
         if isinstance(all_token_ids[0], list):
             all_token_ids = all_token_ids[0]
 
-        # Normalize both target_word and full_text with Indic phonetics helper so string matching succeeds
+        # Fast path: If full_text is the isolated target word, map all content tokens
+        if full_text.strip().lower() == target_word.strip().lower():
+            start_tok = 1 if (hasattr(tokenizer, "bos_token_id") and all_token_ids and all_token_ids[0] == getattr(tokenizer, "bos_token_id", None)) else 0
+            end_tok = len(all_token_ids) - 1 if (hasattr(tokenizer, "eos_token_id") and all_token_ids and all_token_ids[-1] == getattr(tokenizer, "eos_token_id", None)) else len(all_token_ids)
+            alignment.token_indices = list(range(start_tok, max(start_tok + 1, end_tok)))
+            alignment.char_start = 0
+            alignment.char_end = len(full_text)
+            logger.info(
+                f"Mapped isolated '{target_word}' to token indices {alignment.token_indices} (total tokens: {len(all_token_ids)})"
+            )
+            return alignment
+
+        # Normalize both target_word, phrase and full_text
         from flowedit.utils.indic_phonetics import normalize_indic_phonetics
         target_norm = normalize_indic_phonetics(target_word).lower()
         text_norm = normalize_indic_phonetics(full_text).lower()
 
-        # Primary search: word boundary occurrences
-        wb_matches = [m.span() for m in re.finditer(r'\b' + re.escape(target_norm) + r'\b', text_norm)]
-        if not wb_matches:
-            # Substring occurrences
-            wb_matches = [m.span() for m in re.finditer(re.escape(target_norm), text_norm)]
+        char_start = -1
+        char_end = -1
 
-        if wb_matches:
-            chosen_idx = min(occurrence_index, len(wb_matches) - 1)
-            char_start, char_end = wb_matches[chosen_idx]
-        else:
-            # Secondary search: clean alphanumeric matching
-            target_clean = self._normalize_word(target_word)
-            text_clean = self._normalize_word(full_text)
-            clean_matches = [m.span() for m in re.finditer(re.escape(target_clean), text_clean)]
-            if clean_matches:
-                chosen_idx = min(occurrence_index, len(clean_matches) - 1)
-                char_start, char_end = clean_matches[chosen_idx]
+        # 1. Target phrase grounding (e.g. user entered "lead pipes")
+        if target_phrase:
+            phrase_norm = normalize_indic_phonetics(target_phrase).lower()
+            phrase_matches = [m.span() for m in re.finditer(re.escape(phrase_norm), text_norm)]
+            if phrase_matches:
+                p_start, p_end = phrase_matches[min(max(0, occurrence_index), len(phrase_matches) - 1)]
+                phrase_substr = text_norm[p_start:p_end]
+                w_match = re.search(r'\b' + re.escape(target_norm) + r'\b', phrase_substr) or re.search(re.escape(target_norm), phrase_substr)
+                if w_match:
+                    char_start = p_start + w_match.start()
+                    char_end = p_start + w_match.end()
+
+        # 2. Primary search: word boundary occurrences
+        if char_start == -1:
+            wb_matches = [m.span() for m in re.finditer(r'\b' + re.escape(target_norm) + r'\b', text_norm)]
+            if not wb_matches:
+                # Substring occurrences
+                wb_matches = [m.span() for m in re.finditer(re.escape(target_norm), text_norm)]
+
+            if wb_matches:
+                if occurrence_index < 0:
+                    chosen_idx = max(0, len(wb_matches) + occurrence_index)
+                else:
+                    chosen_idx = min(occurrence_index, len(wb_matches) - 1)
+                char_start, char_end = wb_matches[chosen_idx]
             else:
-                char_start = -1
-                char_end = -1
+                # Secondary search: clean alphanumeric matching
+                target_clean = self._normalize_word(target_word)
+                text_clean = self._normalize_word(full_text)
+                clean_matches = [m.span() for m in re.finditer(re.escape(target_clean), text_clean)]
+                if clean_matches:
+                    if occurrence_index < 0:
+                        chosen_idx = max(0, len(clean_matches) + occurrence_index)
+                    else:
+                        chosen_idx = min(occurrence_index, len(clean_matches) - 1)
+                    char_start, char_end = clean_matches[chosen_idx]
+
 
         if char_start == -1:
             # Tertiary search: partial prefix match
@@ -458,8 +544,8 @@ class WhisperAligner:
         best_match = None
         best_score = 0.0
 
-        # Check single words and combinations of up to 3 adjacent words
-        for window_size in range(1, min(4, len(words) + 1)):
+        # Check single words and combinations of up to 4 adjacent words
+        for window_size in range(1, min(5, len(words) + 1)):
             for i in range(len(words) - window_size + 1):
                 window = words[i:i + window_size]
                 combined_word = "".join(w["word"] for w in window)
@@ -467,7 +553,7 @@ class WhisperAligner:
                 
                 score = self._similarity_score(combined_clean, target_clean)
                 
-                # Boost score slightly if phonetic normalizations match
+                # Boost score if phonetic normalizations match
                 try:
                     from flowedit.utils.indic_phonetics import normalize_indic_phonetics
                     phonetic_combined = self._normalize_word(normalize_indic_phonetics(combined_word))
@@ -476,9 +562,16 @@ class WhisperAligner:
                     score = max(score, phonetic_score)
                 except ImportError:
                     pass
+
+                # Length coverage weight to prevent partial substrings (like 'specific') from beating fuller phrases (like 'buy specific')
+                if combined_clean and target_clean:
+                    coverage = min(len(combined_clean), len(target_clean)) / max(len(combined_clean), len(target_clean))
+                    adjusted_score = score * (0.6 + 0.4 * coverage)
+                else:
+                    adjusted_score = score
                 
-                if score > best_score and score > 0.4:
-                    best_score = score
+                if adjusted_score > best_score and adjusted_score > 0.4:
+                    best_score = adjusted_score
                     # Create a merged word_info dictionary spanning the window
                     best_match = {
                         "word": " ".join(w["word"] for w in window),
