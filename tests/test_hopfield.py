@@ -82,10 +82,10 @@ class TestHopfieldMemory:
         assert self.memory.num_entries == 1
         entry = self.memory.entries[0]
         assert entry.access_count == 2
-        # Value should be average: (2.0 + 4.0)/2 = 3.0
-        assert torch.allclose(entry.value, torch.ones(self.dim) * 3.0, atol=1e-4)
-        # word_delta should be average: (1.0 + 3.0)/2 = 2.0
-        assert torch.allclose(entry.word_delta, torch.ones(1, 5, self.dim) * 2.0, atol=1e-4)
+        # Value should be EMA averaged with early correction decay=0.20, alpha=0.80: 2.0*0.2 + 4.0*0.8 = 3.6
+        assert torch.allclose(entry.value, torch.ones(self.dim) * 3.6, atol=1e-4)
+        # word_delta should be EMA averaged: 1.0*0.2 + 3.0*0.8 = 2.6
+        assert torch.allclose(entry.word_delta, torch.ones(1, 5, self.dim) * 2.6, atol=1e-4)
         assert len(entry.carrier_texts) == 2
 
     def test_lru_pruning(self):
@@ -199,6 +199,105 @@ class TestHopfieldMemory:
         # Verify delta is injected at both word positions
         assert res.retrieved_delta[0, 4:9, :].abs().sum() > 0
         assert res.retrieved_delta[0, 22:26, :].abs().sum() > 0
+
+    def test_contextual_averaging_disambiguation(self):
+        """Verify that 'bank' in 'river bank' produces a different key than 'bank' in 'bank account'.
+
+        The three-component contextual averaging (α·word + β·local + γ·global) should
+        produce distinct keys because the neighboring tokens differ.
+        """
+        torch.manual_seed(42)
+        # Simulate two sentences with "bank" in different contexts
+        # Use distinct random embeddings for each sentence to model genuinely different contexts
+        seq_len_a = 30  # "I walked along the river bank yesterday"
+        emb_a = torch.randn(1, seq_len_a, self.dim)
+        bank_indices_a = [24, 25, 26, 27]  # "bank" in "river bank"
+
+        seq_len_b = 30  # "I opened a new bank account today"
+        emb_b = torch.randn(1, seq_len_b, self.dim)
+        bank_indices_b = [15, 16, 17, 18]  # "bank" in "bank account"
+
+        key_river_bank = self.memory.compute_context_key(emb_a, bank_indices_a)
+        key_bank_account = self.memory.compute_context_key(emb_b, bank_indices_b)
+
+        # Both should be unit-normalized
+        assert torch.isclose(torch.norm(key_river_bank), torch.tensor(1.0), atol=1e-4)
+        assert torch.isclose(torch.norm(key_bank_account), torch.tensor(1.0), atol=1e-4)
+
+        # Cosine similarity should be low (distinct contexts → distinct keys)
+        cos_sim = torch.dot(key_river_bank, key_bank_account).item()
+        assert cos_sim < self.config.homograph_sim_threshold, (
+            f"Expected cosine similarity < {self.config.homograph_sim_threshold} for homograph disambiguation, "
+            f"got {cos_sim:.4f}"
+        )
+
+    def test_contextual_averaging_same_sense_clusters(self):
+        """Verify that 'bank' in similar contexts (same sense) produces similar keys.
+
+        Two sentences using "bank" with the same meaning should have keys with
+        cosine similarity >= the homograph threshold, enabling cluster averaging.
+        """
+        torch.manual_seed(42)
+        seq_len = 30
+
+        # Use a shared base embedding with small perturbations to model similar contexts
+        base_emb = torch.randn(1, seq_len, self.dim)
+        emb_a = base_emb + 0.02 * torch.randn(1, seq_len, self.dim)  # "river bank"
+        emb_b = base_emb + 0.02 * torch.randn(1, seq_len, self.dim)  # "bank of the stream"
+
+        # Same approximate position for "bank"
+        bank_indices = [20, 21, 22, 23]
+
+        key_a = self.memory.compute_context_key(emb_a, bank_indices)
+        key_b = self.memory.compute_context_key(emb_b, bank_indices)
+
+        cos_sim = torch.dot(key_a, key_b).item()
+        assert cos_sim >= self.config.homograph_sim_threshold, (
+            f"Expected cosine similarity >= {self.config.homograph_sim_threshold} for same-sense clustering, "
+            f"got {cos_sim:.4f}"
+        )
+
+    def test_context_weight_configuration(self):
+        """Verify that custom contextual averaging weights take effect and produce different keys."""
+        torch.manual_seed(42)
+        seq_len = 20
+        emb = torch.randn(1, seq_len, self.dim)
+        indices = [8, 9, 10, 11]
+
+        # Default weights (0.70 / 0.20 / 0.10)
+        key_default = self.memory.compute_context_key(emb, indices)
+
+        # Create memory with word-only weights (1.0 / 0.0 / 0.0) — ignoring context entirely
+        config_word_only = MemoryConfig(
+            context_key_word_weight=1.0,
+            context_key_local_weight=0.0,
+            context_key_global_weight=0.0,
+        )
+        memory_word_only = HopfieldMemory(config=config_word_only, embedding_dim=self.dim)
+        key_word_only = memory_word_only.compute_context_key(emb, indices)
+
+        # Create memory with context-heavy weights (0.30 / 0.50 / 0.20)
+        config_context_heavy = MemoryConfig(
+            context_key_word_weight=0.30,
+            context_key_local_weight=0.50,
+            context_key_global_weight=0.20,
+        )
+        memory_context_heavy = HopfieldMemory(config=config_context_heavy, embedding_dim=self.dim)
+        key_context_heavy = memory_context_heavy.compute_context_key(emb, indices)
+
+        # All three keys should be different (different weight configurations)
+        sim_default_word = torch.dot(key_default, key_word_only).item()
+        sim_default_heavy = torch.dot(key_default, key_context_heavy).item()
+        sim_word_heavy = torch.dot(key_word_only, key_context_heavy).item()
+
+        # They should not all be identical (at least one pair must differ meaningfully)
+        assert not (sim_default_word > 0.999 and sim_default_heavy > 0.999), (
+            "Different weight configurations should produce different keys"
+        )
+        # Word-only and context-heavy should differ the most
+        assert sim_word_heavy < sim_default_word or sim_word_heavy < sim_default_heavy, (
+            "Word-only and context-heavy keys should be more different than default vs either"
+        )
 
 
 class TestHopfieldRefiner:

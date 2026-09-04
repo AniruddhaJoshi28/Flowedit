@@ -93,6 +93,15 @@ class MemoryConfig:
     # Inference amplification factor on retrieved perturbation δ (Paper Eq. 7: calibrated 1.0 for continuous natural prosody)
     correction_scale: float = 1.0
 
+    # Contextual averaging weights for memory key computation (must sum to 1.0)
+    # K_i = α · word_emb + β · local_context + γ · global_context
+    # Word embedding weight α: primary signal anchoring the key to the target word
+    context_key_word_weight: float = 0.70
+    # Local context weight β: Gaussian-weighted neighbors for sense disambiguation (e.g., "bank" in "river bank" vs "bank account")
+    context_key_local_weight: float = 0.20
+    # Global context weight γ: coarse sentence-level signal for broad disambiguation
+    context_key_global_weight: float = 0.10
+
     # LRU pruning access age threshold
     lru_max_age: int = 1000
 

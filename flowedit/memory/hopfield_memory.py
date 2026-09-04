@@ -98,6 +98,12 @@ class HopfieldMemory(nn.Module):
         self.context_char_radius = getattr(self.config, "context_char_radius", 12)
         self.context_sigma = getattr(self.config, "context_sigma", 5.0)
 
+        # Contextual averaging weights for memory key computation
+        # K_i = α · word_emb + β · local_context + γ · global_context
+        self.context_key_word_weight = getattr(self.config, "context_key_word_weight", 0.70)
+        self.context_key_local_weight = getattr(self.config, "context_key_local_weight", 0.20)
+        self.context_key_global_weight = getattr(self.config, "context_key_global_weight", 0.10)
+
         # Gate threshold τ (Paper Section 3.2: τ ≈ 7.0 for precise 0.70 cosine similarity homograph gating)
         self.gate_threshold = nn.Parameter(
             torch.tensor(float(getattr(self.config, "gate_threshold_init", 7.0)), dtype=torch.float32)
@@ -115,16 +121,24 @@ class HopfieldMemory(nn.Module):
 
     def compute_context_key(
         self,
-
         embeddings: torch.Tensor,
         token_indices: List[int],
         carrier_text: Optional[str] = None,
     ) -> torch.Tensor:
-        """Compute word-centric context key K_i ∈ R^d for sense-level generalization.
+        """Compute word-centric context key K_i ∈ R^d using three-component contextual averaging.
 
-        Anchors primarily on the target word token embeddings (90% weight) with a gentle
-        coarse sentence context embedding (10% weight) to generalize across varying
-        carrier sentences while preserving homograph sense discrimination.
+        Blends three embedding components for sense-level generalization and homograph disambiguation:
+            K_i = α · word_emb + β · local_context + γ · global_context
+
+        Where:
+            - word_emb: mean of target word token embeddings (primary signal)
+            - local_context: Gaussian-weighted mean of ±R neighboring tokens, excluding
+              the target tokens themselves, capturing disambiguating local context
+              (e.g., "river" near "bank" vs "account" near "bank")
+            - global_context: mean of all sequence tokens (coarse sentence signal)
+
+        The configurable weights (α, β, γ) default to (0.70, 0.20, 0.10), keeping the
+        word embedding dominant while incorporating enough context for sense discrimination.
         """
         if embeddings.dim() == 3:
             emb = embeddings[0]  # [S, d]
@@ -140,14 +154,44 @@ class HopfieldMemory(nn.Module):
         min_idx = max(0, min(token_indices))
         max_idx = min(seq_len - 1, max(token_indices))
 
-        # 1. Target word token mean embedding (90% weight)
+        # 1. Target word embedding: mean of target token embeddings
         word_emb = emb[min_idx:max_idx + 1].mean(dim=0)
 
-        # 2. Coarse global context embedding (10% weight)
+        # 2. Local context: Gaussian-weighted average of neighboring tokens (excluding target span)
+        radius = max(1, int(self.context_char_radius))
+        sigma = max(1.0, float(self.context_sigma))
+        local_start = max(0, min_idx - radius)
+        local_end = min(seq_len, max_idx + 1 + radius)
+
+        # Collect neighbor token embeddings and their Gaussian weights
+        local_positions = []
+        for pos in range(local_start, local_end):
+            if pos < min_idx or pos > max_idx:  # Exclude target tokens
+                local_positions.append(pos)
+
+        if local_positions:
+            # Compute Gaussian weights centered on the target span midpoint
+            center = (min_idx + max_idx) / 2.0
+            neighbor_embs = emb[local_positions]  # [N_local, d]
+            distances = torch.tensor(
+                [abs(pos - center) for pos in local_positions],
+                device=emb.device, dtype=emb.dtype,
+            )
+            gauss_weights = torch.exp(-(distances ** 2) / (2.0 * sigma ** 2))
+            gauss_weights = gauss_weights / gauss_weights.sum()
+            local_context = (gauss_weights.unsqueeze(-1) * neighbor_embs).sum(dim=0)  # [d]
+        else:
+            # Fallback: if no neighbors exist (very short sequence), use the word embedding itself
+            local_context = word_emb
+
+        # 3. Global context: mean of all sequence tokens
         global_context = emb.mean(dim=0)
 
-        # Sense-level composite key
-        sense_key = 0.90 * word_emb + 0.10 * global_context
+        # Three-component contextual averaging blend
+        alpha = self.context_key_word_weight
+        beta = self.context_key_local_weight
+        gamma = self.context_key_global_weight
+        sense_key = alpha * word_emb + beta * local_context + gamma * global_context
         return F.normalize(sense_key, p=2, dim=-1)
 
     def _extract_word_delta(
@@ -456,8 +500,16 @@ class HopfieldMemory(nn.Module):
                 except Exception:
                     encoded_tokens = None
 
+            # Group entries by normalized target word for disambiguating homographs
+            word_to_entries: Dict[str, List[Tuple[int, MemoryEntry]]] = {}
             for m_idx, entry in enumerate(valid_entries):
-                char_spans = self._find_word_char_spans(text, entry.word)
+                w_norm = entry.word.strip().lower()
+                if w_norm not in word_to_entries:
+                    word_to_entries[w_norm] = []
+                word_to_entries[w_norm].append((m_idx, entry))
+
+            for w_norm, candidates in word_to_entries.items():
+                char_spans = self._find_word_char_spans(text, candidates[0][1].word)
                 for c_start, c_end in char_spans:
                     # Resolve token span
                     if encoded_tokens is not None and tokenizer is not None and hasattr(tokenizer, "decode"):
@@ -485,22 +537,38 @@ class HopfieldMemory(nn.Module):
                     else:
                         t_start, t_end = self._char_span_to_token_span(c_start, c_end, total_chars, seq_len)
 
+                    span_start = max(0, t_start)
+                    span_end = min(seq_len, max(t_end, span_start + 1))
+
+                    if (span_start, span_end) in processed_token_spans:
+                        continue
+
                     # Search local window around estimated token span
                     search_start = max(0, t_start - 2)
                     search_end = min(seq_len, t_end + 2)
 
-                    # Evaluate local similarity and gate for this occurrence
-                    s_occ = scores[search_start:search_end, m_idx].max().item()
-                    g_occ = gate_matrix[search_start:search_end, m_idx].max().item()
+                    # For multiple homograph entries with the same word, pick the one with highest contextual similarity
+                    best_m_idx = candidates[0][0]
+                    best_entry = candidates[0][1]
+                    best_s_occ = -1e9
+                    best_g_occ = 0.0
+
+                    for m_idx, entry in candidates:
+                        s_cand = scores[search_start:search_end, m_idx].max().item()
+                        g_cand = gate_matrix[search_start:search_end, m_idx].max().item()
+                        if s_cand > best_s_occ:
+                            best_s_occ = s_cand
+                            best_g_occ = g_cand
+                            best_m_idx = m_idx
+                            best_entry = entry
+
+                    s_occ = best_s_occ
+                    g_occ = best_g_occ
+                    m_idx = best_m_idx
+                    entry = best_entry
 
                     # Gate threshold check: for exact word matches in carrier text, activate injection
                     if g_occ >= 0.20 or s_occ >= 3.0 or (entry.word.strip().lower() in text.lower()):
-
-                        span_start = max(0, t_start)
-                        span_end = min(seq_len, max(t_end, span_start + 1))
-
-                        if (span_start, span_end) in processed_token_spans:
-                            continue
                         processed_token_spans.add((span_start, span_end))
 
                         matched_spans.append(
