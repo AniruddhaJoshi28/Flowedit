@@ -11,6 +11,7 @@ Provides endpoints for:
 
 import os
 import json
+import asyncio
 import shutil
 import tempfile
 import subprocess
@@ -600,6 +601,7 @@ async def transcribe_speech_stream(
     language: Optional[str] = Form(None, description="Language code (e.g. 'en', 'hi', 'fr') or leave empty for auto-detection"),
     include_timestamps: bool = Form(True, description="Whether to return segment-level timestamps"),
     use_memory: bool = Form(True, description="Apply Hopfield Memory associative correction and vocabulary biasing"),
+    emit_words: bool = Form(True, description="Whether to stream individual word-level events ('type': 'word')"),
 ):
     """Speech-to-Text Stream: Stream transcription events (Server-Sent Events) in real-time as Whisper decodes with Hopfield Memory."""
     if not audio.filename:
@@ -634,7 +636,9 @@ async def transcribe_speech_stream(
         try:
             accumulated_raw = []
             accumulated_corrected = []
+            accumulated_words = []
             all_corrections = []
+            global_word_id = 0
 
             for event in aligner.transcribe_stream(
                 audio_path=actual_path,
@@ -655,17 +659,42 @@ async def transcribe_speech_stream(
                     accumulated_raw.append(seg_raw)
                     accumulated_corrected.append(seg_corrected)
 
+                    seg_start = event.get("start", 0.0)
+                    seg_end = event.get("end", 0.0)
+
+                    # Stream word-by-word events in real-time
+                    if emit_words and seg_corrected:
+                        words = seg_corrected.split()
+                        w_dur = max(seg_end - seg_start, 0.05)
+                        w_step = w_dur / max(len(words), 1)
+                        for w_i, word_text in enumerate(words):
+                            accumulated_words.append(word_text)
+                            w_start = round(seg_start + w_i * w_step, 3)
+                            w_end = round(seg_start + (w_i + 1) * w_step, 3)
+                            word_event = {
+                                "type": "word",
+                                "id": global_word_id,
+                                "start": w_start,
+                                "end": w_end,
+                                "word": word_text,
+                                "partial_transcript": " ".join(accumulated_words),
+                            }
+                            global_word_id += 1
+                            yield f"data: {json.dumps(word_event)}\n\n"
+                            await asyncio.sleep(0)
+
                     out_event = {
                         "type": "segment",
                         "id": event.get("id", 0),
-                        "start": event.get("start", 0.0),
-                        "end": event.get("end", 0.0),
+                        "start": seg_start,
+                        "end": seg_end,
                         "text": seg_corrected,
                         "raw_text": seg_raw,
                         "partial_transcript": " ".join(accumulated_corrected),
                         "corrections": seg_corrections,
                     }
                     yield f"data: {json.dumps(out_event)}\n\n"
+                    await asyncio.sleep(0)
                 elif event_type == "complete":
                     full_raw = event.get("text", "")
                     full_final = full_raw

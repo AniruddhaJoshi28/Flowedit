@@ -194,11 +194,35 @@ class WhisperAligner:
             for i, seg in enumerate(raw_segments):
                 seg_text = seg.get("text", "").strip()
                 if seg_text:
+                    seg_start = round(float(seg.get("start", 0.0)), 3)
+                    seg_end = round(float(seg.get("end", 0.0)), 3)
+                    words = []
+                    raw_words = seg.get("words", [])
+                    if raw_words:
+                        for w in raw_words:
+                            w_str = (w.get("word", "") if isinstance(w, dict) else str(w)).strip()
+                            if w_str:
+                                words.append({
+                                    "word": w_str,
+                                    "start": round(float(w.get("start", seg_start) if isinstance(w, dict) else seg_start), 3),
+                                    "end": round(float(w.get("end", seg_end) if isinstance(w, dict) else seg_end), 3),
+                                })
+                    if not words and seg_text:
+                        tokens = seg_text.split()
+                        dur = max(seg_end - seg_start, 0.01)
+                        step = dur / max(len(tokens), 1)
+                        for w_i, tok in enumerate(tokens):
+                            words.append({
+                                "word": tok,
+                                "start": round(seg_start + w_i * step, 3),
+                                "end": round(seg_start + (w_i + 1) * step, 3),
+                            })
                     formatted_segments.append({
                         "id": i,
-                        "start": round(float(seg.get("start", 0.0)), 3),
-                        "end": round(float(seg.get("end", 0.0)), 3),
+                        "start": seg_start,
+                        "end": seg_end,
                         "text": seg_text,
+                        "words": words,
                     })
 
         return {
@@ -277,6 +301,7 @@ class WhisperAligner:
                     "start": seg.get("start", 0.0),
                     "end": seg.get("end", 0.0),
                     "text": seg_text,
+                    "words": seg.get("words", []),
                     "partial_transcript": " ".join(accumulated_texts),
                 }
 
