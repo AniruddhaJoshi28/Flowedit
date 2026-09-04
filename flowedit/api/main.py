@@ -10,6 +10,7 @@ Provides endpoints for:
 """
 
 import os
+import json
 import shutil
 import tempfile
 import subprocess
@@ -19,9 +20,10 @@ from contextlib import asynccontextmanager
 from typing import Optional, Dict, Any
 
 import torch
+import numpy as np
 import soundfile as sf
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
-from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
+from fastapi.responses import FileResponse, JSONResponse, HTMLResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from flowedit.config import FlowEditConfig
@@ -589,4 +591,135 @@ async def transcribe_speech(
             os.remove(temp_audio_path)
         if converted_wav_path and os.path.exists(converted_wav_path) and converted_wav_path != temp_audio_path:
             os.remove(converted_wav_path)
+
+
+@app.post("/api/transcribe/stream")
+@app.post("/api/transcribe-stream", include_in_schema=False)
+async def transcribe_speech_stream(
+    audio: UploadFile = File(..., description="Audio file to transcribe (WAV, MP3, M4A, OGG, WebM, FLAC)"),
+    language: Optional[str] = Form(None, description="Language code (e.g. 'en', 'hi', 'fr') or leave empty for auto-detection"),
+    include_timestamps: bool = Form(True, description="Whether to return segment-level timestamps"),
+    use_memory: bool = Form(True, description="Apply Hopfield Memory associative correction and vocabulary biasing"),
+):
+    """Speech-to-Text Stream: Stream transcription events (Server-Sent Events) in real-time as Whisper decodes with Hopfield Memory."""
+    if not audio.filename:
+        raise HTTPException(status_code=400, detail="No audio file uploaded.")
+
+    suffix = os.path.splitext(audio.filename)[1].lower() or ".wav"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_audio:
+        temp_audio_path = temp_audio.name
+
+    content = await audio.read()
+    if not content or len(content) == 0:
+        if os.path.exists(temp_audio_path):
+            os.remove(temp_audio_path)
+        raise HTTPException(status_code=400, detail="Uploaded audio file is empty.")
+
+    with open(temp_audio_path, "wb") as f:
+        f.write(content)
+
+    converted_wav_path = convert_to_wav(temp_audio_path)
+    actual_path = converted_wav_path if (converted_wav_path and os.path.exists(converted_wav_path)) else temp_audio_path
+
+    # Check Hopfield Memory vocabulary biasing
+    memory_instance = None
+    initial_prompt = None
+    if use_memory and correction_pipeline and correction_pipeline.memory and correction_pipeline.memory.num_entries > 0:
+        memory_instance = correction_pipeline.memory
+        initial_prompt = memory_instance.get_vocabulary_prompt()
+
+    aligner = get_whisper_aligner()
+
+    async def sse_generator():
+        try:
+            accumulated_raw = []
+            accumulated_corrected = []
+            all_corrections = []
+
+            for event in aligner.transcribe_stream(
+                audio_path=actual_path,
+                language=language,
+                initial_prompt=initial_prompt,
+            ):
+                event_type = event.get("type")
+                if event_type == "metadata":
+                    yield f"data: {json.dumps(event)}\n\n"
+                elif event_type == "segment":
+                    seg_raw = event.get("text", "")
+                    seg_corrected = seg_raw
+                    seg_corrections = []
+                    if memory_instance and seg_raw:
+                        seg_corrected, seg_corrections = memory_instance.correct_transcript(seg_raw)
+                        all_corrections.extend(seg_corrections)
+
+                    accumulated_raw.append(seg_raw)
+                    accumulated_corrected.append(seg_corrected)
+
+                    out_event = {
+                        "type": "segment",
+                        "id": event.get("id", 0),
+                        "start": event.get("start", 0.0),
+                        "end": event.get("end", 0.0),
+                        "text": seg_corrected,
+                        "raw_text": seg_raw,
+                        "partial_transcript": " ".join(accumulated_corrected),
+                        "corrections": seg_corrections,
+                    }
+                    yield f"data: {json.dumps(out_event)}\n\n"
+                elif event_type == "complete":
+                    full_raw = event.get("text", "")
+                    full_final = full_raw
+                    full_corrections = []
+                    if memory_instance and full_raw:
+                        full_final, full_corrections = memory_instance.correct_transcript(full_raw)
+
+                    # Update segments with corrected text
+                    raw_segments = event.get("segments", [])
+                    final_segments = []
+                    for seg in raw_segments:
+                        st = seg.get("text", "")
+                        if st and memory_instance:
+                            corr_st, _ = memory_instance.correct_transcript(st)
+                            sc = dict(seg)
+                            sc["text"] = corr_st
+                            final_segments.append(sc)
+                        else:
+                            final_segments.append(seg)
+
+                    complete_event = {
+                        "type": "complete",
+                        "success": True,
+                        "text": full_final,
+                        "raw_text": full_raw,
+                        "language": event.get("language", language or "unknown"),
+                        "duration": event.get("duration", 0.0),
+                        "segments": final_segments,
+                        "memory_applied": bool(memory_instance and (full_corrections or all_corrections)),
+                        "corrections": full_corrections or all_corrections,
+                    }
+                    yield f"data: {json.dumps(complete_event)}\n\n"
+        except Exception as e:
+            logger.error(f"Streaming transcription error: {e}", exc_info=True)
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+        finally:
+            if os.path.exists(temp_audio_path):
+                try:
+                    os.remove(temp_audio_path)
+                except Exception:
+                    pass
+            if converted_wav_path and os.path.exists(converted_wav_path) and converted_wav_path != temp_audio_path:
+                try:
+                    os.remove(converted_wav_path)
+                except Exception:
+                    pass
+
+    return StreamingResponse(
+        sse_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 

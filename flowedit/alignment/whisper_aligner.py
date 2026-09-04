@@ -208,6 +208,86 @@ class WhisperAligner:
             "segments": formatted_segments if return_timestamps else [],
         }
 
+    def transcribe_stream(
+        self,
+        audio_path: str,
+        language: Optional[str] = None,
+        initial_prompt: Optional[str] = None,
+    ):
+        """Transcribe speech in an audio file, yielding progressive segment events in real time.
+
+        Args:
+            audio_path: Path to the audio file
+            language: Optional language code or None/'auto'
+            initial_prompt: Optional biasing prompt from Hopfield Memory
+
+        Yields:
+            Dict events:
+                - {"type": "metadata", "language": str, "duration": float}
+                - {"type": "segment", "id": int, "start": float, "end": float, "text": str, "partial_transcript": str}
+                - {"type": "complete", "text": str, "language": str, "duration": float, "segments": list}
+        """
+        self._ensure_loaded()
+        audio_path = str(Path(audio_path).resolve())
+        lang = None if (not language or language.lower() in ("auto", "none", "")) else language.lower()
+
+        # Calculate duration
+        duration = 0.0
+        try:
+            import soundfile as sf
+            info = sf.info(audio_path)
+            duration = round(float(info.duration), 3)
+        except Exception:
+            try:
+                import librosa
+                duration = round(float(librosa.get_duration(path=audio_path)), 3)
+            except Exception:
+                pass
+
+        if self._model is None:
+            raise RuntimeError("Whisper model is not loaded.")
+
+        # Emit initial metadata
+        yield {
+            "type": "metadata",
+            "language": lang or "auto",
+            "duration": duration,
+        }
+
+        # Transcribe with timestamps
+        result = self.transcribe(
+            audio_path=audio_path,
+            language=language,
+            return_timestamps=True,
+            initial_prompt=initial_prompt,
+        )
+
+        detected_lang = result.get("language", lang or "unknown")
+        segments = result.get("segments", [])
+
+        # Stream out segments progressively
+        accumulated_texts = []
+        for i, seg in enumerate(segments):
+            seg_text = seg.get("text", "").strip()
+            if seg_text:
+                accumulated_texts.append(seg_text)
+                yield {
+                    "type": "segment",
+                    "id": seg.get("id", i),
+                    "start": seg.get("start", 0.0),
+                    "end": seg.get("end", 0.0),
+                    "text": seg_text,
+                    "partial_transcript": " ".join(accumulated_texts),
+                }
+
+        yield {
+            "type": "complete",
+            "text": result.get("text", ""),
+            "language": detected_lang,
+            "duration": duration,
+            "segments": segments,
+        }
+
 
     def align(
         self,

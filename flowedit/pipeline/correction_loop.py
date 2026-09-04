@@ -17,7 +17,10 @@ from pathlib import Path
 
 import torch
 import soundfile as sf
-import librosa
+try:
+    import librosa
+except ImportError:
+    librosa = None
 
 from flowedit.config import FlowEditConfig
 from flowedit.backbone import create_backbone

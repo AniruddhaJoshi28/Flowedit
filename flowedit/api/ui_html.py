@@ -1931,3 +1931,9 @@ HTML_CONTENT = r"""<!DOCTYPE html>
 </body>
 </html>
 """
+
+
+def get_ui_html() -> str:
+    """Return the raw HTML content string for the Web UI."""
+    return HTML_CONTENT
+

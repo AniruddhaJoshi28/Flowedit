@@ -15,7 +15,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 import soundfile as sf
-import torchaudio
+try:
+    import torchaudio
+except ImportError:
+    torchaudio = None
 
 from flowedit.config import BackboneConfig
 from flowedit.backbone.base import TTSBackbone

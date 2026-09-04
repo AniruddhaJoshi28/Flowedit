@@ -9,8 +9,12 @@ from dataclasses import dataclass
 import hashlib
 import numpy as np
 import torch
-import torchaudio
-import torchaudio.transforms as T
+try:
+    import torchaudio
+    import torchaudio.transforms as T
+except (ImportError, OSError, Exception):
+    torchaudio = None
+    T = None
 import logging
 
 logger = logging.getLogger(__name__)
@@ -70,7 +74,10 @@ class AudioPreprocessor:
         sr = None
 
         try:
-            waveform, sr = torchaudio.load(file_path)
+            if torchaudio is not None:
+                waveform, sr = torchaudio.load(file_path)
+            else:
+                raise ImportError("torchaudio not installed")
         except Exception as e_ta:
             logger.debug(f"torchaudio.load failed ({e_ta}), attempting soundfile fallback...")
             try:
@@ -120,8 +127,16 @@ class AudioPreprocessor:
 
         # Step 6: Resample if necessary
         if sr != sr_out:
-            resampler = T.Resample(sr, sr_out)
-            waveform = resampler(waveform)
+            if T is not None and hasattr(T, "Resample"):
+                resampler = T.Resample(sr, sr_out)
+                waveform = resampler(waveform)
+            else:
+                try:
+                    import scipy.signal
+                    resampled = scipy.signal.resample(waveform.squeeze().numpy(), int(waveform.shape[-1] * sr_out / sr))
+                    waveform = torch.from_numpy(resampled).unsqueeze(0).float()
+                except Exception:
+                    pass
 
         # Step 7: Conservative peak normalization
         peak_val = torch.max(torch.abs(waveform)).item()
