@@ -35,6 +35,85 @@ from flowedit.config import MemoryConfig
 
 logger = logging.getLogger(__name__)
 
+GRAMMAR_STOPWORDS = {
+    'a', 'an', 'the',
+    'is', 'are', 'am', 'was', 'were', 'be', 'been', 'being',
+    'has', 'have', 'had', 'do', 'does', 'did',
+    'of', 'in', 'on', 'at', 'to', 'for', 'with', 'from',
+    'that', 'this', 'these', 'those', 'it', 'its',
+    'and', 'or', 'but', 'nor', 'so', 'yet'
+}
+
+DIGIT_WORDS = {
+    '0': ' zero ', '1': ' one ', '2': ' two ', '3': ' three ', '4': ' four ',
+    '5': ' five ', '6': ' six ', '7': ' seven ', '8': ' eight ', '9': ' nine ',
+}
+
+
+def broad_acoustic_hash(s: str) -> str:
+    """Compute coarse acoustic/phonetic hash invariant to common ASR plosive/fricative confusions.
+    
+    Acoustically groups phonetically similar consonants and vowels:
+    - Stops / Plosives / Labiodentals: b, p, d, t, v, f, w -> 1
+    - Velar stops: g, k, c, q -> 2
+    - Sibilants / Affricates: s, z, j, x -> 3
+    - Liquids: l, r -> 4
+    - Nasals: m, n -> 5
+    - Vowels / Glides: a, e, i, o, u, y -> 0
+    - Digraph reductions: 'rh' -> 'r', 'ph' -> 'f', 'th' -> 't', 'ck' -> 'k', 'sh' -> 's'
+    - Aspirated stop reduction: bh -> b, dh -> d, kh -> k, gh -> g
+    """
+    s = re.sub(r'\d', lambda m: DIGIT_WORDS.get(m.group(0), ' '), s)
+    s = re.sub(r'[^a-z]', '', s.lower())
+    if not s:
+        return ''
+    s = re.sub(r'^rh', 'r', s)
+    s = re.sub(r'ph', 'f', s)
+    s = re.sub(r'th', 't', s)
+    s = re.sub(r'ck', 'k', s)
+    s = re.sub(r'sh', 's', s)
+    s = re.sub(r'ch', 's', s)
+    s = re.sub(r'zh', 'z', s)
+    s = re.sub(r'([bdfgkt])h', r'\1', s)
+    mapping = {
+        'a': '0', 'e': '0', 'i': '0', 'o': '0', 'u': '0', 'y': '0',
+        'b': '1', 'p': '1', 'd': '1', 't': '1', 'v': '1', 'f': '1', 'w': '1',
+        'g': '2', 'k': '2', 'c': '2', 'q': '2',
+        's': '3', 'z': '3', 'j': '3', 'x': '3',
+        'l': '4', 'r': '4',
+        'm': '5', 'n': '5',
+    }
+    out = []
+    prev = None
+    for ch in s:
+        code = mapping.get(ch, ch)
+        if code != prev:
+            out.append(code)
+            prev = code
+    return ''.join(out)
+
+
+def levenshtein_ratio(s1: str, s2: str) -> float:
+    """Calculate normalized Levenshtein similarity ratio between two strings (0.0 to 1.0)."""
+    c1 = re.sub(r'[^a-z0-9]', '', s1.lower())
+    c2 = re.sub(r'[^a-z0-9]', '', s2.lower())
+    if not c1 or not c2:
+        return 1.0 if c1 == c2 else 0.0
+    if c1 == c2:
+        return 1.0
+    len1, len2 = len(c1), len(c2)
+    dp = [[0] * (len2 + 1) for _ in range(len1 + 1)]
+    for i in range(len1 + 1):
+        dp[i][0] = i
+    for j in range(len2 + 1):
+        dp[0][j] = j
+    for i in range(1, len1 + 1):
+        for j in range(1, len2 + 1):
+            cost = 0 if c1[i - 1] == c2[j - 1] else 1
+            dp[i][j] = min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost)
+    dist = dp[len1][len2]
+    return 1.0 - (dist / max(len1, len2))
+
 
 @dataclass
 class MemoryEntry:
@@ -768,3 +847,252 @@ class HopfieldMemory(nn.Module):
             except Exception:
                 pass
         logger.info("Hopfield Memory cleared.")
+
+    def get_vocabulary_prompt(self) -> str:
+        """Construct an initial_prompt biasing string for Whisper from stored memory words.
+
+        Conditions Whisper's autoregressive decoder on the exact spellings of learned words
+        and domain carrier context.
+        """
+        if not self.entries:
+            return ""
+        unique_words = []
+        seen = set()
+        for e in self.entries:
+            w = e.word.strip()
+            if w and w.lower() not in seen:
+                seen.add(w.lower())
+                unique_words.append(w)
+        if not unique_words:
+            return ""
+
+        context_snippets = []
+        for e in self.entries:
+            text = (e.carrier_text or "").strip()
+            if text and len(text) < 150 and text not in context_snippets:
+                context_snippets.append(text)
+                if len(context_snippets) >= 2:
+                    break
+
+        prompt = "Vocabulary and technical terms: " + ", ".join(unique_words) + "."
+        if context_snippets:
+            prompt += " " + " ".join(context_snippets)
+        return prompt[:450]
+
+    def correct_transcript(
+        self,
+        text: str,
+        threshold: float = 0.65,
+    ) -> Tuple[str, List[Dict[str, Any]]]:
+        """Post-correct transcribed text using associative Hopfield Memory entries.
+
+        Detects phonetic misspellings, split words, and acoustic variations in the
+        transcript and replaces them with their canonical correct spellings while
+        preserving grammatical context.
+
+        Args:
+            text: Raw transcribed text from Whisper
+            threshold: Minimum similarity threshold (default 0.65)
+
+        Returns:
+            Tuple of:
+                - corrected_text: Text with canonical spellings restored
+                - corrections: List of dicts detailing what was corrected
+        """
+        if not text or not self.entries:
+            return text, []
+
+        corrected_text = text
+        applied_corrections: List[Dict[str, Any]] = []
+
+        # 1. Phonetic & Compound Alias Substitution (e.g. entry.phonetic_text -> entry.word)
+        for entry in self.entries:
+            canonical = entry.word.strip()
+            if not canonical:
+                continue
+
+            patterns_to_check = []
+            if entry.phonetic_text and entry.phonetic_text.strip().lower() != canonical.lower():
+                patterns_to_check.append(entry.phonetic_text.strip())
+
+            # Hyphen/space split variants
+            if '-' in canonical:
+                patterns_to_check.append(canonical.replace('-', ' '))
+            if re.search(r'[A-Z]', canonical[1:]) or len(canonical) >= 7:
+                split_var = re.sub(r'([a-z])([A-Z])', r'\1 \2', canonical)
+                if split_var != canonical:
+                    patterns_to_check.append(split_var)
+            if canonical.lower().startswith('bi') and len(canonical) > 4:
+                patterns_to_check.append('by-' + canonical[2:])
+                patterns_to_check.append('by ' + canonical[2:])
+                patterns_to_check.append('bi ' + canonical[2:])
+                patterns_to_check.append('buy ' + canonical[2:])
+
+            for p in set(patterns_to_check):
+                regex_p = r'\b' + re.escape(p).replace(r'\ ', r'[\s-]+') + r'\b'
+                matches = list(re.finditer(regex_p, corrected_text, flags=re.IGNORECASE))
+                for m in reversed(matches):
+                    matched_str = m.group(0)
+                    if matched_str.strip().lower() != canonical.lower():
+                        start, end = m.span()
+                        corrected_text = corrected_text[:start] + canonical + corrected_text[end:]
+                        applied_corrections.append({
+                            "original": matched_str,
+                            "corrected": canonical,
+                            "confidence": 0.99,
+                            "match_type": "phonetic_alias",
+                        })
+
+        # 2. Sliding Window Matching (1 to 4 words)
+        words_with_spans = [(m.group(0), m.start(), m.end()) for m in re.finditer(r'\b[A-Za-z0-9]+\b', corrected_text)]
+        if not words_with_spans:
+            return corrected_text, applied_corrections
+
+        replacements = []
+        occupied_spans = set()
+
+        for window_size in range(min(4, len(words_with_spans)), 0, -1):
+            for i in range(len(words_with_spans) - window_size + 1):
+                window = words_with_spans[i:i + window_size]
+                span_range = (window[0][1], window[-1][2])
+
+                if any(start < span_range[1] and end > span_range[0] for (start, end) in occupied_spans):
+                    continue
+
+                words_list = [w[0] for w in window]
+
+                best_entry = None
+                best_score = 0.0
+                best_match_type = ""
+                best_target_span = span_range
+                best_target_text = corrected_text[span_range[0]:span_range[1]]
+
+                for entry in self.entries:
+                    canonical = entry.word.strip()
+                    if not canonical:
+                        continue
+
+                    # Guard 1: If canonical is ALREADY present in this window, skip
+                    if canonical.lower() in [w.lower() for w in words_list]:
+                        continue
+
+                    canon_words = set(re.findall(r'\b\w+\b', canonical.lower()))
+
+                    # Guard 2: Strip leading & trailing grammatical stopwords
+                    trim_start = 0
+                    trim_end = len(window)
+
+                    while trim_start < trim_end - 1:
+                        w_clean = window[trim_start][0].lower().strip("'-")
+                        if w_clean in GRAMMAR_STOPWORDS and w_clean not in canon_words:
+                            trim_start += 1
+                        else:
+                            break
+
+                    while trim_end > trim_start + 1:
+                        w_clean = window[trim_end - 1][0].lower().strip("'-")
+                        if w_clean in GRAMMAR_STOPWORDS and w_clean not in canon_words:
+                            trim_end -= 1
+                        else:
+                            break
+
+                    trimmed_window = window[trim_start:trim_end]
+                    trimmed_span = (trimmed_window[0][1], trimmed_window[-1][2])
+                    trimmed_text = corrected_text[trimmed_span[0]:trimmed_span[1]]
+
+                    full_text_span = span_range
+                    full_text = corrected_text[full_text_span[0]:full_text_span[1]]
+
+                    # Hashes
+                    h_canon = broad_acoustic_hash(canonical)
+                    h_phon = broad_acoustic_hash(entry.phonetic_text or "")
+
+                    # Evaluate trimmed candidate
+                    h_trim = broad_acoustic_hash(trimmed_text)
+                    lev_trim = levenshtein_ratio(trimmed_text, canonical)
+                    if entry.phonetic_text:
+                        lev_trim = max(lev_trim, levenshtein_ratio(trimmed_text, entry.phonetic_text))
+
+                    # Evaluate full window candidate (for acoustic splits like "an eventamab" -> "amivantamab")
+                    h_full = broad_acoustic_hash(full_text)
+                    lev_full = levenshtein_ratio(full_text, canonical)
+                    if entry.phonetic_text:
+                        lev_full = max(lev_full, levenshtein_ratio(full_text, entry.phonetic_text))
+
+                    cand_span = trimmed_span
+                    cand_text = trimmed_text
+                    score = 0.0
+                    match_type = "acoustic_hash"
+
+                    clean_cand = re.sub(r'[^a-z0-9]', '', cand_text.lower())
+                    clean_full = re.sub(r'[^a-z0-9]', '', full_text.lower())
+                    clean_canon = re.sub(r'[^a-z0-9]', '', canonical.lower())
+
+                    ratio_trim = min(len(clean_cand), len(clean_canon)) / max(len(clean_cand), len(clean_canon), 1)
+                    ratio_full = min(len(clean_full), len(clean_canon)) / max(len(clean_full), len(clean_canon), 1)
+
+                    if h_trim and (h_trim == h_canon or (h_phon and h_trim == h_phon)) and ratio_trim >= 0.70:
+                        score = 0.95
+                        match_type = "acoustic_hash"
+                        cand_span = trimmed_span
+                        cand_text = trimmed_text
+                    elif h_full and (h_full == h_canon or (h_phon and h_full == h_phon)) and ratio_full >= 0.70:
+                        score = 0.95
+                        match_type = "acoustic_split_hash"
+                        cand_span = full_text_span
+                        cand_text = full_text
+                    elif lev_trim >= 0.75 and ratio_trim >= 0.70:
+                        score = lev_trim
+                        match_type = "phonetic_levenshtein"
+                        cand_span = trimmed_span
+                        cand_text = trimmed_text
+                    elif lev_full >= 0.80 and lev_full > lev_trim and ratio_full >= 0.70:
+                        score = lev_full
+                        match_type = "phonetic_levenshtein_split"
+                        cand_span = full_text_span
+                        cand_text = full_text
+
+                    # Guard 3: If canonical is ALREADY present in the immediate context around this span, skip
+                    ctx_start = max(0, cand_span[0] - len(canonical))
+                    ctx_end = min(len(corrected_text), cand_span[1] + len(canonical))
+                    if canonical.lower() in corrected_text[ctx_start:ctx_end].lower():
+                        continue
+
+                    if any(start < cand_span[1] and end > cand_span[0] for (start, end) in occupied_spans):
+                        continue
+
+                    if cand_text.lower() == canonical.lower():
+                        continue
+
+                    if score > best_score:
+                        best_score = score
+                        best_entry = entry
+                        best_match_type = match_type
+                        best_target_span = cand_span
+                        best_target_text = cand_text
+
+                if best_entry is not None and best_score >= threshold:
+                    canonical = best_entry.word.strip()
+                    replacements.append((
+                        best_target_span[0],
+                        best_target_span[1],
+                        best_target_text,
+                        canonical,
+                        round(best_score, 3),
+                        best_match_type
+                    ))
+                    occupied_spans.add(best_target_span)
+
+        # Apply sliding window replacements from right to left to keep string indices intact
+        replacements.sort(key=lambda r: r[0], reverse=True)
+        for start, end, orig, canon, score, m_type in replacements:
+            corrected_text = corrected_text[:start] + canon + corrected_text[end:]
+            applied_corrections.append({
+                "original": orig,
+                "corrected": canon,
+                "confidence": score,
+                "match_type": m_type,
+            })
+
+        return corrected_text, applied_corrections
+

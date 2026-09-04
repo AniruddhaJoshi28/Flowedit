@@ -19,7 +19,7 @@ import torch
 import logging
 import re
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict, Any
 from pathlib import Path
 
 from flowedit.config import AlignmentConfig
@@ -58,45 +58,155 @@ class AlignmentResult:
 
 
 class WhisperAligner:
-    """Whisper-based forced alignment for FlowEdit Stage 1.
+    """Whisper-based forced alignment and transcription for FlowEdit Stage 1 and STT.
 
-    Uses Whisper (via stable-ts for word-level timestamps) to find
-    the temporal boundaries of a target word in reference audio,
-    then maps those boundaries to XTTS-2 token indices.
+    Uses Whisper (via whisperx or openai-whisper) to find temporal boundaries
+    of target words in reference audio, or transcribe free speech to text.
     """
 
     def __init__(self, config: Optional[AlignmentConfig] = None):
         self.config = config or AlignmentConfig()
         self._model = None
+        self._backend = None
 
     def load_model(self) -> None:
-        """Load the Whisper model for alignment."""
-        import whisperx
+        """Load the Whisper model for alignment and speech-to-text."""
         import torch
 
         logger.info(f"Loading Whisper model: {self.config.whisper_model}")
         device = "cuda" if torch.cuda.is_available() else "cpu"
         compute_type = "float16" if device == "cuda" else "int8"
+        self._backend = None
         
         try:
+            import whisperx
             self._model = whisperx.load_model(
                 self.config.whisper_model, 
                 device=device, 
                 compute_type=compute_type
             )
-            logger.info("Whisper model loaded successfully")
+            self._backend = "whisperx"
+            logger.info("Whisper model (whisperx) loaded successfully")
         except Exception as e:
             logger.warning(f"Failed to load Whisper model '{self.config.whisper_model}' ({e}). Attempting fallback to 'base'...")
             try:
+                import whisperx
                 self._model = whisperx.load_model(
                     "base",
                     device=device,
                     compute_type=compute_type
                 )
+                self._backend = "whisperx"
                 logger.info("Whisper 'base' model loaded successfully as fallback.")
             except Exception as e2:
-                logger.warning(f"Failed to load fallback Whisper model ({e2}). Whisper alignment will operate in fallback mode.")
-                self._model = None
+                logger.warning(f"Failed to load whisperx fallback ({e2}). Attempting openai-whisper...")
+                try:
+                    import whisper
+                    self._model = whisper.load_model("base", device=device)
+                    self._backend = "whisper"
+                    logger.info("OpenAI Whisper 'base' loaded successfully.")
+                except Exception as e3:
+                    logger.warning(f"Failed to load Whisper model ({e3}). Whisper alignment will operate in fallback mode.")
+                    self._model = None
+                    self._backend = None
+
+    def transcribe(
+        self,
+        audio_path: str,
+        language: Optional[str] = None,
+        return_timestamps: bool = True,
+        initial_prompt: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Transcribe speech in an audio file to text using Whisper.
+
+        Args:
+            audio_path: Path to the audio file (wav, mp3, flac, etc.)
+            language: Optional language code (e.g., 'en', 'hi', 'fr') or None/'auto' to auto-detect
+            return_timestamps: Whether to include segment-level timestamps in the response
+            initial_prompt: Optional biasing prompt (e.g. correct vocabulary from Hopfield Memory)
+
+        Returns:
+            Dict containing:
+                - text: Complete transcribed text
+                - language: Detected or specified language
+                - duration: Audio duration in seconds
+                - segments: List of segment dicts with start, end, text
+        """
+        self._ensure_loaded()
+        audio_path = str(Path(audio_path).resolve())
+        lang = None if (not language or language.lower() in ("auto", "none", "")) else language.lower()
+
+        # Calculate duration
+        duration = 0.0
+        try:
+            import soundfile as sf
+            info = sf.info(audio_path)
+            duration = round(float(info.duration), 3)
+        except Exception:
+            try:
+                import librosa
+                duration = round(float(librosa.get_duration(path=audio_path)), 3)
+            except Exception:
+                pass
+
+        if self._model is None:
+            raise RuntimeError(
+                "Whisper model is not available. Please ensure 'whisperx' or 'openai-whisper' is installed."
+            )
+
+        raw_segments = []
+        detected_language = lang or "unknown"
+        full_text = ""
+
+        try:
+            if getattr(self, "_backend", None) == "whisper":
+                transcribe_kwargs = {}
+                if lang:
+                    transcribe_kwargs["language"] = lang
+                if initial_prompt:
+                    transcribe_kwargs["initial_prompt"] = initial_prompt
+                res = self._model.transcribe(audio_path, **transcribe_kwargs)
+                full_text = res.get("text", "").strip()
+                detected_language = res.get("language", lang or "unknown")
+                raw_segments = res.get("segments", [])
+            else:
+                import whisperx
+                audio = whisperx.load_audio(audio_path)
+                transcribe_kwargs = {"language": lang}
+                if initial_prompt:
+                    transcribe_kwargs["initial_prompt"] = initial_prompt
+                try:
+                    res = self._model.transcribe(audio, **transcribe_kwargs)
+                except (TypeError, ValueError):
+                    # In case underlying faster-whisper version does not support initial_prompt
+                    res = self._model.transcribe(audio, language=lang)
+                raw_segments = res.get("segments", [])
+                detected_language = res.get("language", lang or "unknown")
+                full_text = " ".join(s.get("text", "").strip() for s in raw_segments).strip()
+                if not full_text and "text" in res:
+                    full_text = res["text"].strip()
+        except Exception as e:
+            logger.error(f"Whisper transcription failed: {e}")
+            raise e
+
+        formatted_segments = []
+        if return_timestamps:
+            for i, seg in enumerate(raw_segments):
+                seg_text = seg.get("text", "").strip()
+                if seg_text:
+                    formatted_segments.append({
+                        "id": i,
+                        "start": round(float(seg.get("start", 0.0)), 3),
+                        "end": round(float(seg.get("end", 0.0)), 3),
+                        "text": seg_text,
+                    })
+
+        return {
+            "text": full_text,
+            "language": detected_language,
+            "duration": duration,
+            "segments": formatted_segments if return_timestamps else [],
+        }
 
 
     def align(

@@ -1,8 +1,6 @@
 """
-FlowEdit Red & White Web Interface HTML Template.
+FlowEdit Web Interface HTML Template.
 """
-
-import os
 
 HTML_CONTENT = r"""<!DOCTYPE html>
 <html lang="en">
@@ -13,7 +11,7 @@ HTML_CONTENT = r"""<!DOCTYPE html>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23DC2626' stroke-width='2.5'><polyline points='22 12 18 12 15 21 9 3 6 12 2 12'/></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23DC2626' stroke-width='2.5'><polygon points='11 5 6 9 2 9 2 15 6 15 11 19 11 5'/><path d='M19.07 4.93a10 10 0 0 1 0 14.14'/><path d='M15.54 8.46a5 5 0 0 1 0 7.07'/></svg>">
     
     <style>
         :root {
@@ -65,6 +63,7 @@ HTML_CONTENT = r"""<!DOCTYPE html>
             -webkit-font-smoothing: antialiased;
         }
 
+        /* ── Header ─────────────────────────────────────────────── */
         header {
             height: 70px;
             background: #FFFFFF;
@@ -189,6 +188,7 @@ HTML_CONTENT = r"""<!DOCTYPE html>
             box-shadow: 0 0 8px #22C55E;
         }
 
+        /* ── Main Container ─────────────────────────────────────── */
         .app-container {
             display: flex;
             flex: 1;
@@ -206,6 +206,7 @@ HTML_CONTENT = r"""<!DOCTYPE html>
             display: flex;
         }
 
+        /* ── Tab 1: Synthesis Studio Layout ────────────────────── */
         .studio-layout {
             display: flex;
             width: 100%;
@@ -237,6 +238,7 @@ HTML_CONTENT = r"""<!DOCTYPE html>
             justify-content: space-between;
         }
 
+        /* Model selector cards */
         .model-picker {
             display: flex;
             flex-direction: column;
@@ -318,6 +320,7 @@ HTML_CONTENT = r"""<!DOCTYPE html>
             background: #64748B;
         }
 
+        /* Voice Selector */
         .voice-list {
             display: flex;
             flex-direction: column;
@@ -401,6 +404,7 @@ HTML_CONTENT = r"""<!DOCTYPE html>
             background: rgba(220,38,38,0.1);
         }
 
+        /* Voice upload trigger */
         .upload-voice-box {
             border: 1.5px dashed var(--border-strong);
             border-radius: var(--radius-md);
@@ -422,6 +426,7 @@ HTML_CONTENT = r"""<!DOCTYPE html>
             color: var(--text-muted);
         }
 
+        /* Main Workspace */
         main.workspace {
             flex: 1;
             display: flex;
@@ -563,6 +568,7 @@ HTML_CONTENT = r"""<!DOCTYPE html>
             border-color: var(--border-strong);
         }
 
+        /* Audio Outputs Grid */
         .outputs-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
@@ -680,6 +686,7 @@ HTML_CONTENT = r"""<!DOCTYPE html>
             border-color: var(--primary-border);
         }
 
+        /* ── Tab 2: FlowEdit Pronunciation Learner ─────────────── */
         .learner-container {
             width: 100%;
             height: 100%;
@@ -755,6 +762,7 @@ HTML_CONTENT = r"""<!DOCTYPE html>
             color: var(--text-muted);
         }
 
+        /* ── Tab 3: Memory Manager ─────────────────────────────── */
         .memory-container {
             width: 100%;
             height: 100%;
@@ -840,6 +848,7 @@ HTML_CONTENT = r"""<!DOCTYPE html>
             text-decoration: underline;
         }
 
+        /* ── Floating Toast Notification ──────────────────────── */
         .toast {
             position: fixed;
             bottom: 2rem;
@@ -869,6 +878,7 @@ HTML_CONTENT = r"""<!DOCTYPE html>
 </head>
 <body>
 
+    <!-- Header Navigation -->
     <header>
         <div class="header-left">
             <div class="brand-logo">
@@ -895,6 +905,10 @@ HTML_CONTENT = r"""<!DOCTYPE html>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
                 Associative Memory (<span id="memCountHeader">4</span>)
             </button>
+            <button class="nav-tab" onclick="switchTab('transcribe')">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M19 11a7 7 0 0 1-7 7m0 0a7 7 0 0 1-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 0 0 3-3V5a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3z"/></svg>
+                Speech to Text
+            </button>
         </div>
 
         <div class="header-right">
@@ -908,7 +922,9 @@ HTML_CONTENT = r"""<!DOCTYPE html>
     <!-- Tab 1: Synthesis Studio -->
     <div id="tab-studio" class="tab-content active app-container">
         <div class="studio-layout">
+            <!-- Sidebar Controls -->
             <aside class="sidebar">
+                <!-- Model Selection -->
                 <div>
                     <div class="sidebar-section-title">
                         <span>Active Model Backbone</span>
@@ -935,9 +951,11 @@ HTML_CONTENT = r"""<!DOCTYPE html>
                     </div>
                 </div>
 
+                <!-- Speaker Preset Selection -->
                 <div>
                     <div class="sidebar-section-title">
                         <span>Speaker Voice</span>
+                    </div>
                     <div class="voice-list" id="voiceList">
                         <div class="voice-card selected" id="speaker-female" onclick="selectSpeaker('female', this)">
                             <div class="voice-card-left">
@@ -979,6 +997,7 @@ HTML_CONTENT = r"""<!DOCTYPE html>
                     </div>
                 </div>
 
+                <!-- Custom Voice Cloning Upload -->
                 <div>
                     <div class="sidebar-section-title">
                         <span>Voice Cloning Upload</span>
@@ -998,6 +1017,7 @@ HTML_CONTENT = r"""<!DOCTYPE html>
                 </div>
             </aside>
 
+            <!-- Main Studio Workspace -->
             <main class="workspace">
                 <div class="prompt-card">
                     <div class="prompt-header">
@@ -1018,6 +1038,10 @@ HTML_CONTENT = r"""<!DOCTYPE html>
                     <div class="prompt-footer">
                         <div class="char-counter" id="charCount">0 characters</div>
                         <div class="action-group">
+                            <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--text-muted); cursor:pointer; margin-right:8px;">
+                                <input type="checkbox" id="streamAudioToggle" checked style="accent-color:var(--primary); width:15px; height:15px;">
+                                Stream Audio
+                            </label>
                             <button class="btn btn-secondary" onclick="document.getElementById('promptInput').value=''; updateCharCount();">Clear</button>
                             <button class="btn btn-primary" id="synthBtn" onclick="runSynthesis()">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
@@ -1027,7 +1051,10 @@ HTML_CONTENT = r"""<!DOCTYPE html>
                     </div>
                 </div>
 
-                <div class="outputs-container" id="outputsGrid"></div>
+                <!-- Outputs Section -->
+                <div class="outputs-container" id="outputsGrid">
+                    <!-- Cards injected dynamically -->
+                </div>
             </main>
         </div>
     </div>
@@ -1051,7 +1078,7 @@ HTML_CONTENT = r"""<!DOCTYPE html>
 
                 <div style="display:flex; flex-direction:column; gap:0.75rem;">
                     <label style="font-size:12px; font-weight:700; color:var(--text-main);">Target Mispronounced Word</label>
-                    <input type="text" id="correctWord" class="text-input-area" style="min-height:46px; height:46px;" value="Bispecific">
+                    <input type="text" id="correctWord" class="text-input-area" style="min-height:46px; height:46px;" value="lead">
                 </div>
 
                 <div style="display:flex; flex-direction:column; gap:0.75rem;">
@@ -1068,6 +1095,7 @@ HTML_CONTENT = r"""<!DOCTYPE html>
                 </button>
             </div>
 
+            <!-- Stages Feedback -->
             <div class="learner-card">
                 <div class="prompt-title">Pipeline Diagnostics & Progress</div>
                 <div class="stage-indicator">
@@ -1111,10 +1139,159 @@ HTML_CONTENT = r"""<!DOCTYPE html>
                 </button>
             </div>
 
-            <div class="memory-grid" id="memoryGrid"></div>
+            <div class="memory-grid" id="memoryGrid">
+                <!-- Memory Cards Injected Dynamically -->
+            </div>
         </div>
     </div>
 
+    <!-- Tab 4: Speech to Text (Transcribe) -->
+    <div id="tab-transcribe" class="tab-content app-container">
+        <div style="width:100%; max-width:1100px; margin:0 auto; padding:2rem; display:flex; flex-direction:column; gap:1.5rem; overflow-y:auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <h2 style="font-family:'Plus Jakarta Sans',sans-serif; font-size:22px; font-weight:800; color:var(--text-main); display:flex; align-items:center; gap:0.5rem;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="var(--primary)" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                        Whisper Speech-to-Text Transcriber
+                    </h2>
+                    <p style="font-size:13px; color:var(--text-muted); margin-top:4px;">Upload speech audio in any format (WAV, MP3, M4A, OGG, FLAC) to transcribe into text with high accuracy.</p>
+                </div>
+                <div class="status-badge" style="background:#EEF2FF; border-color:#C7D2FE; color:#4F46E5;">
+                    <span class="status-dot" style="background:#4F46E5; box-shadow:0 0 8px #4F46E5;"></span>
+                    <span>Whisper Engine Ready</span>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1.2fr; gap:1.5rem;">
+                <!-- Left: Upload & Settings Card -->
+                <div class="prompt-card" style="gap:1.25rem;">
+                    <div class="prompt-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        Audio Input
+                    </div>
+
+                    <!-- Drop Zone -->
+                    <div id="transcribeDropZone" class="upload-voice-box" style="padding:2rem 1.5rem; display:flex; flex-direction:column; align-items:center; gap:0.75rem; border-width:2px;" onclick="document.getElementById('transcribeAudioInput').click()">
+                        <input type="file" id="transcribeAudioInput" accept="audio/*" style="display:none;" onchange="onTranscribeAudioSelected(event)">
+                        <div style="width:48px; height:48px; border-radius:50%; background:var(--primary-bg); display:flex; align-items:center; justify-content:center; color:var(--primary);">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                        </div>
+                        <div style="text-align:center;">
+                            <span id="transcribeFileName" style="font-size:14px; font-weight:700; color:var(--text-main); display:block;">Click to browse or drop audio here</span>
+                            <span style="font-size:11px; color:var(--text-muted);">Supports WAV, MP3, M4A, OGG, FLAC, WebM</span>
+                        </div>
+                    </div>
+
+                    <!-- Audio Preview Player -->
+                    <audio id="transcribeAudioPreview" controls style="display:none; width:100%; border-radius:var(--radius-sm);"></audio>
+
+                    <!-- Language Selection -->
+                    <div style="display:flex; flex-direction:column; gap:0.5rem;">
+                        <label style="font-size:12px; font-weight:700; color:var(--text-main);">Audio Spoken Language</label>
+                        <select id="transcribeLanguage" class="text-input-area" style="min-height:42px; height:42px; padding:0 0.75rem; cursor:pointer;">
+                            <option value="">Auto-Detect Language</option>
+                            <option value="en">English (en)</option>
+                            <option value="hi">Hindi (hi)</option>
+                            <option value="mr">Marathi (mr)</option>
+                            <option value="es">Spanish (es)</option>
+                            <option value="fr">French (fr)</option>
+                            <option value="de">German (de)</option>
+                            <option value="it">Italian (it)</option>
+                            <option value="pt">Portuguese (pt)</option>
+                            <option value="ja">Japanese (ja)</option>
+                            <option value="zh">Chinese (zh)</option>
+                        </select>
+                    </div>
+
+                    <!-- Hopfield Associative Memory Biasing & Correction Toggle -->
+                    <div style="display:flex; align-items:center; justify-content:space-between; padding:0.75rem 1rem; background:var(--primary-bg); border:1.5px solid var(--primary-border); border-radius:var(--radius-md);">
+                        <div style="display:flex; align-items:center; gap:0.6rem;">
+                            <input type="checkbox" id="transcribeUseMemory" checked style="accent-color:var(--primary); width:18px; height:18px; cursor:pointer;">
+                            <div>
+                                <label for="transcribeUseMemory" style="font-size:13px; font-weight:700; color:var(--text-main); cursor:pointer; display:block;">Hopfield Memory Biasing</label>
+                                <span style="font-size:11px; color:var(--text-muted);">Auto-correct phonetic misspellings to learned words</span>
+                            </div>
+                        </div>
+                        <span id="transcribeMemBadge" style="font-size:11px; font-weight:700; color:var(--primary); background:#FFFFFF; padding:3px 8px; border-radius:var(--radius-full); border:1px solid var(--primary-border);">Active (<span id="transcribeMemCount">0</span> words)</span>
+                    </div>
+
+                    <div style="display:flex; align-items:center; justify-content:space-between; padding:0.75rem 1rem; background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:var(--radius-md);">
+                        <div style="display:flex; align-items:center; gap:0.6rem;">
+                            <input type="checkbox" id="transcribeStreamToggle" checked style="accent-color:var(--primary); width:18px; height:18px; cursor:pointer;">
+                            <div>
+                                <label for="transcribeStreamToggle" style="font-size:13px; font-weight:700; color:var(--text-main); cursor:pointer; display:block;">Live Streaming (SSE)</label>
+                                <span style="font-size:11px; color:var(--text-muted);">Stream transcription segments and corrections in real time</span>
+                            </div>
+                        </div>
+                        <span style="font-size:10px; font-weight:800; color:#059669; background:#ECFDF5; border:1px solid #A7F3D0; padding:2px 8px; border-radius:var(--radius-full);">REALTIME</span>
+                    </div>
+
+                    <button class="btn btn-primary" id="btnTranscribe" onclick="runTranscription()" style="width:100%; margin-top:0.5rem;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        Transcribe Audio to Text
+                    </button>
+                </div>
+
+                <!-- Right: Output Card -->
+                <div class="prompt-card" style="display:flex; flex-direction:column; gap:1.25rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div class="prompt-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                            Transcribed Output
+                        </div>
+                        <div id="transcribeMeta" style="display:none; align-items:center; gap:0.5rem;">
+                            <span id="transcribeLangBadge" style="font-size:11px; font-weight:700; background:var(--primary-bg); color:var(--primary); padding:3px 8px; border-radius:var(--radius-full); text-transform:uppercase;">EN</span>
+                            <span id="transcribeDurationBadge" style="font-size:11px; font-weight:600; color:var(--text-muted);">0.0s</span>
+                        </div>
+                    </div>
+
+                    <!-- Output Text Area -->
+                    <div id="transcribeEmptyState" style="min-height:160px; display:flex; flex-direction:column; align-items:center; justify-content:center; border:1.5px dashed var(--border-subtle); border-radius:var(--radius-md); color:var(--text-muted); text-align:center; padding:2rem;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" stroke="var(--border-strong)" stroke-width="1.5" viewBox="0 0 24 24" style="margin-bottom:0.75rem;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        <p style="font-size:13px; font-weight:500;">No transcription yet</p>
+                        <p style="font-size:11px; color:var(--text-light); margin-top:2px;">Upload an audio file on the left and click "Transcribe"</p>
+                    </div>
+
+                    <div id="transcribeResultContainer" style="display:none; flex-direction:column; gap:1rem;">
+                        <!-- Hopfield Memory Correction Alert Banner -->
+                        <div id="hopfieldCorrectionBanner" style="display:none; flex-direction:column; gap:0.4rem; padding:0.75rem 1rem; background:#F0FDF4; border:1px solid #BBF7D0; border-radius:var(--radius-md);">
+                            <div style="display:flex; align-items:center; gap:0.5rem; color:#15803D; font-size:12px; font-weight:700;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                                Hopfield Memory Restored Canonical Spelling
+                            </div>
+                            <div id="hopfieldCorrectionList" style="font-size:12px; color:#166534; display:flex; flex-wrap:wrap; gap:0.4rem;"></div>
+                        </div>
+
+                        <div style="position:relative;">
+                            <textarea id="transcribeResultText" class="text-input-area" style="min-height:150px; font-size:15px; line-height:1.6;" readonly></textarea>
+                            <button class="btn btn-secondary" onclick="copyTranscription()" style="position:absolute; top:8px; right:8px; padding:4px 10px; font-size:11px;">
+                                Copy Text
+                            </button>
+                        </div>
+
+                        <div style="display:flex; gap:0.75rem;">
+                            <button class="btn btn-secondary" style="flex:1; font-size:12px;" onclick="sendToStudio()">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+                                Send to Synthesis Studio
+                            </button>
+                            <button class="btn btn-secondary" style="flex:1; font-size:12px;" onclick="sendToLearner()">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="2"/></svg>
+                                Send to Pronunciation Learner
+                            </button>
+                        </div>
+
+                        <!-- Segment Timeline -->
+                        <div id="transcribeSegmentsWrapper" style="display:none; flex-direction:column; gap:0.5rem; margin-top:0.5rem;">
+                            <span style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted);">Timed Segments</span>
+                            <div id="transcribeSegmentsList" style="max-height:160px; overflow-y:auto; display:flex; flex-direction:column; gap:0.4rem; padding-right:4px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
     <div class="toast" id="toast"></div>
 
     <script>
@@ -1144,6 +1321,9 @@ HTML_CONTENT = r"""<!DOCTYPE html>
                 document.querySelectorAll('.nav-tab')[2].classList.add('active');
                 document.getElementById('tab-memory').classList.add('active');
                 loadMemoryEntries();
+            } else if (tabId === 'transcribe') {
+                document.querySelectorAll('.nav-tab')[3].classList.add('active');
+                document.getElementById('tab-transcribe').classList.add('active');
             }
         }
 
@@ -1260,6 +1440,7 @@ HTML_CONTENT = r"""<!DOCTYPE html>
             setTimeout(() => t.classList.remove('show'), 3500);
         }
 
+        /* ── Synthesis Execution ───────────────────────────────── */
         async function runSynthesis() {
             const text = document.getElementById('promptInput').value.trim();
             if (!text) {
@@ -1314,15 +1495,42 @@ HTML_CONTENT = r"""<!DOCTYPE html>
                         formData.append('speaker_wav', _customSpeakerFile);
                     }
 
+                    const isStreamingAudio = document.getElementById('streamAudioToggle') && document.getElementById('streamAudioToggle').checked;
+                    if (isStreamingAudio && isFine) {
+                        formData.append('stream', 'true');
+                    }
+
                     const t0 = performance.now();
                     const resp = await fetch(endpoint, { method: 'POST', body: formData });
                     if (!resp.ok) {
-                        const err = await resp.json();
+                        const err = await resp.json().catch(() => ({}));
                         throw new Error(err.detail || 'Synthesis failed');
                     }
 
-                    const elapsedSec = ((performance.now() - t0) / 1000).toFixed(2);
-                    const blob = await resp.blob();
+                    let blob;
+                    let firstChunkTime = null;
+                    if (isStreamingAudio && isFine && resp.body) {
+                        const reader = resp.body.getReader();
+                        const chunks = [];
+                        while (true) {
+                            const { done, value } = await reader.read();
+                            if (done) break;
+                            if (firstChunkTime === null) {
+                                firstChunkTime = ((performance.now() - t0) / 1000).toFixed(2);
+                                const st = document.getElementById(`status-${modelKey}`);
+                                if (st) {
+                                    st.textContent = '⚡ Streaming...';
+                                    st.style.color = '#3B82F6';
+                                }
+                            }
+                            chunks.push(value);
+                        }
+                        blob = new Blob(chunks, { type: 'audio/wav' });
+                    } else {
+                        blob = await resp.blob();
+                    }
+
+                    const elapsedSec = firstChunkTime || ((performance.now() - t0) / 1000).toFixed(2);
                     const audioUrl = URL.createObjectURL(blob);
 
                     const audioEl = document.getElementById(`audio-${modelKey}`);
@@ -1337,11 +1545,11 @@ HTML_CONTENT = r"""<!DOCTYPE html>
                     dlEl.download = `${modelKey}_synthesized.wav`;
                     dlEl.style.display = 'flex';
 
-                    document.getElementById(`ttfa-${modelKey}`).textContent = elapsedSec + 's';
+                    document.getElementById(`ttfa-${modelKey}`).textContent = (firstChunkTime ? `⚡ ${firstChunkTime}s (TTFA)` : `${elapsedSec}s`);
                     document.getElementById(`dur-${modelKey}`).textContent = (blob.size / (24000 * 2)).toFixed(2) + 's';
                     document.getElementById(`mem-${modelKey}`).textContent = isMemActive ? '✓ Refined' : 'Standard';
                     metricsEl.style.display = 'flex';
-                    statusEl.textContent = '✓ Ready';
+                    statusEl.textContent = isStreamingAudio ? '✓ Stream Complete' : '✓ Ready';
                     statusEl.style.color = '#22C55E';
 
                     audioEl.play().catch(()=>{});
@@ -1357,6 +1565,7 @@ HTML_CONTENT = r"""<!DOCTYPE html>
             btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg> Generate Speech`;
         }
 
+        /* ── Pronunciation Correction Execution ────────────────── */
         async function runPronunciationCorrection() {
             const sentence = document.getElementById('correctSentence').value.trim();
             const word = document.getElementById('correctWord').value.trim();
@@ -1418,6 +1627,7 @@ HTML_CONTENT = r"""<!DOCTYPE html>
             }
         }
 
+        /* ── Memory Manager Functions ──────────────────────────── */
         async function loadMemoryEntries() {
             try {
                 const resp = await fetch('/api/memory');
@@ -1483,29 +1693,241 @@ HTML_CONTENT = r"""<!DOCTYPE html>
             }
         }
 
+        // Speech-to-Text Transcription Logic
+        let _transcribeFile = null;
+        let _transcribeAudioUrl = null;
+
+        function onTranscribeAudioSelected(event) {
+            const file = event.target.files[0];
+            if (file) {
+                _transcribeFile = file;
+                document.getElementById('transcribeFileName').textContent = file.name;
+                if (_transcribeAudioUrl) URL.revokeObjectURL(_transcribeAudioUrl);
+                _transcribeAudioUrl = URL.createObjectURL(file);
+                const preview = document.getElementById('transcribeAudioPreview');
+                preview.src = _transcribeAudioUrl;
+                preview.style.display = 'block';
+                showToast(`Loaded audio: ${file.name}`);
+            }
+        }
+
+        async function runTranscription() {
+            if (!_transcribeFile) {
+                showToast('Please select or upload an audio file first.');
+                return;
+            }
+
+            const btn = document.getElementById('btnTranscribe');
+            const originalBtnText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `
+                <svg class="spinner" style="animation:spin 1s linear infinite; width:16px; height:16px; display:inline-block; vertical-align:middle; margin-right:6px;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:0.25;"></circle><path fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" style="opacity:0.75;"></path></svg>
+                Transcribing with Whisper...
+            `;
+
+            try {
+                const formData = new FormData();
+                formData.append('audio', _transcribeFile);
+                const lang = document.getElementById('transcribeLanguage').value;
+                if (lang) formData.append('language', lang);
+                formData.append('include_timestamps', 'true');
+                formData.append('use_memory', document.getElementById('transcribeUseMemory').checked);
+
+                const isStreaming = document.getElementById('transcribeStreamToggle') && document.getElementById('transcribeStreamToggle').checked;
+
+                if (isStreaming) {
+                    formData.append('stream', 'true');
+                    const resp = await fetch('/api/transcribe', {
+                        method: 'POST',
+                        headers: { 'Accept': 'text/event-stream' },
+                        body: formData,
+                    });
+
+                    if (!resp.ok) {
+                        const err = await resp.json().catch(() => ({}));
+                        throw new Error(err.detail || 'Streaming transcription failed');
+                    }
+
+                    document.getElementById('transcribeEmptyState').style.display = 'none';
+                    const resContainer = document.getElementById('transcribeResultContainer');
+                    resContainer.style.display = 'flex';
+                    const resultArea = document.getElementById('transcribeResultText');
+                    resultArea.value = '';
+
+                    const banner = document.getElementById('hopfieldCorrectionBanner');
+                    const list = document.getElementById('hopfieldCorrectionList');
+                    const segList = document.getElementById('transcribeSegmentsList');
+                    segList.innerHTML = '';
+                    list.innerHTML = '';
+                    banner.style.display = 'none';
+
+                    const reader = resp.body.getReader();
+                    const decoder = new TextDecoder('utf-8');
+                    let buffer = '';
+                    const accumulatedSegments = [];
+                    const allCorrections = [];
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        buffer += decoder.decode(value, { stream: true });
+                        const blocks = buffer.split('\n\n');
+                        buffer = blocks.pop(); // keep remainder
+
+                        for (const block of blocks) {
+                            if (!block.trim()) continue;
+                            let eventType = 'message';
+                            let dataStr = '';
+                            for (const line of block.split('\n')) {
+                                if (line.startsWith('event:')) eventType = line.slice(6).trim();
+                                if (line.startsWith('data:')) dataStr = line.slice(5).trim();
+                            }
+                            if (!dataStr) continue;
+                            try {
+                                const data = JSON.parse(dataStr);
+                                if (eventType === 'metadata') {
+                                    document.getElementById('transcribeMeta').style.display = 'flex';
+                                    document.getElementById('transcribeLangBadge').textContent = (data.language || 'Detected').toUpperCase();
+                                    document.getElementById('transcribeDurationBadge').textContent = (data.duration ? data.duration.toFixed(1) : '0.0') + 's';
+                                } else if (eventType === 'segment') {
+                                    accumulatedSegments.push(data.text);
+                                    resultArea.value = accumulatedSegments.join(' ');
+                                    resultArea.scrollTop = resultArea.scrollHeight;
+
+                                    document.getElementById('transcribeSegmentsWrapper').style.display = 'flex';
+                                    const item = document.createElement('div');
+                                    item.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:#F8FAFC; border:1px solid var(--border-subtle); padding:6px 10px; border-radius:var(--radius-sm); font-size:12px;';
+                                    item.innerHTML = `
+                                        <span style="color:var(--text-main); font-weight:500;">${data.text}</span>
+                                        <span style="color:var(--text-muted); font-family:monospace; font-size:11px;">${data.start.toFixed(2)}s – ${data.end.toFixed(2)}s</span>
+                                    `;
+                                    segList.appendChild(item);
+                                } else if (eventType === 'correction') {
+                                    allCorrections.push(data);
+                                    banner.style.display = 'flex';
+                                    const chip = document.createElement('span');
+                                    chip.style.cssText = 'background:#DCFCE7; border:1px solid #86EFAC; padding:3px 10px; border-radius:var(--radius-full); font-weight:600; font-size:11px; display:inline-flex; align-items:center; gap:4px;';
+                                    chip.innerHTML = `<span style="text-decoration:line-through; color:#991B1B;">${data.original}</span> → <span style="color:#166534; font-weight:800;">${data.corrected}</span> <span style="font-size:10px; color:#15803D; opacity:0.8;">(${(data.confidence * 100).toFixed(0)}%)</span>`;
+                                    list.appendChild(chip);
+                                } else if (eventType === 'complete') {
+                                    if (data.text) resultArea.value = data.text;
+                                    if (allCorrections.length > 0) {
+                                        showToast(`✓ Hopfield Memory corrected ${allCorrections.length} word spelling(s)!`);
+                                    } else {
+                                        showToast('✓ Real-time streaming transcription completed!');
+                                    }
+                                }
+                            } catch (parseErr) {
+                                console.warn("SSE parse error", parseErr);
+                            }
+                        }
+                    }
+                    return;
+                }
+
+                // Standard non-streaming fallback
+                const resp = await fetch('/api/transcribe', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    throw new Error(err.detail || 'Transcription failed');
+                }
+
+                const data = await resp.json();
+
+                // Display result
+                document.getElementById('transcribeEmptyState').style.display = 'none';
+                const resContainer = document.getElementById('transcribeResultContainer');
+                resContainer.style.display = 'flex';
+                document.getElementById('transcribeResultText').value = data.text;
+
+                // Meta badges
+                document.getElementById('transcribeMeta').style.display = 'flex';
+                document.getElementById('transcribeLangBadge').textContent = (data.language || 'Detected').toUpperCase();
+                document.getElementById('transcribeDurationBadge').textContent = (data.duration ? data.duration.toFixed(1) : '0.0') + 's';
+
+                // Hopfield correction banner
+                const banner = document.getElementById('hopfieldCorrectionBanner');
+                const list = document.getElementById('hopfieldCorrectionList');
+                if (data.corrections && data.corrections.length > 0) {
+                    banner.style.display = 'flex';
+                    list.innerHTML = '';
+                    data.corrections.forEach(c => {
+                        const chip = document.createElement('span');
+                        chip.style.cssText = 'background:#DCFCE7; border:1px solid #86EFAC; padding:3px 10px; border-radius:var(--radius-full); font-weight:600; font-size:11px; display:inline-flex; align-items:center; gap:4px;';
+                        chip.innerHTML = `<span style="text-decoration:line-through; color:#991B1B;">${c.original}</span> → <span style="color:#166534; font-weight:800;">${c.corrected}</span> <span style="font-size:10px; color:#15803D; opacity:0.8;">(${(c.confidence * 100).toFixed(0)}%)</span>`;
+                        list.appendChild(chip);
+                    });
+                    showToast(`✓ Hopfield Memory corrected ${data.corrections.length} word spelling(s)!`);
+                } else {
+                    banner.style.display = 'none';
+                    list.innerHTML = '';
+                    showToast('✓ Transcription completed successfully!');
+                }
+
+                // Render segments
+                const segList = document.getElementById('transcribeSegmentsList');
+                segList.innerHTML = '';
+                if (data.segments && data.segments.length > 0) {
+                    document.getElementById('transcribeSegmentsWrapper').style.display = 'flex';
+                    data.segments.forEach(seg => {
+                        const item = document.createElement('div');
+                        item.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:#F8FAFC; border:1px solid var(--border-subtle); padding:6px 10px; border-radius:var(--radius-sm); font-size:12px;';
+                        item.innerHTML = `
+                            <span style="color:var(--text-main);">${seg.text}</span>
+                            <span style="color:var(--text-muted); font-family:monospace; font-size:11px;">${seg.start.toFixed(2)}s – ${seg.end.toFixed(2)}s</span>
+                        `;
+                        segList.appendChild(item);
+                    });
+                } else {
+                    document.getElementById('transcribeSegmentsWrapper').style.display = 'none';
+                }
+            } catch (err) {
+                showToast(`Error: ${err.message}`);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalBtnText;
+            }
+        }
+
+        function copyTranscription() {
+            const txt = document.getElementById('transcribeResultText').value;
+            if (txt) {
+                navigator.clipboard.writeText(txt);
+                showToast('✓ Copied transcription to clipboard!');
+            }
+        }
+
+        function sendToStudio() {
+            const txt = document.getElementById('transcribeResultText').value;
+            if (txt) {
+                setPrompt(txt);
+                switchTab('studio');
+                showToast('✓ Text copied to Synthesis Studio!');
+            }
+        }
+
+        function sendToLearner() {
+            const txt = document.getElementById('transcribeResultText').value;
+            if (txt) {
+                document.getElementById('correctCarrier').value = txt;
+                switchTab('learner');
+                showToast('✓ Text copied to Pronunciation Learner!');
+            }
+        }
+
+        // Initial system check
         fetch('/api/status').then(r => r.json()).then(s => {
             if (s.memory_entries !== undefined) {
                 document.getElementById('memCountHeader').textContent = s.memory_entries;
+                const memCountEl = document.getElementById('transcribeMemCount');
+                if (memCountEl) memCountEl.textContent = s.memory_entries;
             }
         }).catch(()=>{});
     </script>
 </body>
 </html>
 """
-
-
-def get_ui_html() -> str:
-    """Return UI HTML from file or embedded fallback."""
-    candidates = [
-        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "static", "index.html")),
-        os.path.abspath(os.path.join(os.getcwd(), "static", "index.html")),
-        os.path.abspath(os.path.join(os.getcwd(), "Flowedit", "static", "index.html")),
-    ]
-    for path in candidates:
-        if os.path.isfile(path):
-            try:
-                with open(path, "r", encoding="utf-8") as f:
-                    return f.read()
-            except Exception:
-                pass
-    return HTML_CONTENT

@@ -2,6 +2,7 @@
 FlowEdit FastAPI REST Service.
 
 Provides endpoints for:
+- /api/transcribe: Speech-to-Text transcription via Whisper
 - /api/correct: Learn a pronunciation correction from reference audio
 - /api/synthesize: Synthesize speech with automatic Hopfield memory retrieval
 - /api/baseline: Vanilla baseline synthesis without memory
@@ -27,6 +28,7 @@ from flowedit.config import FlowEditConfig
 from flowedit.audio.prompt_validator import ReferenceAudioError
 from flowedit.pipeline.correction_loop import CorrectionLoop
 from flowedit.pipeline.inference import FlowEditInference
+from flowedit.alignment.whisper_aligner import WhisperAligner
 
 logging.basicConfig(
     level=logging.INFO,
@@ -474,3 +476,117 @@ async def clear_memory():
         if os.path.exists(MEMORY_PATH):
             os.remove(MEMORY_PATH)
     return {"success": True, "message": "Memory cleared successfully.", "size": 0}
+
+
+standalone_aligner: Optional[WhisperAligner] = None
+
+
+def get_whisper_aligner() -> WhisperAligner:
+    """Get active WhisperAligner instance from pipeline or initialize standalone."""
+    global correction_pipeline, standalone_aligner
+    if correction_pipeline and correction_pipeline.aligner:
+        return correction_pipeline.aligner
+    if standalone_aligner is not None:
+        return standalone_aligner
+
+    config = FlowEditConfig()
+    whisper_model_env = os.environ.get("FLOWEDIT_WHISPER_MODEL", "")
+    if whisper_model_env:
+        config.alignment.whisper_model = whisper_model_env
+    standalone_aligner = WhisperAligner(config.alignment)
+    standalone_aligner.load_model()
+    return standalone_aligner
+
+
+@app.post("/api/transcribe")
+async def transcribe_speech(
+    audio: UploadFile = File(..., description="Audio file to transcribe (WAV, MP3, M4A, OGG, WebM, FLAC)"),
+    language: Optional[str] = Form(None, description="Language code (e.g. 'en', 'hi', 'fr') or leave empty for auto-detection"),
+    include_timestamps: bool = Form(True, description="Whether to return segment-level timestamps"),
+    use_memory: bool = Form(True, description="Apply Hopfield Memory associative correction and vocabulary biasing"),
+):
+    """Speech-to-Text: Transcribe spoken audio to text using Whisper with Hopfield Memory spelling correction."""
+    if not audio.filename:
+        raise HTTPException(status_code=400, detail="No audio file uploaded.")
+
+    suffix = os.path.splitext(audio.filename)[1].lower() or ".wav"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_audio:
+        temp_audio_path = temp_audio.name
+
+    converted_wav_path = None
+    try:
+        content = await audio.read()
+        if not content or len(content) == 0:
+            raise HTTPException(status_code=400, detail="Uploaded audio file is empty.")
+
+        with open(temp_audio_path, "wb") as f:
+            f.write(content)
+
+        # Convert to strict 24kHz/16kHz Mono WAV if possible for maximum compatibility
+        converted_wav_path = convert_to_wav(temp_audio_path)
+        actual_path = converted_wav_path if (converted_wav_path and os.path.exists(converted_wav_path)) else temp_audio_path
+
+        # Check if Hopfield Memory is available and has entries for vocabulary biasing
+        memory_instance = None
+        initial_prompt = None
+        if use_memory and correction_pipeline and correction_pipeline.memory and correction_pipeline.memory.num_entries > 0:
+            memory_instance = correction_pipeline.memory
+            initial_prompt = memory_instance.get_vocabulary_prompt()
+            if initial_prompt:
+                logger.info(f"Biasing Whisper ASR with Hopfield vocabulary prompt: '{initial_prompt}'")
+
+        aligner = get_whisper_aligner()
+        result = aligner.transcribe(
+            audio_path=actual_path,
+            language=language,
+            return_timestamps=include_timestamps,
+            initial_prompt=initial_prompt,
+        )
+
+        raw_text = result["text"]
+        final_text = raw_text
+        corrections = []
+
+        # Apply associative Hopfield post-correction to fix phonetic spellings to canonical words
+        if memory_instance:
+            final_text, corrections = memory_instance.correct_transcript(raw_text)
+            if corrections:
+                logger.info(f"✓ Hopfield Memory corrected {len(corrections)} spelling(s) in transcript: {corrections}")
+
+        # Update segment texts if corrections were made
+        segments = result.get("segments", [])
+        if memory_instance and corrections and segments:
+            updated_segments = []
+            for seg in segments:
+                seg_text = seg.get("text", "")
+                if seg_text:
+                    corr_seg_text, _ = memory_instance.correct_transcript(seg_text)
+                    seg_copy = dict(seg)
+                    seg_copy["text"] = corr_seg_text
+                    updated_segments.append(seg_copy)
+                else:
+                    updated_segments.append(seg)
+            segments = updated_segments
+
+        return JSONResponse({
+            "success": True,
+            "text": final_text,
+            "raw_text": raw_text,
+            "language": result["language"],
+            "duration": result["duration"],
+            "segments": segments,
+            "memory_applied": bool(memory_instance and corrections),
+            "memory_entries_count": memory_instance.num_entries if memory_instance else 0,
+            "corrections": corrections,
+        })
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Transcription error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
+    finally:
+        if os.path.exists(temp_audio_path):
+            os.remove(temp_audio_path)
+        if converted_wav_path and os.path.exists(converted_wav_path) and converted_wav_path != temp_audio_path:
+            os.remove(converted_wav_path)
+
