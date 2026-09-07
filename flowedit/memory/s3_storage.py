@@ -351,8 +351,12 @@ class S3SpellingStore:
                 "total_words": len(self._dictionary),
             }
 
-    def load_from_s3(self) -> bool:
-        """Download dictionary from S3 bucket into memory."""
+    def load_from_s3(self, replace: bool = False) -> bool:
+        """Download dictionary from S3 bucket into memory.
+        
+        Args:
+            replace: If True, clears existing in-memory entries before loading from S3.
+        """
         if not self.bucket_name:
             return False
 
@@ -367,6 +371,8 @@ class S3SpellingStore:
             data = json.loads(content)
             loaded_words = data.get("words", {})
             if isinstance(loaded_words, dict):
+                if replace:
+                    self._dictionary.clear()
                 self._dictionary.update(loaded_words)
                 logger.info(f"[S3 Store] ✓ Loaded {len(loaded_words)} words from {self.bucket_name}/{key}")
                 return True
@@ -374,24 +380,145 @@ class S3SpellingStore:
             logger.info(f"[S3 Store] No existing dictionary in S3 ({self.bucket_name}/{key}): {e}")
         return False
 
-    def delete_word(self, word: str) -> bool:
-        """Delete a word from dictionary and sync to S3."""
+    def get_s3_metadata(self) -> Dict[str, Any]:
+        """Fetch remote S3 object metadata if accessible."""
+        if not self.bucket_name:
+            return {"exists": False, "reason": "no_bucket"}
+        client = self._get_s3_client()
+        if not client:
+            return {"exists": False, "reason": "no_client"}
+        key = f"{self.prefix}spelling_dictionary.json"
+        try:
+            head = client.head_object(Bucket=self.bucket_name, Key=key)
+            last_mod = head.get("LastModified")
+            iso_mod = last_mod.isoformat() if hasattr(last_mod, "isoformat") else str(last_mod)
+            return {
+                "exists": True,
+                "bucket": self.bucket_name,
+                "key": key,
+                "size_bytes": head.get("ContentLength", 0),
+                "last_modified": iso_mod,
+                "etag": (head.get("ETag") or "").strip('"'),
+                "content_type": head.get("ContentType", "application/json"),
+            }
+        except Exception as e:
+            return {
+                "exists": False,
+                "bucket": self.bucket_name,
+                "key": key,
+                "error": str(e),
+            }
+
+    def get_entries_data(self, refresh: bool = False, word: Optional[str] = None) -> Dict[str, Any]:
+        """Get dictionary entries along with live S3 status metadata.
+        
+        Args:
+            refresh: If True, pulls fresh state from S3 before returning.
+            word: Optional target word filter.
+        """
+        if refresh:
+            self.load_from_s3(replace=True)
+
+        meta = self.get_s3_metadata()
+        key = f"{self.prefix}spelling_dictionary.json"
+
+        if word:
+            word_key = word.strip().lower()
+            entry = self._dictionary.get(word_key)
+            entries = [entry] if entry else []
+        else:
+            entries = list(self._dictionary.values())
+
+        return {
+            "bucket": self.bucket_name,
+            "region": self.region_name,
+            "prefix": self.prefix,
+            "key": key,
+            "s3_uri": f"s3://{self.bucket_name}/{key}" if self.bucket_name else None,
+            "total_words": len(self._dictionary),
+            "filtered_count": len(entries),
+            "s3_metadata": meta,
+            "entries": entries,
+        }
+
+    def delete_word(self, word: str) -> Tuple[bool, Dict[str, Any]]:
+        """Delete a word from dictionary and sync updated state to S3.
+        
+        Returns:
+            Tuple of (bool found, dict sync_result)
+        """
         word_key = word.strip().lower()
         if word_key in self._dictionary:
             del self._dictionary[word_key]
-            self.sync_to_s3()
-            return True
-        return False
+            sync_res = self.sync_to_s3()
+            return True, sync_res
+        return False, {}
+
+    def delete_sense(self, word: str, sense_id: str) -> Tuple[bool, Dict[str, Any]]:
+        """Delete a specific sense profile for a word and sync to S3.
+        
+        If no senses remain for the word, the word entry is removed.
+        """
+        word_key = word.strip().lower()
+        if word_key not in self._dictionary:
+            return False, {"error": f"Word '{word}' not found in dictionary."}
+
+        word_data = self._dictionary[word_key]
+        senses = word_data.get("senses", [])
+        new_senses = [s for s in senses if s.get("sense_id") != sense_id]
+
+        if len(new_senses) == len(senses):
+            return False, {"error": f"Sense '{sense_id}' not found for word '{word}'."}
+
+        if not new_senses:
+            del self._dictionary[word_key]
+        else:
+            word_data["senses"] = new_senses
+            # Update default spell to first remaining sense if any
+            if new_senses and "spell_as" in new_senses[0]:
+                word_data["default_spell"] = new_senses[0]["spell_as"]
+
+        sync_res = self.sync_to_s3()
+        return True, sync_res
 
     def list_corrections(self) -> List[Dict[str, Any]]:
         """Return all dictionary entries."""
         return list(self._dictionary.values())
 
+    def clear_all(self, delete_remote_file: bool = False) -> Dict[str, Any]:
+        """Clear all in-memory entries and update S3 bucket.
+        
+        Args:
+            delete_remote_file: If True, completely deletes the object from S3.
+                                If False, syncs an empty dictionary {} to S3.
+        """
+        self._dictionary.clear()
+        if not self.bucket_name:
+            return {"synced": False, "status": "no_bucket_configured", "total_words": 0}
+
+        key = f"{self.prefix}spelling_dictionary.json"
+        if delete_remote_file:
+            client = self._get_s3_client()
+            if client:
+                try:
+                    client.delete_object(Bucket=self.bucket_name, Key=key)
+                    logger.info(f"[S3 Store] Deleted remote object s3://{self.bucket_name}/{key}")
+                    return {
+                        "synced": True,
+                        "status": "remote_file_deleted",
+                        "bucket": self.bucket_name,
+                        "key": key,
+                        "total_words": 0,
+                    }
+                except Exception as e:
+                    logger.error(f"[S3 Store] Error deleting remote object s3://{self.bucket_name}/{key}: {e}")
+                    return {"synced": False, "status": "delete_failed", "error": str(e), "total_words": 0}
+
+        return self.sync_to_s3()
+
     def clear(self) -> None:
         """Clear all in-memory entries and sync to S3."""
-        self._dictionary.clear()
-        if self.bucket_name:
-            self.sync_to_s3()
+        self.clear_all(delete_remote_file=False)
 
 
 # Global singleton store instance
