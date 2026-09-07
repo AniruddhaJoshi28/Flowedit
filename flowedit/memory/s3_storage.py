@@ -32,7 +32,8 @@ class S3SpellingStore:
             bucket_name
             or os.environ.get("FLOWEDIT_S3_BUCKET")
             or os.environ.get("S3_BUCKET_NAME")
-            or os.environ.get("AWS_S3_BUCKET", "")
+            or os.environ.get("AWS_S3_BUCKET")
+            or "flowedit-bucket"
         ).strip()
         self.endpoint_url = (
             endpoint_url

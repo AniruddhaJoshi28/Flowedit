@@ -173,7 +173,7 @@ class BackboneConfig:
 class S3Config:
     """S3 Bucket configuration for deterministic phonetic spelling corrections."""
 
-    bucket_name: str = field(default_factory=lambda: os.environ.get("FLOWEDIT_S3_BUCKET", os.environ.get("S3_BUCKET_NAME", "")))
+    bucket_name: str = field(default_factory=lambda: os.environ.get("FLOWEDIT_S3_BUCKET", os.environ.get("S3_BUCKET_NAME", os.environ.get("AWS_S3_BUCKET", "flowedit-bucket"))))
     endpoint_url: Optional[str] = field(default_factory=lambda: os.environ.get("FLOWEDIT_S3_URL", os.environ.get("S3_ENDPOINT_URL", None)))
     prefix: str = field(default_factory=lambda: os.environ.get("FLOWEDIT_S3_PREFIX", "corrections/"))
     region_name: str = field(default_factory=lambda: os.environ.get("AWS_REGION", os.environ.get("AWS_DEFAULT_REGION", "us-east-1")))
