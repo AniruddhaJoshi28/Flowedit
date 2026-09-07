@@ -32,6 +32,7 @@ from flowedit.audio.prompt_validator import ReferenceAudioError
 from flowedit.pipeline.correction_loop import CorrectionLoop
 from flowedit.pipeline.inference import FlowEditInference
 from flowedit.alignment.whisper_aligner import WhisperAligner
+from flowedit.memory.s3_storage import s3_spelling_store
 
 logging.basicConfig(
     level=logging.INFO,
@@ -244,23 +245,66 @@ async def correct_pronunciation(
     text: str = Form(..., description="Full text containing target word"),
     target_word: str = Form(..., description="The word to correct pronunciation of"),
     language: str = Form("en", description="Language code"),
-    ref_audio: UploadFile = File(..., description="Reference audio with correct pronunciation"),
+    mode: str = Form("audio", description="Correction mode: 'audio' (default, 3-stage FlowEdit optimization) or 'spell' (deterministic phonetic respelling)"),
+    spell_as: Optional[str] = Form(None, description="Replacement phonetic spelling when mode='spell' (e.g. 'red' for 'read')"),
+    ref_audio: Optional[UploadFile] = File(None, description="Reference audio with correct pronunciation (required for mode='audio')"),
     speaker_wav: Optional[UploadFile] = File(None, description="Speaker reference audio for voice conditioning"),
     speaker_name: Optional[str] = Form("female", description="Preset speaker voice name if not uploading audio"),
     ref_text: Optional[str] = Form(None, description="Optional transcription of speaker audio"),
     occurrence_index: int = Form(0, description="Occurrence index of target word if multiple exist"),
     phonetic_hint: Optional[str] = Form(None, description="Phonetic hint for warm-starting optimization"),
 ):
-    """Learn a pronunciation correction from reference audio using FlowEdit (Stages 1-3)."""
+    """Pronunciation correction endpoint supporting two modes:
+    1. 'audio': Full FlowEdit 3-stage continuous latent optimization from reference audio (untouched).
+    2. 'spell': Deterministic phonetic respelling (e.g. 'read' -> 'red') stored directly in S3.
+    """
     global correction_pipeline
-    if not correction_pipeline:
-        raise HTTPException(status_code=503, detail="Pipeline not initialized.")
-
     text = text.strip()
     target_word = target_word.strip()
 
     if not text or not target_word:
         raise HTTPException(status_code=400, detail="text and target_word must be non-empty.")
+
+    mode_clean = (mode or "audio").strip().lower()
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # Mode 2: 'spell' — Deterministic Phonetic Respelling with Direct S3 Sync
+    # ─────────────────────────────────────────────────────────────────────────
+    if mode_clean == "spell":
+        replacement = (spell_as or "").strip()
+        if not replacement:
+            raise HTTPException(status_code=400, detail="spell_as is required when mode='spell'.")
+
+        reg_result = s3_spelling_store.add_correction(
+            word=target_word,
+            spell_as=replacement,
+            carrier_text=text,
+            language=language,
+        )
+
+        return JSONResponse({
+            "success": True,
+            "mode": "spell",
+            "word": target_word,
+            "spell_as": replacement,
+            "sense_id": reg_result.get("sense_id"),
+            "sense_display": reg_result.get("sense_display"),
+            "carrier_text": text,
+            "s3_synced": reg_result.get("s3_synced", False),
+            "s3_status": reg_result.get("s3_status", "pending_s3_link"),
+            "s3_uri": reg_result.get("s3_uri"),
+            "total_spelling_entries": reg_result.get("total_entries", 1),
+            "memory_size": correction_pipeline.memory.num_entries if correction_pipeline and correction_pipeline.memory else 0,
+        })
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # Mode 1: 'audio' — Existing FlowEdit Latent Optimization (Untouched)
+    # ─────────────────────────────────────────────────────────────────────────
+    if not ref_audio:
+        raise HTTPException(status_code=400, detail="ref_audio is required for audio correction mode.")
+
+    if not correction_pipeline:
+        raise HTTPException(status_code=503, detail="Pipeline not initialized.")
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_ref:
         temp_ref_path = temp_ref.name
@@ -353,6 +397,7 @@ async def synthesize_text(
             **synth_kwargs,
         )
 
+        applied_spells = [f"{c['word']}->{c['spell_as']}" for c in result.get("spelling_applied", [])]
         return FileResponse(
             path=output_path,
             media_type="audio/wav",
@@ -360,11 +405,67 @@ async def synthesize_text(
             headers={
                 "X-FlowEdit-Mode": "corrected",
                 "X-Memory-Active": str(result.get("is_modified", False)),
+                "X-Spelling-Applied": ", ".join(applied_spells) if applied_spells else "none",
+                "X-Hopfield-Active": str(result.get("hopfield_active", False)),
             },
         )
     finally:
         if is_temp_speaker and os.path.exists(temp_speaker_path):
             os.remove(temp_speaker_path)
+
+
+@app.get("/api/s3/config")
+async def get_s3_config():
+    """Get current S3 storage status."""
+    return {
+        "configured": bool(s3_spelling_store.bucket_name),
+        "bucket_name": s3_spelling_store.bucket_name,
+        "endpoint_url": s3_spelling_store.endpoint_url,
+        "prefix": s3_spelling_store.prefix,
+        "region_name": s3_spelling_store.region_name,
+        "total_words": len(s3_spelling_store._dictionary),
+    }
+
+
+@app.post("/api/s3/config")
+async def update_s3_config(
+    bucket_name: Optional[str] = Form(None),
+    endpoint_url: Optional[str] = Form(None),
+    prefix: Optional[str] = Form(None),
+    region_name: Optional[str] = Form(None),
+):
+    """Configure or update S3 bucket link."""
+    cfg = s3_spelling_store.configure_s3(
+        bucket_name=bucket_name,
+        endpoint_url=endpoint_url,
+        prefix=prefix,
+        region_name=region_name,
+    )
+    return {"success": True, "config": cfg}
+
+
+@app.get("/api/spelling")
+async def list_spelling_corrections():
+    """List all registered S3 phonetic spelling corrections."""
+    entries = s3_spelling_store.list_corrections()
+    return {
+        "size": len(entries),
+        "corrections": entries,
+        "s3_bucket": s3_spelling_store.bucket_name or None,
+    }
+
+
+@app.delete("/api/spelling/{word}")
+async def delete_spelling_correction(word: str):
+    """Delete a phonetic spelling correction by word."""
+    deleted = s3_spelling_store.delete_word(word)
+    if not deleted:
+        raise HTTPException(status_code=404, detail=f"No spelling entry found for word '{word}'.")
+    return {
+        "success": True,
+        "message": f"Deleted spelling correction for '{word}'.",
+        "size": len(s3_spelling_store._dictionary),
+    }
 
 
 @app.post("/api/baseline")

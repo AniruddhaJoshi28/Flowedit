@@ -86,13 +86,19 @@ class FlowEditInference:
         """
         self._ensure_ready()
         t0 = time.time()
-
         text = normalize_indic_phonetics(text)
+
+        # Autonomous Memory Check 1: S3 Spelling Store (deterministic phonetic respelling via shared HomographContextResolver)
+        from flowedit.memory.s3_storage import s3_spelling_store
+        text, spelling_applied = s3_spelling_store.apply_corrections_to_text(text)
+        if spelling_applied:
+            logger.info(f"[Inference] Autonomous S3 spelling correction applied: {spelling_applied}")
+
         speaker_conditioning = self.backbone.get_speaker_embedding(
             speaker_wav, language=language, ref_text=user_ref_text
         )
 
-        # Refine text embeddings and synthesize
+        # Autonomous Memory Check 2: Modern Hopfield Continuous Memory (continuous latent delta retrieval)
         refine_res = self.refiner(
             backbone=self.backbone,
             text=text,
@@ -111,10 +117,15 @@ class FlowEditInference:
 
         elapsed_ms = (time.time() - t0) * 1000.0
 
+        diag = dict(refine_res.diagnostics)
+        diag["spelling_applied"] = spelling_applied
+
         return {
             "waveform": waveform,
             "sample_rate": sr,
-            "is_modified": refine_res.is_modified,
+            "is_modified": refine_res.is_modified or bool(spelling_applied),
+            "spelling_applied": spelling_applied,
+            "hopfield_active": refine_res.is_modified,
             "inference_time_ms": elapsed_ms,
-            "diagnostics": refine_res.diagnostics,
+            "diagnostics": diag,
         }

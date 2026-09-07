@@ -1068,20 +1068,40 @@ HTML_CONTENT = r"""<!DOCTYPE html>
                     FlowEdit Pronunciation Learning Engine
                 </div>
                 <p style="font-size:13px; color:var(--text-muted); line-height:1.5;">
-                    Provide a carrier sentence, target word, and audio containing the ground truth pronunciation. FlowEdit runs Whisper forced alignment and 50-step Adam latent optimization ($\delta^*$) to store the correction into Modern Hopfield Memory.
+                    Correct pronunciations using either ground-truth reference audio (FlowEdit 3-stage optimization) or deterministic phonetic respelling (stored in S3).
                 </p>
+
+                <!-- Correction Mode Toggle -->
+                <div style="display:flex; gap:8px; margin:0.5rem 0 0.75rem; background:rgba(0,0,0,0.04); padding:4px; border-radius:8px; width:fit-content;">
+                    <button type="button" id="modeAudioBtn" style="background:var(--primary); color:#fff; font-weight:700; border:none; padding:7px 14px; font-size:12px; border-radius:6px; cursor:pointer;" onclick="setCorrectionMode('audio')">
+                        🎙️ Audio Mode (Reference WAV)
+                    </button>
+                    <button type="button" id="modeSpellBtn" style="background:transparent; color:var(--text-muted); font-weight:600; border:none; padding:7px 14px; font-size:12px; border-radius:6px; cursor:pointer;" onclick="setCorrectionMode('spell')">
+                        ✍️ Spell Mode (Phonetic Respelling / S3)
+                    </button>
+                </div>
 
                 <div style="display:flex; flex-direction:column; gap:0.75rem;">
                     <label style="font-size:12px; font-weight:700; color:var(--text-main);">Full Carrier Sentence</label>
-                    <input type="text" id="correctSentence" class="text-input-area" style="min-height:46px; height:46px;" value="The toy is made up of lead.">
+                    <input type="text" id="correctSentence" class="text-input-area" style="min-height:46px; height:46px;" value="She read the book yesterday.">
                 </div>
 
                 <div style="display:flex; flex-direction:column; gap:0.75rem;">
                     <label style="font-size:12px; font-weight:700; color:var(--text-main);">Target Mispronounced Word</label>
-                    <input type="text" id="correctWord" class="text-input-area" style="min-height:46px; height:46px;" value="lead">
+                    <input type="text" id="correctWord" class="text-input-area" style="min-height:46px; height:46px;" value="read">
                 </div>
 
-                <div style="display:flex; flex-direction:column; gap:0.75rem;">
+                <!-- Spell Mode Input (Shown when in Spell Mode) -->
+                <div id="spellAsContainer" style="display:none; flex-direction:column; gap:0.75rem;">
+                    <label style="font-size:12px; font-weight:700; color:var(--text-main);">Spell it as (Phonetic spelling, e.g. 'red' for 'read')</label>
+                    <input type="text" id="correctSpellAs" class="text-input-area" style="min-height:46px; height:46px;" placeholder="e.g. red" value="red">
+                    <div style="font-size:11px; color:var(--text-muted); line-height:1.4;">
+                        Uses shared homograph context resolver to classify sense (e.g. past vs present) and stores directly in S3.
+                    </div>
+                </div>
+
+                <!-- Audio Mode Upload (Shown when in Audio Mode) -->
+                <div id="refAudioContainer" style="display:flex; flex-direction:column; gap:0.75rem;">
                     <label style="font-size:12px; font-weight:700; color:var(--text-main);">Reference Correct Pronunciation Audio (.WAV)</label>
                     <div class="upload-voice-box" onclick="document.getElementById('refAudioFile').click()">
                         <input type="file" id="refAudioFile" accept="audio/*" style="display:none;" onchange="onRefAudioUploaded(event)">
@@ -1091,7 +1111,7 @@ HTML_CONTENT = r"""<!DOCTYPE html>
 
                 <button class="btn btn-primary" id="learnBtn" style="margin-top:0.5rem;" onclick="runPronunciationCorrection()">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-                    Optimize & Learn Pronunciation
+                    <span id="learnBtnText">Optimize & Learn Pronunciation</span>
                 </button>
             </div>
 
@@ -1566,12 +1586,98 @@ HTML_CONTENT = r"""<!DOCTYPE html>
         }
 
         /* ── Pronunciation Correction Execution ────────────────── */
+        let _currentCorrectionMode = 'audio';
+
+        function setCorrectionMode(mode) {
+            _currentCorrectionMode = mode;
+            const audioBtn = document.getElementById('modeAudioBtn');
+            const spellBtn = document.getElementById('modeSpellBtn');
+            const refAudioContainer = document.getElementById('refAudioContainer');
+            const spellAsContainer = document.getElementById('spellAsContainer');
+            const learnBtnText = document.getElementById('learnBtnText');
+
+            if (mode === 'spell') {
+                audioBtn.style.background = 'transparent';
+                audioBtn.style.color = 'var(--text-muted)';
+                audioBtn.style.fontWeight = '600';
+
+                spellBtn.style.background = 'var(--primary)';
+                spellBtn.style.color = '#fff';
+                spellBtn.style.fontWeight = '700';
+
+                refAudioContainer.style.display = 'none';
+                spellAsContainer.style.display = 'flex';
+                if (learnBtnText) learnBtnText.textContent = 'Save Phonetic Spelling to S3';
+            } else {
+                spellBtn.style.background = 'transparent';
+                spellBtn.style.color = 'var(--text-muted)';
+                spellBtn.style.fontWeight = '600';
+
+                audioBtn.style.background = 'var(--primary)';
+                audioBtn.style.color = '#fff';
+                audioBtn.style.fontWeight = '700';
+
+                refAudioContainer.style.display = 'flex';
+                spellAsContainer.style.display = 'none';
+                if (learnBtnText) learnBtnText.textContent = 'Optimize & Learn Pronunciation';
+            }
+        }
+
         async function runPronunciationCorrection() {
             const sentence = document.getElementById('correctSentence').value.trim();
             const word = document.getElementById('correctWord').value.trim();
 
             if (!sentence || !word) {
                 showToast('Please enter both carrier sentence and target word.');
+                return;
+            }
+
+            if (_currentCorrectionMode === 'spell') {
+                const spellAs = (document.getElementById('correctSpellAs').value || '').trim();
+                if (!spellAs) {
+                    showToast('Please enter the phonetic spelling (e.g. red for read).');
+                    return;
+                }
+
+                const btn = document.getElementById('learnBtn');
+                btn.disabled = true;
+                btn.textContent = 'Saving Phonetic Spelling to S3...';
+
+                const st1 = document.getElementById('stage1');
+                const st2 = document.getElementById('stage2');
+                const st3 = document.getElementById('stage3');
+
+                st1.classList.add('active');
+                document.getElementById('stage1-text').textContent = 'Classifying word context & syntactic sense...';
+
+                try {
+                    const formData = new FormData();
+                    formData.append('text', sentence);
+                    formData.append('target_word', word);
+                    formData.append('mode', 'spell');
+                    formData.append('spell_as', spellAs);
+
+                    st2.classList.add('active');
+                    document.getElementById('stage2-text').textContent = `Mapping '${word}' ➔ '${spellAs}'...`;
+
+                    const resp = await fetch('/api/correct', { method: 'POST', body: formData });
+                    const res = await resp.json();
+                    if (!resp.ok) {
+                        throw new Error(res.detail || 'Spelling correction failed');
+                    }
+
+                    st3.classList.add('active');
+                    document.getElementById('stage1-text').textContent = `✓ Sense: ${res.sense_display || res.sense_id}`;
+                    document.getElementById('stage2-text').textContent = `✓ Phonetic mapping: '${res.word}' ➔ '${res.spell_as}'`;
+                    document.getElementById('stage3-text').textContent = `✓ S3 Persistence: ${res.s3_status === 'synced' ? 'Synchronized to S3' : 'Held in memory (ready for S3 link)'}`;
+
+                    showToast(`✓ Phonetic spelling for '${res.word}' saved to S3!`);
+                } catch (e) {
+                    showToast('Spelling Correction Failed: ' + e.message);
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> <span id="learnBtnText">Save Phonetic Spelling to S3</span>`;
+                }
                 return;
             }
 

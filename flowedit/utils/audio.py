@@ -6,7 +6,10 @@ functions used throughout the pipeline.
 """
 
 import torch
-import torchaudio
+try:
+    import torchaudio
+except (ImportError, OSError):
+    torchaudio = None
 import numpy as np
 import librosa
 import soundfile as sf
