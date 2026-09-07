@@ -10,6 +10,9 @@ from typing import Optional, Tuple, Any
 import os
 import torch
 
+from flowedit.utils.env import load_flowedit_env
+load_flowedit_env()
+
 
 @dataclass
 class OptimizationConfig:

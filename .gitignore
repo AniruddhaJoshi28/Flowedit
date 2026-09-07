@@ -16,6 +16,9 @@ ENV/
 htmlcov/
 *.egg-info/
 .eggs/
+.env
+.env.*
+!.env.example
 
 # ── 2. Training Artifacts & Large Checkpoint Outputs ──────────────────────────
 # Generated datasets and training output directories

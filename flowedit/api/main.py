@@ -17,6 +17,10 @@ import tempfile
 import subprocess
 import traceback
 import logging
+
+# Ensure environment variables from .env are loaded before any FlowEdit module imports
+from flowedit.utils.env import load_flowedit_env
+load_flowedit_env()
 from contextlib import asynccontextmanager
 from typing import Optional, Dict, Any
 

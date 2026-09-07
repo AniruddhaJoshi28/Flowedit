@@ -14,6 +14,10 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple, Any
 
 from flowedit.alignment.homograph_resolver import HomographContextResolver
+from flowedit.utils.env import load_flowedit_env
+
+# Ensure .env is loaded
+load_flowedit_env()
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +76,8 @@ class S3SpellingStore:
             import boto3
             from botocore.config import Config
 
+            load_flowedit_env()
+
             cfg = Config(
                 region_name=self.region_name,
                 retries={"max_attempts": 3, "mode": "standard"},
@@ -84,8 +90,12 @@ class S3SpellingStore:
             if os.environ.get("AWS_ACCESS_KEY_ID") and os.environ.get("AWS_SECRET_ACCESS_KEY"):
                 kwargs["aws_access_key_id"] = os.environ.get("AWS_ACCESS_KEY_ID")
                 kwargs["aws_secret_access_key"] = os.environ.get("AWS_SECRET_ACCESS_KEY")
+            if os.environ.get("AWS_SESSION_TOKEN"):
+                kwargs["aws_session_token"] = os.environ.get("AWS_SESSION_TOKEN")
 
-            self._s3_client = boto3.client("s3", **kwargs)
+            profile_name = os.environ.get("AWS_PROFILE")
+            session = boto3.Session(profile_name=profile_name) if profile_name else boto3.Session()
+            self._s3_client = session.client("s3", **kwargs)
             return self._s3_client
         except Exception as e:
             logger.warning(f"Failed to create boto3 S3 client: {e}")
@@ -333,6 +343,7 @@ class S3SpellingStore:
             }
         except Exception as e:
             logger.error(f"[S3 Store] Error uploading to S3 ({self.bucket_name}/{key}): {e}")
+            self._s3_client = None  # Reset client so next request re-loads fresh credentials
             return {
                 "synced": False,
                 "status": "upload_failed",

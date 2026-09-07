@@ -8,6 +8,9 @@ project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
+from flowedit.utils.env import load_flowedit_env
+load_flowedit_env()
+
 def main():
     parser = argparse.ArgumentParser(description="Start FlowEdit FastAPI Server")
     parser.add_argument("--host", default="0.0.0.0", help="Host IP address")
