@@ -46,6 +46,11 @@ checkpoints/
 *.log
 *.tmp
 
+# Exception: keep essential preset deployment voices
+!deploy_voices/blessing.wav
+!deploy_voices/michael.wav
+!flowedit/resources/*.wav
+
 # ── 4. OS & IDE Metadata ──────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
@@ -54,3 +59,4 @@ Thumbs.db
 *.swp
 temp_packages/
 .env
+.venv

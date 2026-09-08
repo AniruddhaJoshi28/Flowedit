@@ -16,7 +16,11 @@ from typing import Optional, Dict, List, Any, Union
 from pathlib import Path
 
 import torch
-import soundfile as sf
+
+try:
+    import soundfile as sf
+except ImportError:
+    sf = None
 try:
     import librosa
 except ImportError:

@@ -26,7 +26,25 @@ from typing import Optional, Dict, Any
 
 import torch
 import numpy as np
-import soundfile as sf
+try:
+    import soundfile as sf
+except ImportError:
+    sf = None
+
+
+def write_audio_file(path: str, data: np.ndarray, sample_rate: int):
+    """Write audio to WAV file using soundfile or built-in wave module."""
+    if sf is not None:
+        sf.write(path, data, sample_rate)
+    else:
+        import wave
+        int16_data = (np.clip(data, -1.0, 1.0) * 32767.0).astype(np.int16)
+        with wave.open(path, "wb") as wf:
+            wf.setnchannels(1 if data.ndim == 1 else data.shape[1])
+            wf.setsampwidth(2)
+            wf.setframerate(sample_rate)
+            wf.writeframes(int16_data.tobytes())
+
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, HTMLResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -53,18 +71,67 @@ MEMORY_PATH = "./corrections.pt"
 def convert_to_wav(input_path: str) -> str:
     """Ensure any uploaded audio file is a strict 24kHz Mono WAV."""
     output_path = input_path + "_converted.wav"
+    # 1. Try ffmpeg if available on system
     try:
         subprocess.run([
             "ffmpeg", "-y", "-i", input_path,
             "-acodec", "pcm_s16le", "-ar", "24000", "-ac", "1",
             output_path
         ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        os.remove(input_path)
-        return output_path
+        if os.path.exists(output_path) and os.path.getsize(output_path) > 100:
+            if os.path.exists(input_path):
+                try:
+                    os.remove(input_path)
+                except Exception:
+                    pass
+            return output_path
     except Exception:
-        if os.path.exists(output_path):
+        pass
+
+    # 2. Pure Python / Torch fallback (no ffmpeg dependency required)
+    try:
+        import wave
+        with wave.open(input_path, "rb") as wf:
+            n_channels = wf.getnchannels()
+            sampwidth = wf.getsampwidth()
+            framerate = wf.getframerate()
+            n_frames = wf.getnframes()
+            if n_frames > 0:
+                raw_bytes = wf.readframes(n_frames)
+                dtype = np.int16 if sampwidth == 2 else np.int32
+                audio_np = np.frombuffer(raw_bytes, dtype=dtype).astype(np.float32)
+                if n_channels > 1:
+                    audio_np = audio_np.reshape(-1, n_channels).mean(axis=1)
+                audio_np /= (32768.0 if dtype == np.int16 else 2147483648.0)
+
+                # Resample to 24,000 Hz if needed
+                if framerate != 24000:
+                    t_in = torch.from_numpy(audio_np).unsqueeze(0).unsqueeze(0)
+                    target_len = max(1, int(round(len(audio_np) * (24000.0 / float(framerate)))))
+                    t_out = torch.nn.functional.interpolate(t_in, size=target_len, mode="linear", align_corners=False)
+                    audio_np = t_out.squeeze().numpy()
+
+                out_int16 = (np.clip(audio_np, -1.0, 1.0) * 32767.0).astype(np.int16)
+                with wave.open(output_path, "wb") as out_wf:
+                    out_wf.setnchannels(1)
+                    out_wf.setsampwidth(2)
+                    out_wf.setframerate(24000)
+                    out_wf.writeframes(out_int16.tobytes())
+                if os.path.exists(input_path):
+                    try:
+                        os.remove(input_path)
+                    except Exception:
+                        pass
+                return output_path
+    except Exception as e_py:
+        logger.debug(f"Pure Python audio conversion failed: {e_py}")
+
+    if os.path.exists(output_path):
+        try:
             os.remove(output_path)
-        return input_path
+        except Exception:
+            pass
+    return input_path
 
 
 @asynccontextmanager
@@ -123,54 +190,167 @@ app.add_middleware(
 STATIC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "static"))
 
 
-def get_preset_voices() -> Dict[str, str]:
-    """Find preset deployment voice WAV files."""
-    candidates = [
-        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "text_to_speech", "app", "deploy_voices")),
-        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "deploy_voices")),
-        "/home/rsurya/projects/text_to_speech/app/deploy_voices",
-        os.path.expanduser("~/projects/text_to_speech/app/deploy_voices"),
+# ==============================================================================
+# DIRECT HARDCODED VOICE PATHS (Set your exact .wav paths here)
+# ==============================================================================
+MICHAEL_VOICE_FILE_PATH: Optional[str] = None   # e.g. r"C:\Users\IOTPL\Project\flow_edit\michael.wav"
+BLESSING_VOICE_FILE_PATH: Optional[str] = None  # e.g. r"C:\Users\IOTPL\Project\flow_edit\blessing.wav"
+
+# Hardcoded default deployment voice mappings
+HARDCODED_DEFAULT_VOICES = {
+    "female": "blessing",
+    "woman": "blessing",
+    "blessing": "blessing",
+    "blessing.wav": "blessing",
+    "male": "michael",
+    "man": "michael",
+    "michael": "michael",
+    "michael.wav": "michael",
+}
+
+
+def get_hardcoded_voice_path(target_name: str) -> Optional[str]:
+    """Find the exact hardcoded path for blessing or michael across project candidate directories."""
+    if not target_name:
+        target_name = "blessing"
+
+    # If target_name is already a valid file path on disk, return its absolute path directly
+    if os.path.isfile(target_name) and os.path.getsize(target_name) > 1000:
+        return os.path.abspath(target_name)
+
+    target_lower = str(target_name).lower().strip()
+    is_male = "male" in target_lower or "michael" in target_lower or "man" in target_lower
+
+    # 1. Direct explicit file path if configured above
+    if is_male and MICHAEL_VOICE_FILE_PATH and os.path.isfile(MICHAEL_VOICE_FILE_PATH):
+        return os.path.abspath(MICHAEL_VOICE_FILE_PATH)
+    if not is_male and BLESSING_VOICE_FILE_PATH and os.path.isfile(BLESSING_VOICE_FILE_PATH):
+        return os.path.abspath(BLESSING_VOICE_FILE_PATH)
+
+    voice_key = HARDCODED_DEFAULT_VOICES.get(target_lower, "michael" if is_male else "blessing")
+    filename = f"{voice_key}.wav"
+
+    pkg_api_dir = os.path.dirname(os.path.abspath(__file__))
+    flowedit_root = os.path.abspath(os.path.join(pkg_api_dir, "..", ".."))
+    workspace_root = os.path.abspath(os.path.join(flowedit_root, ".."))
+
+    candidate_locations = [
+        os.path.join(flowedit_root, "deploy_voices", filename),
+        os.path.abspath(os.path.join(pkg_api_dir, "..", "resources", filename)),
+        os.path.join(workspace_root, "deploy_voices", filename),
+        os.path.join(workspace_root, filename),
+        os.path.join(flowedit_root, filename),
+        os.path.join(os.getcwd(), "deploy_voices", filename),
+        os.path.join(os.getcwd(), filename),
     ]
-    voices = {}
-    for d in candidates:
-        if os.path.isdir(d):
+
+    env_dir = os.environ.get("FLOWEDIT_VOICES_DIR", "")
+    if env_dir:
+        candidate_locations.insert(0, os.path.join(env_dir, filename))
+
+    for cand in candidate_locations:
+        if cand and os.path.isfile(cand) and os.path.getsize(cand) > 1000:
+            return os.path.abspath(cand)
+
+    # Fallback to default_speaker.wav in resources if blessing requested
+    if voice_key == "blessing":
+        res_default = os.path.abspath(os.path.join(pkg_api_dir, "..", "resources", "default_speaker.wav"))
+        if os.path.isfile(res_default) and os.path.getsize(res_default) > 1000:
+            return res_default
+
+    return None
+
+
+def get_preset_voices() -> Dict[str, str]:
+    """Find preset deployment voice WAV files (Blessing for female, Michael for male)."""
+    voices: Dict[str, str] = {}
+
+    # Explicit hardcoded registration
+    blessing_path = get_hardcoded_voice_path("blessing")
+    if blessing_path:
+        voices["blessing"] = blessing_path
+
+    michael_path = get_hardcoded_voice_path("michael")
+    if michael_path:
+        voices["michael"] = michael_path
+
+    # Search any additional voice files in deploy folders
+    env_dir = os.environ.get("FLOWEDIT_VOICES_DIR", "")
+    pkg_api_dir = os.path.dirname(os.path.abspath(__file__))
+    flowedit_root = os.path.abspath(os.path.join(pkg_api_dir, "..", ".."))
+    workspace_root = os.path.abspath(os.path.join(flowedit_root, ".."))
+
+    dedicated_dirs = [
+        os.path.join(flowedit_root, "deploy_voices"),
+        os.path.join(workspace_root, "deploy_voices"),
+        env_dir,
+    ]
+
+    for d in dedicated_dirs:
+        if d and os.path.isdir(d):
             for f in os.listdir(d):
                 if f.lower().endswith(".wav"):
                     name = os.path.splitext(f)[0].lower()
-                    voices[name] = os.path.join(d, f)
-            if voices:
-                break
+                    if name not in voices:
+                        cand_f = os.path.abspath(os.path.join(d, f))
+                        if os.path.isfile(cand_f) and os.path.getsize(cand_f) > 1000:
+                            voices[name] = cand_f
+
     return voices
 
 
 async def resolve_speaker_path(speaker_wav: Optional[UploadFile], speaker_name: Optional[str]) -> tuple[str, bool]:
-    """Resolves speaker WAV file path from upload or preset name. Returns (path, is_temp)."""
-    if speaker_wav is not None:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_speaker:
-            temp_path = temp_speaker.name
-        content = await speaker_wav.read()
-        with open(temp_path, "wb") as f:
-            f.write(content)
-        converted_path = convert_to_wav(temp_path)
-        return converted_path, True
-    
-    # Check preset
-    voices = get_preset_voices()
-    name_key = (speaker_name or "female").lower()
-    if name_key in ("female", "woman", "blessing"):
-        target_name = "blessing" if "blessing" in voices else next(iter(voices.keys()), None)
-    elif name_key in ("male", "man", "michael"):
-        target_name = "michael" if "michael" in voices else next(iter(voices.keys()), None)
+    """Resolves speaker WAV file path from upload or hardcoded preset name. Returns (path, is_temp)."""
+    # 1. Only process speaker_wav if a non-empty audio file was genuinely uploaded
+    if speaker_wav is not None and getattr(speaker_wav, "filename", None):
+        try:
+            content = await speaker_wav.read()
+            # Must be non-empty audio with valid header (> 100 bytes)
+            if content and len(content) > 100:
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_speaker:
+                    temp_path = temp_speaker.name
+                with open(temp_path, "wb") as f:
+                    f.write(content)
+                converted_path = convert_to_wav(temp_path)
+                return converted_path, True
+            else:
+                logger.info("Empty speaker_wav upload received; defaulting to hardcoded preset voice.")
+        except Exception as e:
+            logger.warning(f"Error reading uploaded speaker_wav: {e}. Falling back to hardcoded voice.")
+
+    # 2. Check if speaker_name is already a valid file path on disk
+    if speaker_name and os.path.isfile(speaker_name) and os.path.getsize(speaker_name) > 100:
+        return os.path.abspath(speaker_name), False
+
+    # 3. Hardcoded voice resolution: female -> blessing, male -> michael
+    name_key = (speaker_name or "female").strip().lower()
+    if name_key in ("male", "man", "michael"):
+        target_name = "michael"
     else:
-        target_name = name_key if name_key in voices else next(iter(voices.keys()), None)
-    
-    if target_name and target_name in voices and os.path.isfile(voices[target_name]):
+        target_name = "blessing"  # Default female voice (Blessing)
+
+    voice_path = get_hardcoded_voice_path(target_name)
+    if voice_path and os.path.isfile(voice_path):
+        return voice_path, False
+
+    # Check preset voices dictionary
+    voices = get_preset_voices()
+    if target_name in voices and os.path.isfile(voices[target_name]):
         return voices[target_name], False
-    
-    # Fallback to any wav file found
+
+    # Alternate gender fallback
+    alt_target = "michael" if target_name == "blessing" else "blessing"
+    alt_path = get_hardcoded_voice_path(alt_target)
+    if alt_path and os.path.isfile(alt_path):
+        return alt_path, False
+
+    # Failsafe fallback to any available wav file
     if voices:
-        first_voice = next(iter(voices.values()))
-        return first_voice, False
+        return next(iter(voices.values())), False
+
+    bundled_default = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "resources", "default_speaker.wav"))
+    if os.path.isfile(bundled_default):
+        return bundled_default, False
 
     raise HTTPException(status_code=400, detail="No speaker reference voice provided or found.")
 
@@ -511,7 +691,7 @@ async def synthesize_baseline(
                 user_ref_text=ref_text,
                 text_embedding_delta=None,
             )
-        sf.write(output_path, wav.squeeze().cpu().numpy(), sr)
+        write_audio_file(output_path, wav.squeeze().cpu().numpy(), sr)
 
         return FileResponse(
             path=output_path,
