@@ -1148,19 +1148,59 @@ HTML_CONTENT = r"""<!DOCTYPE html>
     <!-- Tab 3: Memory Manager -->
     <div id="tab-memory" class="tab-content app-container">
         <div class="memory-container">
-            <div class="memory-header">
-                <div>
-                    <h2 style="font-family:'Plus Jakarta Sans',sans-serif; font-size:20px; font-weight:800; color:var(--text-main);">Modern Hopfield Pronunciation Memory</h2>
-                    <p style="font-size:12px; color:var(--text-muted);">Stored continuous vector corrections ($d=1024$) applied automatically at inference time.</p>
+            <!-- Section 1: S3 Cloud Phonetic Spelling Dictionary -->
+            <div style="background:#FFFFFF; border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:1.5rem; display:flex; flex-direction:column; gap:1.25rem; box-shadow:var(--shadow-sm);">
+                <div class="memory-header" style="border-bottom:1px solid var(--border-subtle); padding-bottom:1rem;">
+                    <div>
+                        <div style="display:flex; align-items:center; gap:0.75rem;">
+                            <h2 style="font-family:'Plus Jakarta Sans',sans-serif; font-size:18px; font-weight:800; color:var(--text-main);">
+                                ☁️ Amazon S3 Phonetic Spelling Dictionary
+                            </h2>
+                            <span id="s3BucketBadge" class="status-badge" style="background:#EFF6FF; border-color:#BFDBFE; color:#1D4ED8; font-size:11px; padding:3px 10px;">
+                                Bucket: flowedit-bucket
+                            </span>
+                        </div>
+                        <p style="font-size:12px; color:var(--text-muted); margin-top:4px;">
+                            Deterministic pronunciation corrections stored directly in S3 (<code id="s3UriCode" style="background:#F1F5F9; padding:2px 6px; border-radius:4px; font-size:11px;">s3://flowedit-bucket/corrections/spelling_dictionary.json</code>).
+                        </p>
+                    </div>
+                    <div style="display:flex; gap:0.5rem;">
+                        <button class="btn btn-secondary" style="font-size:12px; padding:6px 12px;" onclick="loadS3SpellingEntries(true)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                            Refresh S3
+                        </button>
+                        <button class="btn btn-secondary" style="color:#EF4444; border-color:#FCA5A5; font-size:12px; padding:6px 12px;" onclick="clearAllS3Spelling()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                            Clear S3 Dictionary
+                        </button>
+                    </div>
                 </div>
-                <button class="btn btn-secondary" style="color:#EF4444; border-color:#FCA5A5;" onclick="clearAllMemory()">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                    Clear All Memory
-                </button>
+
+                <div id="s3SpellingGrid" class="memory-grid">
+                    <!-- S3 Word Cards Injected Dynamically -->
+                </div>
             </div>
 
-            <div class="memory-grid" id="memoryGrid">
-                <!-- Memory Cards Injected Dynamically -->
+            <!-- Section 2: Modern Hopfield Pronunciation Memory -->
+            <div style="background:#FFFFFF; border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:1.5rem; display:flex; flex-direction:column; gap:1.25rem; box-shadow:var(--shadow-sm);">
+                <div class="memory-header" style="border-bottom:1px solid var(--border-subtle); padding-bottom:1rem;">
+                    <div>
+                        <h2 style="font-family:'Plus Jakarta Sans',sans-serif; font-size:18px; font-weight:800; color:var(--text-main);">
+                            🧠 Modern Hopfield Pronunciation Memory
+                        </h2>
+                        <p style="font-size:12px; color:var(--text-muted); margin-top:4px;">
+                            Stored continuous vector corrections ($d=1024$) learned via 3-stage optimization and applied automatically at inference time.
+                        </p>
+                    </div>
+                    <button class="btn btn-secondary" style="color:#EF4444; border-color:#FCA5A5; font-size:12px; padding:6px 12px;" onclick="clearAllMemory()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        Clear Hopfield Memory
+                    </button>
+                </div>
+
+                <div class="memory-grid" id="memoryGrid">
+                    <!-- Memory Cards Injected Dynamically -->
+                </div>
             </div>
         </div>
     </div>
@@ -1341,6 +1381,7 @@ HTML_CONTENT = r"""<!DOCTYPE html>
                 document.querySelectorAll('.nav-tab')[2].classList.add('active');
                 document.getElementById('tab-memory').classList.add('active');
                 loadMemoryEntries();
+                loadS3SpellingEntries();
             } else if (tabId === 'transcribe') {
                 document.querySelectorAll('.nav-tab')[3].classList.add('active');
                 document.getElementById('tab-transcribe').classList.add('active');
@@ -1672,6 +1713,7 @@ HTML_CONTENT = r"""<!DOCTYPE html>
                     document.getElementById('stage3-text').textContent = `✓ S3 Persistence: ${res.s3_status === 'synced' ? 'Synchronized to S3' : 'Held in memory (ready for S3 link)'}`;
 
                     showToast(`✓ Phonetic spelling for '${res.word}' saved to S3!`);
+                    loadS3SpellingEntries();
                 } catch (e) {
                     showToast('Spelling Correction Failed: ' + e.message);
                 } finally {
@@ -1796,6 +1838,116 @@ HTML_CONTENT = r"""<!DOCTYPE html>
                 }
             } catch (e) {
                 showToast('Error clearing memory: ' + e.message);
+            }
+        }
+
+        /* ── S3 Spelling Store Functions ──────────────────────── */
+        async function loadS3SpellingEntries(refresh = false) {
+            try {
+                const url = refresh ? '/api/s3/entries?refresh=true' : '/api/s3/entries';
+                const resp = await fetch(url);
+                const data = await resp.json();
+                
+                const badge = document.getElementById('s3BucketBadge');
+                if (badge && data.bucket) {
+                    badge.textContent = `Bucket: ${data.bucket}`;
+                }
+                const uriCode = document.getElementById('s3UriCode');
+                if (uriCode && data.s3_uri) {
+                    uriCode.textContent = data.s3_uri;
+                }
+
+                const grid = document.getElementById('s3SpellingGrid');
+                if (!grid) return;
+                grid.innerHTML = '';
+
+                if (!data.entries || data.entries.length === 0) {
+                    grid.innerHTML = `
+                        <div style="grid-column: 1/-1; text-align:center; padding:2rem; color:var(--text-muted); background:var(--bg-page); border-radius:var(--radius-sm);">
+                            No phonetic spelling corrections in S3 yet. Use <strong>Spell Mode</strong> in the Pronunciation Learner tab to add one!
+                        </div>
+                    `;
+                    return;
+                }
+
+                data.entries.forEach(entry => {
+                    const card = document.createElement('div');
+                    card.className = 'memory-entry-card';
+                    
+                    const sensesHtml = (entry.senses || []).map(s => `
+                        <div style="margin-top:6px; padding:6px 8px; background:var(--bg-page); border-radius:6px; font-size:11px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+                                <span style="font-weight:700; color:var(--text-main);">${s.display_name || s.sense_id}</span>
+                                <span style="font-family:'JetBrains Mono',monospace; color:var(--primary); font-weight:700;">➔ ${s.spell_as}</span>
+                            </div>
+                            <div style="color:var(--text-muted); font-style:italic;">"${s.carrier_text || 'No context'}"</div>
+                            ${s.context_clues && s.context_clues.length ? `<div style="color:var(--text-light); margin-top:2px;">Clues: ${s.context_clues.join(', ')}</div>` : ''}
+                        </div>
+                    `).join('');
+
+                    card.innerHTML = `
+                        <div class="entry-top">
+                            <div>
+                                <span class="entry-word" style="color:#0F172A; font-size:17px;">${entry.word}</span>
+                                <span style="margin-left:8px; font-family:'JetBrains Mono',monospace; color:var(--primary); font-weight:700; background:var(--primary-bg); padding:2px 8px; border-radius:4px; font-size:12px;">
+                                    ➔ ${entry.default_spell}
+                                </span>
+                            </div>
+                            <button class="delete-btn" title="Delete from S3" onclick="deleteS3SpellingWord('${entry.word}')">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                Delete
+                            </button>
+                        </div>
+                        <div style="font-size:12px; color:var(--text-muted); font-weight:600; margin-top:4px;">
+                            Registered Senses (${(entry.senses || []).length}):
+                        </div>
+                        <div style="max-height:140px; overflow-y:auto;">
+                            ${sensesHtml}
+                        </div>
+                        <div class="entry-footer" style="margin-top:auto; padding-top:8px; border-top:1px solid var(--border-subtle);">
+                            <span>Target: <strong>${entry.default_spell}</strong></span>
+                            <span class="status-badge" style="background:#ECFDF5; border-color:#A7F3D0; color:#059669; font-size:10px; padding:2px 6px;">
+                                S3 Synced
+                            </span>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+
+            } catch (e) {
+                console.error('Failed to load S3 spelling entries:', e);
+            }
+        }
+
+        async function deleteS3SpellingWord(word) {
+            if (!confirm(`Delete phonetic spelling for '${word}' from Amazon S3 bucket?`)) return;
+            try {
+                const resp = await fetch(`/api/s3/entries/${encodeURIComponent(word)}`, { method: 'DELETE' });
+                const res = await resp.json();
+                if (resp.ok) {
+                    showToast(`✓ Deleted '${word}' from S3 bucket!`);
+                    loadS3SpellingEntries();
+                } else {
+                    showToast('Failed to delete: ' + (res.detail || 'Error'));
+                }
+            } catch (e) {
+                showToast('Deletion error: ' + e.message);
+            }
+        }
+
+        async function clearAllS3Spelling() {
+            if (!confirm('Clear ALL phonetic spelling corrections from Amazon S3? This will empty the dictionary in the S3 bucket.')) return;
+            try {
+                const resp = await fetch('/api/s3/entries', { method: 'DELETE' });
+                const res = await resp.json();
+                if (resp.ok) {
+                    showToast('✓ All entries cleared from S3 bucket.');
+                    loadS3SpellingEntries();
+                } else {
+                    showToast('Failed to clear S3: ' + (res.detail || 'Error'));
+                }
+            } catch (e) {
+                showToast('Error clearing S3 dictionary: ' + e.message);
             }
         }
 
@@ -2033,6 +2185,7 @@ HTML_CONTENT = r"""<!DOCTYPE html>
                 if (memCountEl) memCountEl.textContent = s.memory_entries;
             }
         }).catch(()=>{});
+        loadS3SpellingEntries();
     </script>
 </body>
 </html>

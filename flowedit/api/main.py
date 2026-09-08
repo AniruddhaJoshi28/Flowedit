@@ -628,27 +628,108 @@ async def update_s3_config(
     return {"success": True, "config": cfg}
 
 
-@app.get("/api/spelling")
-async def list_spelling_corrections():
-    """List all registered S3 phonetic spelling corrections."""
-    entries = s3_spelling_store.list_corrections()
+# ============================================================================
+# S3 SPELING DICTIONARY INSPECTION & DELETION ENDPOINTS
+# ============================================================================
+
+@app.get("/api/s3/entries")
+async def get_s3_entries(
+    word: Optional[str] = Query(None, description="Optional target word to inspect or filter"),
+    refresh: bool = Query(False, description="Re-download the latest state from S3 bucket before returning"),
+):
+    """View dictionary entries stored in the S3 bucket with live S3 status metadata."""
+    data = s3_spelling_store.get_entries_data(refresh=refresh, word=word)
     return {
-        "size": len(entries),
-        "corrections": entries,
-        "s3_bucket": s3_spelling_store.bucket_name or None,
+        "success": True,
+        **data,
+    }
+
+
+@app.delete("/api/s3/entries/{word}")
+async def delete_s3_entry(word: str):
+    """Delete a phonetic spelling correction entry from the S3 bucket."""
+    found, sync_res = s3_spelling_store.delete_word(word)
+    if not found:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No spelling entry found for word '{word}' in S3 bucket '{s3_spelling_store.bucket_name}'.",
+        )
+    return {
+        "success": True,
+        "message": f"Successfully deleted '{word}' from S3 bucket '{s3_spelling_store.bucket_name}'.",
+        "deleted_word": word,
+        "remaining_words": len(s3_spelling_store._dictionary),
+        "s3_synced": sync_res.get("synced", False),
+        "s3_uri": sync_res.get("s3_uri"),
+        "s3_status": sync_res.get("status"),
+    }
+
+
+@app.delete("/api/s3/entries/{word}/senses/{sense_id}")
+async def delete_s3_entry_sense(word: str, sense_id: str):
+    """Delete a specific grammatical sense of a word from the S3 bucket."""
+    found, sync_res = s3_spelling_store.delete_sense(word, sense_id)
+    if not found:
+        raise HTTPException(
+            status_code=404,
+            detail=sync_res.get("error", f"Sense '{sense_id}' for word '{word}' not found in S3 dictionary."),
+        )
+    return {
+        "success": True,
+        "message": f"Deleted sense '{sense_id}' for word '{word}' from S3.",
+        "word": word,
+        "sense_id": sense_id,
+        "remaining_words": len(s3_spelling_store._dictionary),
+        "s3_synced": sync_res.get("synced", False),
+        "s3_uri": sync_res.get("s3_uri"),
+    }
+
+
+@app.delete("/api/s3/entries")
+async def clear_s3_entries(
+    delete_file: bool = Query(False, description="If True, deletes the remote S3 object completely. If False, empties dictionary to {}."),
+):
+    """Clear or delete all entries from the S3 bucket."""
+    res = s3_spelling_store.clear_all(delete_remote_file=delete_file)
+    return {
+        "success": True,
+        "message": f"Cleared all spelling entries from S3 bucket '{s3_spelling_store.bucket_name}'.",
+        "remaining_words": 0,
+        "s3_synced": res.get("synced", False),
+        "s3_status": res.get("status"),
+        "s3_uri": res.get("s3_uri"),
+        "delete_remote_file": delete_file,
+    }
+
+
+# Backwards compatibility aliases
+@app.get("/api/spelling")
+async def list_spelling_corrections(
+    refresh: bool = Query(False, description="Re-download latest state from S3 before listing"),
+):
+    """List all registered S3 phonetic spelling corrections."""
+    data = s3_spelling_store.get_entries_data(refresh=refresh)
+    return {
+        "size": data["total_words"],
+        "corrections": data["entries"],
+        "s3_bucket": data["bucket"],
+        "s3_uri": data["s3_uri"],
+        "s3_metadata": data["s3_metadata"],
     }
 
 
 @app.delete("/api/spelling/{word}")
 async def delete_spelling_correction(word: str):
-    """Delete a phonetic spelling correction by word."""
-    deleted = s3_spelling_store.delete_word(word)
-    if not deleted:
+    """Delete a phonetic spelling correction by word (alias for /api/s3/entries/{word})."""
+    found, sync_res = s3_spelling_store.delete_word(word)
+    if not found:
         raise HTTPException(status_code=404, detail=f"No spelling entry found for word '{word}'.")
     return {
         "success": True,
         "message": f"Deleted spelling correction for '{word}'.",
         "size": len(s3_spelling_store._dictionary),
+        "s3_synced": sync_res.get("synced", False),
+        "s3_uri": sync_res.get("s3_uri"),
     }
 
 
