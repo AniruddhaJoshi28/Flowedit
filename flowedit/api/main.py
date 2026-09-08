@@ -27,7 +27,25 @@ from typing import Optional, Dict, Any
 import torch
 import numpy as np
 try:
+    try:
     import soundfile as sf
+except ImportError:
+    sf = None
+
+
+def write_audio_file(path: str, data: np.ndarray, sample_rate: int):
+    """Write audio to WAV file using soundfile or built-in wave module."""
+    if sf is not None:
+        sf.write(path, data, sample_rate)
+    else:
+        import wave
+        int16_data = (np.clip(data, -1.0, 1.0) * 32767.0).astype(np.int16)
+        with wave.open(path, "wb") as wf:
+            wf.setnchannels(1 if data.ndim == 1 else data.shape[1])
+            wf.setsampwidth(2)
+            wf.setframerate(sample_rate)
+            wf.writeframes(int16_data.tobytes())
+
 except ImportError:
     sf = None
 
@@ -235,6 +253,82 @@ def get_hardcoded_voice_path(target_name: str) -> Optional[str]:
     workspace_root = os.path.abspath(os.path.join(flowedit_root, ".."))
 
     candidate_locations = [
+        os.path.join(flowedit_root, "deploy_voices", filename),
+        os.path.abspath(os.path.join(pkg_api_dir, "..", "resources", filename)),
+        os.path.join(workspace_root, "deploy_voices", filename),
+        os.path.join(workspace_root, filename),
+        os.path.join(flowedit_root, filename),
+        os.path.join(os.getcwd(), "deploy_voices", filename),
+        os.path.join(os.getcwd(), filename),
+    ]
+
+    env_dir = os.environ.get("FLOWEDIT_VOICES_DIR", "")
+    if env_dir:
+        candidate_locations.insert(0, os.path.join(env_dir, filename))
+
+    for cand in candidate_locations:
+        if cand and os.path.isfile(cand) and os.path.getsize(cand) > 1000:
+            return os.path.abspath(cand)
+
+    # Fallback to default_speaker.wav in resources if blessing requested
+    if voice_key == "blessing":
+        res_default = os.path.abspath(os.path.join(pkg_api_dir, "..", "resources", "default_speaker.wav"))
+        if os.path.isfile(res_default) and os.path.getsize(res_default) > 1000:
+            return res_default
+
+    return None
+
+
+# ==============================================================================
+# DIRECT HARDCODED VOICE PATHS (Set your exact .wav paths here)
+# ==============================================================================
+MICHAEL_VOICE_FILE_PATH: Optional[str] = "/home/rsurya/projects/flow_edit/michael.wav"
+BLESSING_VOICE_FILE_PATH: Optional[str] = "/home/rsurya/projects/flow_edit/blessing.wav"
+
+# Hardcoded default deployment voice mappings
+HARDCODED_DEFAULT_VOICES = {
+    "female": "blessing",
+    "woman": "blessing",
+    "blessing": "blessing",
+    "blessing.wav": "blessing",
+    "male": "michael",
+    "man": "michael",
+    "michael": "michael",
+    "michael.wav": "michael",
+}
+
+
+def get_hardcoded_voice_path(target_name: str) -> Optional[str]:
+    """Find the exact hardcoded path for blessing or michael across project candidate directories."""
+    if not target_name:
+        target_name = "blessing"
+
+    # If target_name is already a valid file path on disk, return its absolute path directly
+    if os.path.isfile(target_name) and os.path.getsize(target_name) > 1000:
+        return os.path.abspath(target_name)
+
+    target_lower = str(target_name).lower().strip()
+    is_male = "male" in target_lower or "michael" in target_lower or "man" in target_lower
+
+    # 1. Direct explicit file path if configured above
+    if is_male and MICHAEL_VOICE_FILE_PATH and os.path.isfile(MICHAEL_VOICE_FILE_PATH) and os.path.getsize(MICHAEL_VOICE_FILE_PATH) > 1000:
+        return os.path.abspath(MICHAEL_VOICE_FILE_PATH)
+    if not is_male and BLESSING_VOICE_FILE_PATH and os.path.isfile(BLESSING_VOICE_FILE_PATH) and os.path.getsize(BLESSING_VOICE_FILE_PATH) > 1000:
+        return os.path.abspath(BLESSING_VOICE_FILE_PATH)
+
+    voice_key = HARDCODED_DEFAULT_VOICES.get(target_lower, "michael" if is_male else "blessing")
+    filename = f"{voice_key}.wav"
+
+    pkg_api_dir = os.path.dirname(os.path.abspath(__file__))
+    flowedit_root = os.path.abspath(os.path.join(pkg_api_dir, "..", ".."))
+    workspace_root = os.path.abspath(os.path.join(flowedit_root, ".."))
+
+    candidate_locations = [
+        # Primary confirmed IIT server path
+        f"/home/rsurya/projects/flow_edit/{filename}",
+        f"/home/rsurya/projects/flow_edit/Flowedit/model/{filename}",
+        f"/home/rsurya/projects/flow_edit/Flowedit/deploy_voices/{filename}",
+        f"/home/rsurya/projects/flow_edit/Flowedit/flowedit/resources/{filename}",
         os.path.join(flowedit_root, "deploy_voices", filename),
         os.path.abspath(os.path.join(pkg_api_dir, "..", "resources", filename)),
         os.path.join(workspace_root, "deploy_voices", filename),
@@ -895,14 +989,22 @@ async def transcribe_speech(
         converted_wav_path = convert_to_wav(temp_audio_path)
         actual_path = converted_wav_path if (converted_wav_path and os.path.exists(converted_wav_path)) else temp_audio_path
 
-        # Check if Hopfield Memory is available and has entries for vocabulary biasing
+        # Check if Hopfield Memory and S3 Spelling Store are available for vocabulary biasing
         memory_instance = None
-        initial_prompt = None
+        prompt_parts = []
         if use_memory and correction_pipeline and correction_pipeline.memory and correction_pipeline.memory.num_entries > 0:
             memory_instance = correction_pipeline.memory
-            initial_prompt = memory_instance.get_vocabulary_prompt()
-            if initial_prompt:
-                logger.info(f"Biasing Whisper ASR with Hopfield vocabulary prompt: '{initial_prompt}'")
+            hop_prompt = memory_instance.get_vocabulary_prompt()
+            if hop_prompt:
+                prompt_parts.append(hop_prompt)
+
+        s3_prompt = s3_spelling_store.get_vocabulary_prompt()
+        if s3_prompt:
+            prompt_parts.append(s3_prompt)
+
+        initial_prompt = " ".join(prompt_parts).strip() or None
+        if initial_prompt:
+            logger.info(f"Biasing Whisper ASR with vocabulary prompt: '{initial_prompt[:120]}...'")
 
         aligner = get_whisper_aligner()
         result = aligner.transcribe(
@@ -915,21 +1017,29 @@ async def transcribe_speech(
         raw_text = result["text"]
         final_text = raw_text
         corrections = []
+        s3_applied = []
 
-        # Apply associative Hopfield post-correction to fix phonetic spellings to canonical words
+        # 1. FlowEdit S3 Spelling Store: Restore canonical words from phonetic variants
+        final_text, s3_applied = s3_spelling_store.apply_corrections_to_transcript(final_text)
+        if s3_applied:
+            logger.info(f"✓ S3 Spelling Store corrected {len(s3_applied)} phonetic variant(s) in transcript: {s3_applied}")
+
+        # 2. FlowEdit Hopfield Associative Memory: Match learned acoustic representations
         if memory_instance:
-            final_text, corrections = memory_instance.correct_transcript(raw_text)
+            final_text, corrections = memory_instance.correct_transcript(final_text)
             if corrections:
                 logger.info(f"✓ Hopfield Memory corrected {len(corrections)} spelling(s) in transcript: {corrections}")
 
         # Update segment texts if corrections were made
         segments = result.get("segments", [])
-        if memory_instance and corrections and segments:
+        if (s3_applied or corrections) and segments:
             updated_segments = []
             for seg in segments:
                 seg_text = seg.get("text", "")
                 if seg_text:
-                    corr_seg_text, _ = memory_instance.correct_transcript(seg_text)
+                    corr_seg_text, _ = s3_spelling_store.apply_corrections_to_transcript(seg_text)
+                    if memory_instance:
+                        corr_seg_text, _ = memory_instance.correct_transcript(corr_seg_text)
                     seg_copy = dict(seg)
                     seg_copy["text"] = corr_seg_text
                     updated_segments.append(seg_copy)
@@ -944,9 +1054,10 @@ async def transcribe_speech(
             "language": result["language"],
             "duration": result["duration"],
             "segments": segments,
-            "memory_applied": bool(memory_instance and corrections),
+            "memory_applied": bool(s3_applied or (memory_instance and corrections)),
             "memory_entries_count": memory_instance.num_entries if memory_instance else 0,
             "corrections": corrections,
+            "s3_corrections": s3_applied,
         })
     except HTTPException:
         raise
@@ -969,7 +1080,7 @@ async def transcribe_speech_stream(
     use_memory: bool = Form(True, description="Apply Hopfield Memory associative correction and vocabulary biasing"),
     emit_words: bool = Form(True, description="Whether to stream individual word-level events ('type': 'word')"),
 ):
-    """Speech-to-Text Stream: Stream transcription events (Server-Sent Events) in real-time as Whisper decodes with Hopfield Memory."""
+    """Speech-to-Text Stream: Stream transcription events (Server-Sent Events) in real-time as Whisper decodes with Hopfield Memory and S3 Store."""
     if not audio.filename:
         raise HTTPException(status_code=400, detail="No audio file uploaded.")
 
@@ -989,12 +1100,20 @@ async def transcribe_speech_stream(
     converted_wav_path = convert_to_wav(temp_audio_path)
     actual_path = converted_wav_path if (converted_wav_path and os.path.exists(converted_wav_path)) else temp_audio_path
 
-    # Check Hopfield Memory vocabulary biasing
+    # Check Hopfield Memory and S3 Spelling Store vocabulary biasing
     memory_instance = None
-    initial_prompt = None
+    stream_prompt_parts = []
     if use_memory and correction_pipeline and correction_pipeline.memory and correction_pipeline.memory.num_entries > 0:
         memory_instance = correction_pipeline.memory
-        initial_prompt = memory_instance.get_vocabulary_prompt()
+        hop_prompt = memory_instance.get_vocabulary_prompt()
+        if hop_prompt:
+            stream_prompt_parts.append(hop_prompt)
+
+    s3_prompt = s3_spelling_store.get_vocabulary_prompt()
+    if s3_prompt:
+        stream_prompt_parts.append(s3_prompt)
+
+    initial_prompt = " ".join(stream_prompt_parts).strip() or None
 
     aligner = get_whisper_aligner()
 
@@ -1004,6 +1123,7 @@ async def transcribe_speech_stream(
             accumulated_corrected = []
             accumulated_words = []
             all_corrections = []
+            all_s3_corrections = []
             global_word_id = 0
 
             for event in aligner.transcribe_stream(
@@ -1018,8 +1138,16 @@ async def transcribe_speech_stream(
                     seg_raw = event.get("text", "")
                     seg_corrected = seg_raw
                     seg_corrections = []
-                    if memory_instance and seg_raw:
-                        seg_corrected, seg_corrections = memory_instance.correct_transcript(seg_raw)
+                    seg_s3_corrections = []
+
+                    # Apply S3 spelling store restitution
+                    seg_corrected, seg_s3_corrections = s3_spelling_store.apply_corrections_to_transcript(seg_corrected)
+                    if seg_s3_corrections:
+                        all_s3_corrections.extend(seg_s3_corrections)
+
+                    # Apply Hopfield associative memory restitution
+                    if memory_instance and seg_corrected:
+                        seg_corrected, seg_corrections = memory_instance.correct_transcript(seg_corrected)
                         all_corrections.extend(seg_corrections)
 
                     accumulated_raw.append(seg_raw)
@@ -1058,6 +1186,7 @@ async def transcribe_speech_stream(
                         "raw_text": seg_raw,
                         "partial_transcript": " ".join(accumulated_corrected),
                         "corrections": seg_corrections,
+                        "s3_corrections": seg_s3_corrections,
                     }
                     yield f"data: {json.dumps(out_event)}\n\n"
                     await asyncio.sleep(0)
@@ -1065,22 +1194,29 @@ async def transcribe_speech_stream(
                     full_raw = event.get("text", "")
                     full_final = full_raw
                     full_corrections = []
-                    if memory_instance and full_raw:
-                        full_final, full_corrections = memory_instance.correct_transcript(full_raw)
+                    full_s3_corrections = []
+
+                    full_final, full_s3_corrections = s3_spelling_store.apply_corrections_to_transcript(full_final)
+                    if memory_instance and full_final:
+                        full_final, full_corrections = memory_instance.correct_transcript(full_final)
 
                     # Update segments with corrected text
                     raw_segments = event.get("segments", [])
                     final_segments = []
                     for seg in raw_segments:
                         st = seg.get("text", "")
-                        if st and memory_instance:
-                            corr_st, _ = memory_instance.correct_transcript(st)
+                        if st:
+                            corr_st, _ = s3_spelling_store.apply_corrections_to_transcript(st)
+                            if memory_instance:
+                                corr_st, _ = memory_instance.correct_transcript(corr_st)
                             sc = dict(seg)
                             sc["text"] = corr_st
                             final_segments.append(sc)
                         else:
                             final_segments.append(seg)
 
+                    combined_corrections = full_corrections or all_corrections
+                    combined_s3 = full_s3_corrections or all_s3_corrections
                     complete_event = {
                         "type": "complete",
                         "success": True,
@@ -1089,8 +1225,9 @@ async def transcribe_speech_stream(
                         "language": event.get("language", language or "unknown"),
                         "duration": event.get("duration", 0.0),
                         "segments": final_segments,
-                        "memory_applied": bool(memory_instance and (full_corrections or all_corrections)),
-                        "corrections": full_corrections or all_corrections,
+                        "memory_applied": bool(combined_s3 or (memory_instance and combined_corrections)),
+                        "corrections": combined_corrections,
+                        "s3_corrections": combined_s3,
                     }
                     yield f"data: {json.dumps(complete_event)}\n\n"
         except Exception as e:

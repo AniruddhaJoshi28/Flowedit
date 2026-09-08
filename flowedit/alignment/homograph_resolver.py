@@ -152,8 +152,8 @@ class HomographContextResolver:
             or candidate_entry.get("context_window", "")
         ).strip()
 
-        # If candidate has no carrier context, it's a global/unconditional rule -> full score
-        if not cand_carrier:
+        # If candidate has no carrier context, or carrier is just the target word itself, or sense_id is default -> unconditional rule
+        if not cand_carrier or cand_carrier.lower() == word_clean or candidate_entry.get("sense_id") == "default":
             return 1.0
 
         # Extract features from query sentence
@@ -225,8 +225,11 @@ class HomographContextResolver:
         if not candidate_senses:
             return None
 
-        # If any candidate is an unconditional/global rule without carrier context
-        global_cand = next((c for c in candidate_senses if not (c.get("carrier_text", "").strip())), None)
+        # If any candidate is an unconditional/global rule without distinct carrier context
+        global_cand = next(
+            (c for c in candidate_senses if not (c.get("carrier_text", "").strip()) or c.get("carrier_text", "").strip().lower() == word.lower() or c.get("sense_id") == "default"),
+            None
+        )
 
         best_cand = None
         best_score = -1.0
@@ -244,6 +247,10 @@ class HomographContextResolver:
         # Fallback to global rule if available
         if global_cand is not None:
             return global_cand
+
+        # If only one candidate sense exists for this word, use it
+        if len(candidate_senses) == 1:
+            return candidate_senses[0]
 
         return None
 

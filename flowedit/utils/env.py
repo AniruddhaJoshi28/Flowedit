@@ -21,9 +21,16 @@ def load_flowedit_env() -> bool:
     # Pure Python fallback parser
     search_dirs = [
         os.getcwd(),
+        os.path.dirname(os.getcwd()),
+        "/home/rsurya/projects/flow_edit",
+        "/home/rsurya/projects/flow_edit/Flowedit",
+        "/home/rsurya/projects/flow_edit/JNJ Commercial",
+        os.path.expanduser("~/projects/flow_edit"),
         os.path.dirname(os.path.abspath(__file__)),
         os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")),
         os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../..")),
+        os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../..")),
+        os.path.expanduser("~"),
     ]
     loaded = False
     seen = set()

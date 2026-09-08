@@ -1,0 +1,2011 @@
+nohup: ignoring input
+INFO:     Will watch for changes in these directories: ['/home/rsurya/projects/flow_edit/Flowedit']
+INFO:     Uvicorn running on http://0.0.0.0:8009 (Press CTRL+C to quit)
+INFO:     Started reloader process [3710475] using StatReload
+INFO:     Started server process [3710478]
+INFO:     Waiting for application startup.
+2026-09-04 14:28:25,000 - flowedit.api - INFO - Starting up FlowEdit API...
+2026-09-04 14:28:25,000 - flowedit.pipeline.correction_loop - INFO - ============================================================
+2026-09-04 14:28:25,000 - flowedit.pipeline.correction_loop - INFO - Initializing FlowEdit Pipeline (arXiv:2606.20518)...
+2026-09-04 14:28:25,000 - flowedit.pipeline.correction_loop - INFO - ============================================================
+2026-09-04 14:28:25,001 - flowedit.backbone.xtts_wrapper - INFO - Resolved XTTS model directory: /home/rsurya/projects/flow_edit/../text_to_speech/app/model
+2026-09-04 14:28:25,001 - flowedit.backbone.xtts_wrapper - INFO - Loading Fine-Tuned XTTS Backbone on device 'cuda'...
+2026-09-04 14:28:25,001 - flowedit.backbone.xtts_wrapper - INFO -   Model Dir:   /home/rsurya/projects/text_to_speech/app/model
+2026-09-04 14:28:25,001 - flowedit.backbone.xtts_wrapper - INFO -   Checkpoint:  /home/rsurya/projects/text_to_speech/app/model/model.pth
+2026-09-04 14:28:25,001 - flowedit.backbone.xtts_wrapper - INFO -   Config:      /home/rsurya/projects/text_to_speech/app/model/config.json
+2026-09-04 14:28:25,001 - flowedit.backbone.xtts_wrapper - INFO -   Vocab:       /home/rsurya/projects/text_to_speech/app/model/vocab.json
+2026-09-04 14:28:45,994 - flowedit.backbone.xtts_wrapper - INFO - XTTS Discrete VAE loaded successfully from /home/rsurya/projects/text_to_speech/app/model/dvae.pth
+2026-09-04 14:29:01,192 - flowedit.backbone.xtts_wrapper - INFO - ✓ Base XTTS Model loaded for raw baseline comparison from /home/rsurya/projects/text_to_speech/app/model/base_model.pth
+2026-09-04 14:29:01,192 - flowedit.backbone.xtts_wrapper - INFO - ✓ Fine-Tuned XTTS Backbone loaded. Device: cuda, Embedding Dim: 1024
+2026-09-04 14:29:01,192 - flowedit.alignment.whisper_aligner - INFO - Loading Whisper model: base
+/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/pyannote/audio/core/io.py:48: UserWarning: 
+torchcodec is not installed correctly so built-in audio decoding will fail. Solutions are:
+* use audio preloaded in-memory as a {'waveform': (channel, time) torch.Tensor, 'sample_rate': int} dictionary;
+* fix torchcodec installation. Error message was:
+
+Could not load libtorchcodec. Likely causes:
+          1. FFmpeg is not properly installed in your environment. We support
+             versions 4, 5, 6 and 7.
+          2. The PyTorch version (2.8.0+cu128) is not compatible with
+             this version of TorchCodec. Refer to the version compatibility
+             table:
+             https://github.com/pytorch/torchcodec?tab=readme-ov-file#installing-torchcodec.
+          3. Another runtime dependency; see exceptions below.
+        The following exceptions were raised as we tried to load libtorchcodec:
+        
+[start of libtorchcodec loading traceback]
+FFmpeg version 7: libavutil.so.59: cannot open shared object file: No such file or directory
+FFmpeg version 6: /home/rsurya/anaconda3/bin/../lib/libstdc++.so.6: version `GLIBCXX_3.4.32' not found (required by /lib/x86_64-linux-gnu/libavfilter.so.9)
+FFmpeg version 5: libavutil.so.57: cannot open shared object file: No such file or directory
+FFmpeg version 4: libavutil.so.56: cannot open shared object file: No such file or directory
+[end of libtorchcodec loading traceback].
+  warnings.warn(
+2026-09-04 14:29:02 - whisperx.asr - INFO - No language specified, language will be detected for each audio file (increases inference time)
+2026-09-04 14:29:02 - whisperx.vads.pyannote - INFO - Performing voice activity detection using Pyannote...
+INFO: Lightning automatically upgraded your loaded checkpoint from v1.5.4 to v2.6.5. To apply the upgrade to your files permanently, run `python -m lightning.pytorch.utilities.upgrade_checkpoint ../.venv/lib/python3.13/site-packages/whisperx/assets/pytorch_model.bin`
+2026-09-04 14:29:02,422 - lightning.pytorch.utilities.migration.utils - INFO - Lightning automatically upgraded your loaded checkpoint from v1.5.4 to v2.6.5. To apply the upgrade to your files permanently, run `python -m lightning.pytorch.utilities.upgrade_checkpoint ../.venv/lib/python3.13/site-packages/whisperx/assets/pytorch_model.bin`
+2026-09-04 14:29:02,459 - flowedit.alignment.whisper_aligner - INFO - Whisper model (whisperx) loaded successfully
+2026-09-04 14:29:02,459 - flowedit.pipeline.correction_loop - INFO - ✓ FlowEdit Pipeline ready in 37.46s (Embedding dim d=1024)
+2026-09-04 14:29:02,460 - flowedit.memory.hopfield_memory - INFO - ✓ Loaded 4 valid Hopfield Memory entries (d=1024, gate_tau=4.00) from ./corrections.pt
+2026-09-04 14:29:02,460 - flowedit.pipeline.inference - INFO - Initializing FlowEdit inference pipeline...
+2026-09-04 14:29:02,460 - flowedit.pipeline.inference - INFO - ✓ Inference pipeline ready. Memory has 4 corrections.
+2026-09-04 14:29:02,460 - flowedit.api - INFO - FlowEdit API ready. Loaded memory entries: 4
+INFO:     Application startup complete.
+INFO:     10.61.10.186:57512 - "GET /docs HTTP/1.1" 200 OK
+INFO:     10.61.10.186:57512 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     10.63.9.58:63769 - "GET /docs HTTP/1.1" 200 OK
+INFO:     10.63.9.58:63769 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     10.61.10.186:57980 - "GET /docs HTTP/1.1" 200 OK
+INFO:     10.61.10.186:57980 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     10.63.10.130:55903 - "GET /docs HTTP/1.1" 200 OK
+INFO:     10.63.10.130:55903 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     10.65.11.42:55333 - "GET /docs HTTP/1.1" 200 OK
+INFO:     10.65.11.42:55333 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     10.65.11.42:64990 - "GET / HTTP/1.1" 200 OK
+INFO:     10.65.11.42:64990 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.65.11.42:59372 - "GET /docs HTTP/1.1" 200 OK
+INFO:     10.65.11.42:59372 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     10.65.11.42:52364 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     10.65.11.42:50424 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/pyannote/audio/utils/reproducibility.py:74: ReproducibilityWarning: TensorFloat-32 (TF32) has been disabled as it might lead to reproducibility issues and lower accuracy.
+It can be re-enabled by calling
+   >>> import torch
+   >>> torch.backends.cuda.matmul.allow_tf32 = True
+   >>> torch.backends.cudnn.allow_tf32 = True
+See https://github.com/pyannote/pyannote-audio/issues/1370 for more details.
+
+  warnings.warn(
+INFO:     10.65.11.42:55192 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+INFO:     10.65.11.42:55192 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+INFO:     10.65.11.42:60211 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+INFO:     10.65.11.42:62590 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+INFO:     10.65.11.42:62947 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+INFO:     10.65.11.42:59025 - "POST /api/transcribe/stream_wrong HTTP/1.1" 404 Not Found
+INFO:     10.65.11.42:58844 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+INFO:     10.61.10.186:57619 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+INFO:     10.61.10.186:62425 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+INFO:     10.61.10.186:65127 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+INFO:     10.61.10.186:65127 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+INFO:     10.61.10.186:60481 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/torchaudio/_backend/utils.py:213: UserWarning: In 2.9, this function's implementation will be changed to use torchaudio.load_with_torchcodec` under the hood. Some parameters like ``normalize``, ``format``, ``buffer_size``, and ``backend`` will be ignored. We recommend that you port your code to rely directly on TorchCodec's decoder instead: https://docs.pytorch.org/torchcodec/stable/generated/torchcodec.decoders.AudioDecoder.html#torchcodec.decoders.AudioDecoder.
+  warnings.warn(
+2026-09-06 09:59:58,034 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 09:59:59,414 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpuxdw485r.wav
+INFO:     10.65.11.42:61905 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-06 10:00:00,105 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 10:00:00,826 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpmy6qo0ly.wav
+INFO:     10.65.11.42:61905 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-06 10:00:57,220 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 10:00:58,456 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpjfjzrrkj.wav
+INFO:     10.65.11.42:62933 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-06 10:00:59,623 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 10:01:00,458 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpky62v7jm.wav
+INFO:     10.65.11.42:62933 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.65.11.42:60908 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-06 10:01:12,374 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 10:01:13,406 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmphfkyfivu.wav
+INFO:     10.65.11.42:60909 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-06 10:01:13,978 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 10:01:15,216 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpb4iy0orh.wav
+INFO:     10.65.11.42:60909 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.65.11.42:49298 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-06 10:01:27,573 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 10:01:31,056 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpegcovgpn.wav
+INFO:     10.65.11.42:60698 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-06 10:08:15,406 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 10:08:16,528 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpqwzise1i.wav
+INFO:     10.63.10.130:59311 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-06 10:08:17,715 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 10:08:18,449 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp5zqo8jwe.wav
+INFO:     10.63.10.130:59311 - "POST /api/synthesize HTTP/1.1" 200 OK
+/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/torchaudio/_backend/utils.py:213: UserWarning: In 2.9, this function's implementation will be changed to use torchaudio.load_with_torchcodec` under the hood. Some parameters like ``normalize``, ``format``, ``buffer_size``, and ``backend`` will be ignored. We recommend that you port your code to rely directly on TorchCodec's decoder instead: https://docs.pytorch.org/torchcodec/stable/generated/torchcodec.decoders.AudioDecoder.html#torchcodec.decoders.AudioDecoder.
+  warnings.warn(
+2026-09-06 10:16:53,301 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 10:16:54,480 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpil83npvd.wav
+INFO:     10.65.11.42:52057 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-06 10:16:55,142 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 10:16:55,803 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpniohv5pj.wav
+INFO:     10.65.11.42:52057 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-06 10:19:47,511 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 10:19:48,677 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpnhdf3yjd.wav
+INFO:     10.63.10.130:54128 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-06 10:19:49,347 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 10:19:50,050 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp_5ih6h5j.wav
+INFO:     10.63.10.130:54128 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:52178 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-06 10:20:00,740 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 10:20:02,000 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpma7f4vpw.wav
+INFO:     10.63.10.130:52179 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-06 10:20:02,784 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 10:20:03,402 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp8jikemf4.wav
+INFO:     10.63.10.130:52179 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:50405 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-06 10:20:12,420 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 10:20:13,710 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpae3a4dg5.wav
+INFO:     10.63.10.130:51051 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-06 10:20:14,401 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 10:20:15,504 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpof7wn0qw.wav
+INFO:     10.63.10.130:51051 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:64806 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-06 10:20:30,000 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 10:20:33,776 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpi7i73t2d.wav
+INFO:     10.63.10.130:65103 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-06 10:21:50,268 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 10:21:51,384 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpotqyfql4.wav
+INFO:     10.63.10.130:61303 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-06 10:21:52,004 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 10:21:52,785 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp3jrkgfbd.wav
+INFO:     10.63.10.130:61303 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-06 10:22:14,445 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 10:22:15,683 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpgwkq0ou1.wav
+INFO:     10.63.10.130:56694 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-06 10:22:16,363 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 10:22:17,226 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpwoprvo6m.wav
+INFO:     10.63.10.130:56694 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-06 10:22:49,646 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 10:22:50,963 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpqq3kukf2.wav
+INFO:     10.63.10.130:54344 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-06 10:22:51,933 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 10:22:52,715 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp_f5mhzxj.wav
+INFO:     10.63.10.130:54344 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-06 10:30:29,336 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 10:30:30,555 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmptlow3m2q.wav
+INFO:     10.63.10.130:52372 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-06 10:30:31,283 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 10:30:32,006 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpry7gv131.wav
+INFO:     10.63.10.130:52372 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-06 10:30:42,450 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 10:30:43,827 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmps3me0iqd.wav
+INFO:     10.63.10.130:54183 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-06 10:30:44,609 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 10:30:45,185 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpxfd687mz.wav
+INFO:     10.63.10.130:54183 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-06 10:31:01,271 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 10:31:02,412 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpy06ya0_h.wav
+INFO:     10.63.10.130:60822 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-06 10:31:03,180 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 10:31:04,168 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp1lt6_tor.wav
+INFO:     10.63.10.130:60822 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:57069 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-06 10:31:13,323 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 10:31:14,391 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpiap73j_7.wav
+INFO:     10.63.10.130:62536 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-06 10:31:14,991 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 10:31:16,152 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp3q51fawr.wav
+INFO:     10.63.10.130:57069 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+INFO:     10.63.10.130:62536 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-06 10:31:18,270 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 10:31:21,758 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpad1lsq4k.wav
+INFO:     10.63.10.130:56565 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:55024 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     10.63.10.130:55024 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+2026-09-06 11:15:57,540 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 11:15:58,813 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpnzgw9y71.wav
+INFO:     10.63.10.130:64537 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-06 11:15:59,779 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 11:16:00,590 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp0_3pl5g8.wav
+INFO:     10.63.10.130:64537 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:56135 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-06 11:16:40,544 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 11:16:41,868 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpq5bxl2qd.wav
+INFO:     10.63.10.130:52371 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-06 11:16:42,696 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 11:16:43,422 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpuabf27q_.wav
+INFO:     10.63.10.130:52371 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:51458 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-06 11:18:19,341 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 11:18:22,950 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp05__muce.wav
+INFO:     10.63.10.130:56761 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:50505 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-06 11:18:50,125 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 11:18:51,807 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpj795kw9q.wav
+INFO:     10.63.10.130:50505 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+INFO:     10.63.10.130:50330 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-06 11:18:52,989 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 11:18:54,430 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpwe99ja3h.wav
+INFO:     10.63.10.130:55392 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-06 11:18:55,069 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 11:18:56,477 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpyj9aos1s.wav
+INFO:     10.63.10.130:55392 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:52786 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-06 11:19:51,220 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 11:19:56,090 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpgixxku7r.wav
+INFO:     10.63.10.130:52787 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-06 11:20:17,737 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 11:20:19,339 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpn26ilwk7.wav
+INFO:     10.63.10.130:58360 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-06 11:20:20,129 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-06 11:20:20,971 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp2jw73wnc.wav
+INFO:     10.63.10.130:58360 - "POST /api/synthesize HTTP/1.1" 200 OK
+/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/torchaudio/_backend/utils.py:213: UserWarning: In 2.9, this function's implementation will be changed to use torchaudio.load_with_torchcodec` under the hood. Some parameters like ``normalize``, ``format``, ``buffer_size``, and ``backend`` will be ignored. We recommend that you port your code to rely directly on TorchCodec's decoder instead: https://docs.pytorch.org/torchcodec/stable/generated/torchcodec.decoders.AudioDecoder.html#torchcodec.decoders.AudioDecoder.
+  warnings.warn(
+2026-09-07 05:22:53,483 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 05:22:54,607 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmphim4nvlb.wav
+INFO:     10.65.11.42:52994 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.65.11.42:52993 - "POST /api/transcribe/stream HTTP/1.1" 400 Bad Request
+2026-09-07 05:23:59,957 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 05:24:00,990 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpvtbc6f86.wav
+INFO:     10.65.11.42:60147 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.65.11.42:60146 - "POST /api/transcribe/stream HTTP/1.1" 400 Bad Request
+INFO:     10.65.11.42:62840 - "GET /api/status HTTP/1.1" 200 OK
+2026-09-07 05:30:27,013 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 05:30:27,710 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmps4ca0pqp.wav
+INFO:     10.65.11.42:62843 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 05:41:10,431 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 05:41:11,847 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpckdcgu2j.wav
+INFO:     10.65.11.42:56309 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 05:43:50,753 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 05:43:52,328 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmphr3d90e2.wav
+INFO:     10.65.11.42:59120 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.65.11.42:59119 - "POST /api/transcribe/stream HTTP/1.1" 400 Bad Request
+2026-09-07 05:44:19,230 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 05:44:20,672 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp5vokw1x7.wav
+INFO:     10.65.11.42:61138 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.65.11.42:61137 - "POST /api/transcribe/stream HTTP/1.1" 400 Bad Request
+2026-09-07 05:44:28,617 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 05:44:29,973 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmppg8f3hd9.wav
+INFO:     10.65.11.42:53139 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 05:58:15,882 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 05:58:17,029 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpq7nfsdah.wav
+INFO:     10.65.11.42:58835 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 06:01:32,674 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 06:01:33,926 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpnmha1z9g.wav
+INFO:     10.65.11.42:64492 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.65.11.42:64493 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 06:01:34 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 06:01:34 - whisperx.asr - INFO - Detected language: en (0.98) in first 30s of audio
+2026-09-07 06:04:40,227 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 06:04:41,346 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpa39pihp7.wav
+INFO:     10.65.11.42:60632 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.65.11.42:60635 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 06:04:41 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 06:04:41 - whisperx.asr - INFO - Detected language: en (0.99) in first 30s of audio
+INFO:     10.63.10.130:54980 - "GET /api/status HTTP/1.1" 200 OK
+2026-09-07 06:43:57,110 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 06:43:58,635 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpoh5k36as.wav
+INFO:     10.63.10.130:50752 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:50753 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 06:43:59 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 06:43:59 - whisperx.asr - INFO - Detected language: en (0.99) in first 30s of audio
+2026-09-07 06:58:28,998 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 06:58:30,642 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpw18c1kfa.wav
+INFO:     10.63.10.130:57840 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:57847 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 06:58:33 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 06:58:33 - whisperx.asr - INFO - Detected language: en (0.60) in first 30s of audio
+INFO:     10.63.10.130:57853 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 06:58:39 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 06:58:39 - whisperx.asr - INFO - Detected language: en (0.85) in first 30s of audio
+INFO:     10.63.10.130:57857 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 06:58:43 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 06:58:43 - whisperx.asr - INFO - Detected language: ml (0.30) in first 30s of audio
+INFO:     10.63.10.130:57858 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 06:58:45 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 06:58:45 - whisperx.asr - INFO - Detected language: en (0.84) in first 30s of audio
+INFO:     10.63.10.130:57860 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 06:58:55 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 06:58:55 - whisperx.asr - INFO - Detected language: en (0.70) in first 30s of audio
+INFO:     10.63.10.130:57861 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 06:58:57 - whisperx.vads.pyannote - WARNING - No active speech found in audio
+2026-09-07 06:58:57 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 06:58:57 - whisperx.asr - INFO - Detected language: en (0.84) in first 30s of audio
+INFO:     10.63.10.130:57862 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 06:58:59 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 06:58:59 - whisperx.asr - INFO - Detected language: en (0.47) in first 30s of audio
+INFO:     10.63.10.130:49670 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 06:59:06 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 06:59:06 - whisperx.asr - INFO - Detected language: en (0.69) in first 30s of audio
+INFO:     10.63.10.130:49671 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 06:59:06 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 06:59:06 - whisperx.asr - INFO - Detected language: en (0.47) in first 30s of audio
+INFO:     10.63.10.130:49672 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 06:59:07 - whisperx.vads.pyannote - WARNING - No active speech found in audio
+2026-09-07 06:59:07 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 06:59:07 - whisperx.asr - INFO - Detected language: en (0.62) in first 30s of audio
+INFO:     10.63.10.130:49673 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 06:59:22 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 06:59:22 - whisperx.asr - INFO - Detected language: en (0.93) in first 30s of audio
+INFO:     10.63.10.130:49675 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 06:59:25 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 06:59:25 - whisperx.asr - INFO - Detected language: en (0.31) in first 30s of audio
+INFO:     10.63.10.130:49676 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 06:59:28 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 06:59:28 - whisperx.asr - INFO - Detected language: en (0.81) in first 30s of audio
+2026-09-07 06:59:46,247 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 06:59:47,807 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmplyd5z40j.wav
+INFO:     10.63.10.130:57398 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:57399 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 06:59:48 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 06:59:48 - whisperx.asr - INFO - Detected language: zh (0.26) in first 30s of audio
+INFO:     10.63.10.130:57400 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 06:59:56 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 06:59:56 - whisperx.asr - INFO - Detected language: en (0.74) in first 30s of audio
+INFO:     10.63.10.130:57401 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 06:59:57 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 06:59:57 - whisperx.asr - INFO - Detected language: en (0.80) in first 30s of audio
+INFO:     10.63.10.130:59593 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:00:21 - whisperx.vads.pyannote - WARNING - No active speech found in audio
+2026-09-07 07:00:21 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:00:21 - whisperx.asr - INFO - Detected language: en (0.54) in first 30s of audio
+INFO:     10.63.10.130:59594 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:00:22 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:00:22 - whisperx.asr - INFO - Detected language: en (0.51) in first 30s of audio
+INFO:     10.63.10.130:50161 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:00:28 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:00:29 - whisperx.asr - INFO - Detected language: en (0.70) in first 30s of audio
+2026-09-07 07:35:21,483 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:35:23,732 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpqlk2yzb8.wav
+INFO:     10.61.10.186:62963 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.61.10.186:60888 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+INFO:     10.61.10.186:60888 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:38:37,845 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:38:39,070 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpz4drzuwu.wav
+INFO:     10.61.10.186:62160 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 07:38:39,481 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:38:40,800 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp80pg6xdl.wav
+INFO:     10.61.10.186:54309 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:56073 - "GET /api/transcribe/stream HTTP/1.1" 405 Method Not Allowed
+2026-09-07 07:41:28,040 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:41:29,140 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpml8bie2s.wav
+INFO:     10.63.10.130:60136 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.61.10.186:61751 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:42:09 - whisperx.vads.pyannote - WARNING - No active speech found in audio
+INFO:     10.61.10.186:61751 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:42:10,802 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:42:12,294 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmphuxhjtrx.wav
+INFO:     10.61.10.186:51597 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 07:42:12,864 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:42:14,350 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpbcokmsk3.wav
+INFO:     10.61.10.186:51597 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.61.10.186:54883 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:51:40,537 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:51:41,825 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpt2zewka4.wav
+INFO:     10.63.10.130:52923 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:52926 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:51:42 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:51:42 - whisperx.asr - INFO - Detected language: ko (0.35) in first 30s of audio
+INFO:     10.63.10.130:58013 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:51:45 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:51:45 - whisperx.asr - INFO - Detected language: en (0.39) in first 30s of audio
+2026-09-07 07:51:45,123 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:51:46,166 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpvj1qf3fk.wav
+INFO:     10.63.10.130:58015 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 07:51:47,174 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:51:48,661 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpq3619foz.wav
+INFO:     10.63.10.130:50878 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:51:48 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:51:48 - whisperx.asr - INFO - Detected language: en (0.68) in first 30s of audio
+INFO:     10.63.10.130:50880 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 07:51:49,546 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:51:50,565 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpg0p_d7jq.wav
+INFO:     10.63.10.130:64448 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 07:51:50,805 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:51:52,351 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp5fqv3cah.wav
+INFO:     10.63.10.130:64449 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 07:51:53,050 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:51:54,463 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmph9gi6rpl.wav
+INFO:     10.63.10.130:53714 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:49295 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:52:01 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:52:01 - whisperx.asr - INFO - Detected language: en (0.89) in first 30s of audio
+2026-09-07 07:52:01,667 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:52:02,866 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmph388_gpr.wav
+INFO:     10.63.10.130:62632 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:62634 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:52:03 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:52:03 - whisperx.asr - INFO - Detected language: en (0.26) in first 30s of audio
+2026-09-07 07:52:03,349 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:52:04,586 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpe7owzs5i.wav
+INFO:     10.63.10.130:62636 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:65211 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:52:07 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:52:07 - whisperx.asr - INFO - Detected language: en (0.72) in first 30s of audio
+2026-09-07 07:52:07,393 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:52:08,794 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp91dyvico.wav
+INFO:     10.63.10.130:65213 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 07:52:09,304 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:52:10,454 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpregi65h5.wav
+INFO:     10.63.10.130:54021 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:56849 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:52:14 - whisperx.vads.pyannote - WARNING - No active speech found in audio
+2026-09-07 07:52:14 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:52:14 - whisperx.asr - INFO - Detected language: en (0.47) in first 30s of audio
+INFO:     10.63.10.130:58578 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:52:19 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:52:19 - whisperx.asr - INFO - Detected language: en (0.75) in first 30s of audio
+2026-09-07 07:52:19,922 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:52:21,331 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpjm193fsu.wav
+INFO:     10.63.10.130:61644 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 07:52:21,821 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:52:22,840 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpazceiaw3.wav
+INFO:     10.63.10.130:58284 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:63884 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:52:29 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:52:29 - whisperx.asr - INFO - Detected language: en (0.90) in first 30s of audio
+2026-09-07 07:52:29,903 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:52:30,943 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp33e833ln.wav
+INFO:     10.63.10.130:63886 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 07:52:31,353 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:52:32,324 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp13enjtk9.wav
+INFO:     10.63.10.130:52344 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:65284 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:52:40 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:52:40 - whisperx.asr - INFO - Detected language: en (0.51) in first 30s of audio
+2026-09-07 07:52:42,220 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:52:43,275 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpib1xugpt.wav
+INFO:     10.63.10.130:62236 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:62235 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:52:43 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:52:43 - whisperx.asr - INFO - Detected language: en (0.84) in first 30s of audio
+2026-09-07 07:52:44,230 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:52:45,604 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmphudzhefp.wav
+INFO:     10.63.10.130:49982 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 07:52:46,104 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:52:47,513 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpysgqeac_.wav
+INFO:     10.63.10.130:49985 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:58036 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:52:47 - whisperx.vads.pyannote - WARNING - No active speech found in audio
+2026-09-07 07:52:47 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:52:47 - whisperx.asr - INFO - Detected language: en (0.60) in first 30s of audio
+INFO:     10.63.10.130:56771 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:52:50 - whisperx.vads.pyannote - WARNING - No active speech found in audio
+2026-09-07 07:52:50 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:52:50 - whisperx.asr - INFO - Detected language: en (0.32) in first 30s of audio
+INFO:     10.63.10.130:62733 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:52:53 - whisperx.vads.pyannote - WARNING - No active speech found in audio
+2026-09-07 07:52:53 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:52:53 - whisperx.asr - INFO - Detected language: en (0.59) in first 30s of audio
+INFO:     10.63.10.130:49310 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:53:05 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:53:05 - whisperx.asr - INFO - Detected language: en (0.92) in first 30s of audio
+2026-09-07 07:53:05,971 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:53:07,100 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpo4cu3r7_.wav
+INFO:     10.63.10.130:49312 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 07:53:07,446 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:53:08,461 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp6pl4f5zn.wav
+INFO:     10.63.10.130:50488 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:58228 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:53:19 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:53:19 - whisperx.asr - INFO - Detected language: en (0.83) in first 30s of audio
+2026-09-07 07:53:19,798 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:53:21,285 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpq7umvm4c.wav
+INFO:     10.63.10.130:58230 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 07:53:21,525 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:53:22,883 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpp5bxp_gs.wav
+INFO:     10.63.10.130:62067 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 07:53:32,333 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:53:33,830 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp9hb_74r_.wav
+INFO:     10.63.10.130:60389 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:56501 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:53:42 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:53:42 - whisperx.asr - INFO - Detected language: en (0.83) in first 30s of audio
+2026-09-07 07:53:42,495 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:53:43,647 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpe3sitkrq.wav
+INFO:     10.63.10.130:63079 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 07:53:44,173 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:53:45,543 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp90b7lf7j.wav
+INFO:     10.63.10.130:54976 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 07:53:46,513 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:53:47,770 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpbm5jjun8.wav
+INFO:     10.63.10.130:54539 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:51667 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:53:53 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:53:53 - whisperx.asr - INFO - Detected language: en (0.87) in first 30s of audio
+2026-09-07 07:53:54,155 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:53:55,453 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpqd0lnmeq.wav
+INFO:     10.63.10.130:51669 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:51150 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:54:01 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:54:01 - whisperx.asr - INFO - Detected language: en (0.88) in first 30s of audio
+2026-09-07 07:54:02,209 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:54:03,579 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp7qnxeuzk.wav
+INFO:     10.63.10.130:56503 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 07:54:04,452 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:54:05,699 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpd7e47xxa.wav
+INFO:     10.63.10.130:61337 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:64493 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:54:14 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:54:14 - whisperx.asr - INFO - Detected language: en (0.73) in first 30s of audio
+2026-09-07 07:54:14,408 - flowedit.memory.hopfield_memory - INFO - [Hopfield Retrieve] Active word corrections: [('Anurag', 23, 'phonetic=None', 'gate=1.00')]
+2026-09-07 07:54:14,413 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] INJECTION ACTIVE: [('Anurag', 23, None)] (gate_max=1.000, delta_norm=4.4981, scale=1.0).
+2026-09-07 07:54:14,419 - flowedit.backbone.xtts_wrapper - INFO - [XTTS Hook] Successfully injected refined embeddings at GPT token positions 1..37 (delta norm: 4.4981)
+2026-09-07 07:54:15,952 - flowedit.backbone.xtts_wrapper - INFO - [XTTS Hook] Successfully injected refined embeddings at GPT token positions 1..37 (delta norm: 4.4981)
+2026-09-07 07:54:16,046 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpu8dzuvcm.wav
+INFO:     10.63.10.130:52709 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 07:54:16,870 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:54:20,508 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpsomakyvu.wav
+INFO:     10.63.10.130:63484 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:50729 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:54:23 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:54:23 - whisperx.asr - INFO - Detected language: en (0.89) in first 30s of audio
+2026-09-07 07:54:27,359 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:54:28,503 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpjjc3utyw.wav
+INFO:     10.63.10.130:49980 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:54:28 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:54:28 - whisperx.asr - INFO - Detected language: en (0.84) in first 30s of audio
+INFO:     10.63.10.130:49986 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 07:54:29,351 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:54:30,394 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpi3351d0u.wav
+INFO:     10.63.10.130:62635 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 07:54:30,831 - flowedit.memory.hopfield_memory - INFO - [Hopfield Retrieve] Active word corrections: [('Anurag', 23, 'phonetic=None', 'gate=1.00')]
+2026-09-07 07:54:30,833 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] INJECTION ACTIVE: [('Anurag', 23, None)] (gate_max=1.000, delta_norm=4.4981, scale=1.0).
+2026-09-07 07:54:30,840 - flowedit.backbone.xtts_wrapper - INFO - [XTTS Hook] Successfully injected refined embeddings at GPT token positions 1..37 (delta norm: 4.4981)
+2026-09-07 07:54:32,258 - flowedit.backbone.xtts_wrapper - INFO - [XTTS Hook] Successfully injected refined embeddings at GPT token positions 1..37 (delta norm: 4.4981)
+2026-09-07 07:54:32,349 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpvtz7191z.wav
+INFO:     10.63.10.130:58706 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 07:54:33,154 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:54:36,938 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp0wk4tx5o.wav
+INFO:     10.63.10.130:53977 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:57881 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:54:52 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:54:52 - whisperx.asr - INFO - Detected language: en (0.66) in first 30s of audio
+2026-09-07 07:54:52,404 - flowedit.memory.hopfield_memory - INFO - [Hopfield Retrieve] Active word corrections: [('Anurag', 33, 'phonetic=None', 'gate=1.00')]
+2026-09-07 07:54:52,406 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] INJECTION ACTIVE: [('Anurag', 33, None)] (gate_max=1.000, delta_norm=4.4981, scale=1.0).
+2026-09-07 07:54:52,416 - flowedit.backbone.xtts_wrapper - INFO - [XTTS Hook] Successfully injected refined embeddings at GPT token positions 1..51 (delta norm: 4.4981)
+2026-09-07 07:54:54,244 - flowedit.backbone.xtts_wrapper - INFO - [XTTS Hook] Successfully injected refined embeddings at GPT token positions 1..51 (delta norm: 4.4981)
+2026-09-07 07:54:54,352 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmppgd39878.wav
+INFO:     10.63.10.130:57236 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:63262 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:55:06 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:55:06 - whisperx.asr - INFO - Detected language: pl (0.88) in first 30s of audio
+2026-09-07 07:55:06,651 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:55:08,386 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpf46kg3ly.wav
+INFO:     10.63.10.130:63265 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 07:55:08,872 - flowedit.memory.hopfield_memory - INFO - [Hopfield Retrieve] Active word corrections: [('Anurag', 33, 'phonetic=None', 'gate=1.00')]
+2026-09-07 07:55:08,874 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] INJECTION ACTIVE: [('Anurag', 33, None)] (gate_max=1.000, delta_norm=4.4981, scale=1.0).
+2026-09-07 07:55:08,883 - flowedit.backbone.xtts_wrapper - INFO - [XTTS Hook] Successfully injected refined embeddings at GPT token positions 1..51 (delta norm: 4.4981)
+2026-09-07 07:55:10,924 - flowedit.backbone.xtts_wrapper - INFO - [XTTS Hook] Successfully injected refined embeddings at GPT token positions 1..51 (delta norm: 4.4981)
+2026-09-07 07:55:11,014 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp68z696tz.wav
+INFO:     10.63.10.130:54801 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:60125 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:55:22 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:55:22 - whisperx.asr - INFO - Detected language: en (0.83) in first 30s of audio
+2026-09-07 07:55:22,907 - flowedit.memory.hopfield_memory - INFO - [Hopfield Retrieve] Active word corrections: [('Anurag', 33, 'phonetic=None', 'gate=1.00')]
+2026-09-07 07:55:22,908 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] INJECTION ACTIVE: [('Anurag', 33, None)] (gate_max=1.000, delta_norm=4.4981, scale=1.0).
+2026-09-07 07:55:22,917 - flowedit.backbone.xtts_wrapper - INFO - [XTTS Hook] Successfully injected refined embeddings at GPT token positions 1..51 (delta norm: 4.4981)
+2026-09-07 07:55:24,697 - flowedit.backbone.xtts_wrapper - INFO - [XTTS Hook] Successfully injected refined embeddings at GPT token positions 1..51 (delta norm: 4.4981)
+2026-09-07 07:55:24,790 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpv19b9oz_.wav
+INFO:     10.63.10.130:63693 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:52349 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:55:35 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:55:35 - whisperx.asr - INFO - Detected language: en (0.53) in first 30s of audio
+2026-09-07 07:55:36,185 - flowedit.memory.hopfield_memory - INFO - [Hopfield Retrieve] Active word corrections: [('Anurag', 3, 'phonetic=None', 'gate=1.00')]
+2026-09-07 07:55:36,186 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] INJECTION ACTIVE: [('Anurag', 3, None)] (gate_max=1.000, delta_norm=4.4981, scale=1.0).
+2026-09-07 07:55:36,193 - flowedit.backbone.xtts_wrapper - INFO - [XTTS Hook] Successfully injected refined embeddings at GPT token positions 1..36 (delta norm: 4.4981)
+2026-09-07 07:55:37,535 - flowedit.backbone.xtts_wrapper - INFO - [XTTS Hook] Successfully injected refined embeddings at GPT token positions 1..36 (delta norm: 4.4981)
+2026-09-07 07:55:37,631 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpiogcwht3.wav
+INFO:     10.63.10.130:50564 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:51633 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:55:44 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:55:44 - whisperx.asr - INFO - Detected language: en (0.95) in first 30s of audio
+2026-09-07 07:55:44,654 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:55:46,492 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpfnb32705.wav
+INFO:     10.63.10.130:55332 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:52743 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:55:52 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:55:52 - whisperx.asr - INFO - Detected language: en (0.31) in first 30s of audio
+2026-09-07 07:55:52,876 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:55:54,157 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp7eaph65s.wav
+INFO:     10.63.10.130:52745 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:62098 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:55:58 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:55:58 - whisperx.asr - INFO - Detected language: en (0.92) in first 30s of audio
+2026-09-07 07:55:58,918 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:56:00,001 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpxrsad21o.wav
+INFO:     10.63.10.130:54130 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:60567 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:56:04 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:56:04 - whisperx.asr - INFO - Detected language: en (0.92) in first 30s of audio
+2026-09-07 07:56:05,331 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:56:06,519 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpir9x2cch.wav
+INFO:     10.63.10.130:64968 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 07:56:06,763 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:56:07,547 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpg0y88f0x.wav
+INFO:     10.63.10.130:64969 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:54063 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 07:56:13 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 07:56:13 - whisperx.asr - INFO - Detected language: en (0.82) in first 30s of audio
+2026-09-07 07:56:13,417 - flowedit.memory.hopfield_memory - INFO - [Hopfield Retrieve] Active word corrections: [('Anurag', 19, 'phonetic=None', 'gate=1.00')]
+2026-09-07 07:56:13,418 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] INJECTION ACTIVE: [('Anurag', 19, None)] (gate_max=1.000, delta_norm=4.4981, scale=1.0).
+2026-09-07 07:56:13,427 - flowedit.backbone.xtts_wrapper - INFO - [XTTS Hook] Successfully injected refined embeddings at GPT token positions 1..52 (delta norm: 4.4981)
+2026-09-07 07:56:15,362 - flowedit.backbone.xtts_wrapper - INFO - [XTTS Hook] Successfully injected refined embeddings at GPT token positions 1..52 (delta norm: 4.4981)
+2026-09-07 07:56:15,445 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpcm_fgm5y.wav
+INFO:     10.63.10.130:54065 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 07:56:15,925 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 07:56:16,665 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpr_8r9cae.wav
+INFO:     10.63.10.130:61759 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.61.10.186:55806 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+INFO:     10.61.10.186:55806 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 08:15:40,559 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:15:43,036 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp0dqjhrmz.wav
+INFO:     10.61.10.186:59441 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 08:20:37,250 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:20:39,109 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpr465du49.wav
+INFO:     10.61.10.186:62069 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.61.10.186:61938 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 08:21:35,463 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:21:36,765 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpop685u7e.wav
+INFO:     10.61.10.186:61941 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.61.10.186:51253 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 08:21:50,532 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:21:52,454 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp5z3tpxkp.wav
+INFO:     10.61.10.186:51256 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.61.10.186:61221 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 08:22:20,022 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:22:21,537 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpuk67ewmb.wav
+INFO:     10.61.10.186:61224 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.61.10.186:61221 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+INFO:     10.61.10.186:60434 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 08:23:26,912 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:23:29,094 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpcqt_nw4j.wav
+INFO:     10.61.10.186:64143 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.61.10.186:62081 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 08:23:42,018 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:23:43,172 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpriviwf2b.wav
+INFO:     10.61.10.186:62084 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.61.10.186:62633 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 08:24:03,212 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:24:04,356 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpztgnod0t.wav
+INFO:     10.61.10.186:49835 - "POST /api/synthesize HTTP/1.1" 200 OK
+WARNING:  StatReload detected changes in 'flowedit/config.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-09-07 08:24:21,811 - flowedit.api - INFO - Shutting down FlowEdit API...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3710478]
+INFO:     Started server process [984053]
+INFO:     Waiting for application startup.
+2026-09-07 08:24:25,414 - flowedit.api - INFO - Starting up FlowEdit API...
+2026-09-07 08:24:25,414 - flowedit.pipeline.correction_loop - INFO - ============================================================
+2026-09-07 08:24:25,414 - flowedit.pipeline.correction_loop - INFO - Initializing FlowEdit Pipeline (arXiv:2606.20518)...
+2026-09-07 08:24:25,414 - flowedit.pipeline.correction_loop - INFO - ============================================================
+2026-09-07 08:24:25,414 - flowedit.backbone.xtts_wrapper - INFO - Resolved XTTS model directory: /home/rsurya/projects/flow_edit/../text_to_speech/app/model
+2026-09-07 08:24:25,415 - flowedit.backbone.xtts_wrapper - INFO - Loading Fine-Tuned XTTS Backbone on device 'cuda'...
+2026-09-07 08:24:25,415 - flowedit.backbone.xtts_wrapper - INFO -   Model Dir:   /home/rsurya/projects/text_to_speech/app/model
+2026-09-07 08:24:25,415 - flowedit.backbone.xtts_wrapper - INFO -   Checkpoint:  /home/rsurya/projects/text_to_speech/app/model/model.pth
+2026-09-07 08:24:25,415 - flowedit.backbone.xtts_wrapper - INFO -   Config:      /home/rsurya/projects/text_to_speech/app/model/config.json
+2026-09-07 08:24:25,415 - flowedit.backbone.xtts_wrapper - INFO -   Vocab:       /home/rsurya/projects/text_to_speech/app/model/vocab.json
+2026-09-07 08:24:46,889 - flowedit.backbone.xtts_wrapper - INFO - XTTS Discrete VAE loaded successfully from /home/rsurya/projects/text_to_speech/app/model/dvae.pth
+2026-09-07 08:25:01,164 - flowedit.backbone.xtts_wrapper - INFO - ✓ Base XTTS Model loaded for raw baseline comparison from /home/rsurya/projects/text_to_speech/app/model/base_model.pth
+2026-09-07 08:25:01,164 - flowedit.backbone.xtts_wrapper - INFO - ✓ Fine-Tuned XTTS Backbone loaded. Device: cuda, Embedding Dim: 1024
+2026-09-07 08:25:01,164 - flowedit.alignment.whisper_aligner - INFO - Loading Whisper model: base
+/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/pyannote/audio/core/io.py:48: UserWarning: 
+torchcodec is not installed correctly so built-in audio decoding will fail. Solutions are:
+* use audio preloaded in-memory as a {'waveform': (channel, time) torch.Tensor, 'sample_rate': int} dictionary;
+* fix torchcodec installation. Error message was:
+
+Could not load libtorchcodec. Likely causes:
+          1. FFmpeg is not properly installed in your environment. We support
+             versions 4, 5, 6 and 7.
+          2. The PyTorch version (2.8.0+cu128) is not compatible with
+             this version of TorchCodec. Refer to the version compatibility
+             table:
+             https://github.com/pytorch/torchcodec?tab=readme-ov-file#installing-torchcodec.
+          3. Another runtime dependency; see exceptions below.
+        The following exceptions were raised as we tried to load libtorchcodec:
+        
+[start of libtorchcodec loading traceback]
+FFmpeg version 7: libavutil.so.59: cannot open shared object file: No such file or directory
+FFmpeg version 6: /home/rsurya/anaconda3/bin/../lib/libstdc++.so.6: version `GLIBCXX_3.4.32' not found (required by /lib/x86_64-linux-gnu/libavfilter.so.9)
+FFmpeg version 5: libavutil.so.57: cannot open shared object file: No such file or directory
+FFmpeg version 4: libavutil.so.56: cannot open shared object file: No such file or directory
+[end of libtorchcodec loading traceback].
+  warnings.warn(
+2026-09-07 08:25:02 - whisperx.asr - INFO - No language specified, language will be detected for each audio file (increases inference time)
+2026-09-07 08:25:02 - whisperx.vads.pyannote - INFO - Performing voice activity detection using Pyannote...
+INFO: Lightning automatically upgraded your loaded checkpoint from v1.5.4 to v2.6.5. To apply the upgrade to your files permanently, run `python -m lightning.pytorch.utilities.upgrade_checkpoint ../.venv/lib/python3.13/site-packages/whisperx/assets/pytorch_model.bin`
+2026-09-07 08:25:03,450 - lightning.pytorch.utilities.migration.utils - INFO - Lightning automatically upgraded your loaded checkpoint from v1.5.4 to v2.6.5. To apply the upgrade to your files permanently, run `python -m lightning.pytorch.utilities.upgrade_checkpoint ../.venv/lib/python3.13/site-packages/whisperx/assets/pytorch_model.bin`
+2026-09-07 08:25:03,518 - flowedit.alignment.whisper_aligner - INFO - Whisper model (whisperx) loaded successfully
+2026-09-07 08:25:03,518 - flowedit.pipeline.correction_loop - INFO - ✓ FlowEdit Pipeline ready in 38.10s (Embedding dim d=1024)
+2026-09-07 08:25:03,521 - flowedit.memory.hopfield_memory - INFO - ✓ Loaded 4 valid Hopfield Memory entries (d=1024, gate_tau=4.00) from ./corrections.pt
+2026-09-07 08:25:03,521 - flowedit.pipeline.inference - INFO - Initializing FlowEdit inference pipeline...
+2026-09-07 08:25:03,521 - flowedit.pipeline.inference - INFO - ✓ Inference pipeline ready. Memory has 4 corrections.
+2026-09-07 08:25:03,521 - flowedit.api - INFO - FlowEdit API ready. Loaded memory entries: 4
+INFO:     Application startup complete.
+INFO:     10.61.10.186:53216 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/pyannote/audio/utils/reproducibility.py:74: ReproducibilityWarning: TensorFloat-32 (TF32) has been disabled as it might lead to reproducibility issues and lower accuracy.
+It can be re-enabled by calling
+   >>> import torch
+   >>> torch.backends.cuda.matmul.allow_tf32 = True
+   >>> torch.backends.cudnn.allow_tf32 = True
+See https://github.com/pyannote/pyannote-audio/issues/1370 for more details.
+
+  warnings.warn(
+WARNING:  StatReload detected changes in 'flowedit/alignment/__init__.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-09-07 08:25:05,980 - flowedit.api - INFO - Shutting down FlowEdit API...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [984053]
+Process SpawnProcess-3:
+Traceback (most recent call last):
+  File "/home/rsurya/anaconda3/lib/python3.13/multiprocessing/process.py", line 313, in _bootstrap
+    self.run()
+    ~~~~~~~~^^
+  File "/home/rsurya/anaconda3/lib/python3.13/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+    ~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 77, in run
+    return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 81, in serve
+    await self._serve(sockets)
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 88, in _serve
+    config.load()
+    ~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/config.py", line 494, in load
+    self.loaded_app = self.load_app()
+                      ~~~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/config.py", line 428, in load_app
+    return import_from_string(self.app)
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/importer.py", line 22, in import_from_string
+    raise exc from None
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+  File "/home/rsurya/anaconda3/lib/python3.13/importlib/__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1026, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/api/main.py", line 32, in <module>
+    from flowedit.pipeline.correction_loop import CorrectionLoop
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/pipeline/__init__.py", line 1, in <module>
+    from .correction_loop import CorrectionLoop
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/pipeline/correction_loop.py", line 28, in <module>
+    from flowedit.alignment.whisper_aligner import WhisperAligner, AlignmentResult
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/alignment/__init__.py", line 2, in <module>
+    from .homograph_resolver import HomographContextResolver, SenseProfile
+ModuleNotFoundError: No module named 'flowedit.alignment.homograph_resolver'
+WARNING:  StatReload detected changes in 'flowedit/api/main.py'. Reloading...
+Process SpawnProcess-4:
+Traceback (most recent call last):
+  File "/home/rsurya/anaconda3/lib/python3.13/multiprocessing/process.py", line 313, in _bootstrap
+    self.run()
+    ~~~~~~~~^^
+  File "/home/rsurya/anaconda3/lib/python3.13/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+    ~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 77, in run
+    return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 81, in serve
+    await self._serve(sockets)
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 88, in _serve
+    config.load()
+    ~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/config.py", line 494, in load
+    self.loaded_app = self.load_app()
+                      ~~~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/config.py", line 428, in load_app
+    return import_from_string(self.app)
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/importer.py", line 22, in import_from_string
+    raise exc from None
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+  File "/home/rsurya/anaconda3/lib/python3.13/importlib/__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1026, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/api/main.py", line 32, in <module>
+    from flowedit.pipeline.correction_loop import CorrectionLoop
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/pipeline/__init__.py", line 1, in <module>
+    from .correction_loop import CorrectionLoop
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/pipeline/correction_loop.py", line 28, in <module>
+    from flowedit.alignment.whisper_aligner import WhisperAligner, AlignmentResult
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/alignment/__init__.py", line 2, in <module>
+    from .homograph_resolver import HomographContextResolver, SenseProfile
+ModuleNotFoundError: No module named 'flowedit.alignment.homograph_resolver'
+WARNING:  StatReload detected changes in 'flowedit/config.py'. Reloading...
+Process SpawnProcess-5:
+Traceback (most recent call last):
+  File "/home/rsurya/anaconda3/lib/python3.13/multiprocessing/process.py", line 313, in _bootstrap
+    self.run()
+    ~~~~~~~~^^
+  File "/home/rsurya/anaconda3/lib/python3.13/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+    ~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 77, in run
+    return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 81, in serve
+    await self._serve(sockets)
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 88, in _serve
+    config.load()
+    ~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/config.py", line 494, in load
+    self.loaded_app = self.load_app()
+                      ~~~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/config.py", line 428, in load_app
+    return import_from_string(self.app)
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/importer.py", line 22, in import_from_string
+    raise exc from None
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+  File "/home/rsurya/anaconda3/lib/python3.13/importlib/__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1026, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/api/main.py", line 32, in <module>
+    from flowedit.pipeline.correction_loop import CorrectionLoop
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/pipeline/__init__.py", line 1, in <module>
+    from .correction_loop import CorrectionLoop
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/pipeline/correction_loop.py", line 28, in <module>
+    from flowedit.alignment.whisper_aligner import WhisperAligner, AlignmentResult
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/alignment/__init__.py", line 2, in <module>
+    from .homograph_resolver import HomographContextResolver, SenseProfile
+ModuleNotFoundError: No module named 'flowedit.alignment.homograph_resolver'
+WARNING:  StatReload detected changes in 'flowedit/alignment/__init__.py'. Reloading...
+Process SpawnProcess-6:
+Traceback (most recent call last):
+  File "/home/rsurya/anaconda3/lib/python3.13/multiprocessing/process.py", line 313, in _bootstrap
+    self.run()
+    ~~~~~~~~^^
+  File "/home/rsurya/anaconda3/lib/python3.13/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+    ~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 77, in run
+    return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 81, in serve
+    await self._serve(sockets)
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 88, in _serve
+    config.load()
+    ~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/config.py", line 494, in load
+    self.loaded_app = self.load_app()
+                      ~~~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/config.py", line 428, in load_app
+    return import_from_string(self.app)
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/importer.py", line 22, in import_from_string
+    raise exc from None
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+  File "/home/rsurya/anaconda3/lib/python3.13/importlib/__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1026, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/api/main.py", line 35, in <module>
+    from flowedit.memory.s3_storage import s3_spelling_store
+ModuleNotFoundError: No module named 'flowedit.memory.s3_storage'
+WARNING:  StatReload detected changes in 'flowedit/api/main.py'. Reloading...
+INFO:     Started server process [986458]
+INFO:     Waiting for application startup.
+2026-09-07 08:28:51,434 - flowedit.api - INFO - Starting up FlowEdit API...
+2026-09-07 08:28:51,435 - flowedit.pipeline.correction_loop - INFO - ============================================================
+2026-09-07 08:28:51,435 - flowedit.pipeline.correction_loop - INFO - Initializing FlowEdit Pipeline (arXiv:2606.20518)...
+2026-09-07 08:28:51,435 - flowedit.pipeline.correction_loop - INFO - ============================================================
+2026-09-07 08:28:51,435 - flowedit.backbone.xtts_wrapper - INFO - Resolved XTTS model directory: /home/rsurya/projects/flow_edit/../text_to_speech/app/model
+2026-09-07 08:28:51,435 - flowedit.backbone.xtts_wrapper - INFO - Loading Fine-Tuned XTTS Backbone on device 'cuda'...
+2026-09-07 08:28:51,435 - flowedit.backbone.xtts_wrapper - INFO -   Model Dir:   /home/rsurya/projects/text_to_speech/app/model
+2026-09-07 08:28:51,435 - flowedit.backbone.xtts_wrapper - INFO -   Checkpoint:  /home/rsurya/projects/text_to_speech/app/model/model.pth
+2026-09-07 08:28:51,435 - flowedit.backbone.xtts_wrapper - INFO -   Config:      /home/rsurya/projects/text_to_speech/app/model/config.json
+2026-09-07 08:28:51,435 - flowedit.backbone.xtts_wrapper - INFO -   Vocab:       /home/rsurya/projects/text_to_speech/app/model/vocab.json
+2026-09-07 08:29:12,133 - flowedit.backbone.xtts_wrapper - INFO - XTTS Discrete VAE loaded successfully from /home/rsurya/projects/text_to_speech/app/model/dvae.pth
+2026-09-07 08:29:26,373 - flowedit.backbone.xtts_wrapper - INFO - ✓ Base XTTS Model loaded for raw baseline comparison from /home/rsurya/projects/text_to_speech/app/model/base_model.pth
+2026-09-07 08:29:26,373 - flowedit.backbone.xtts_wrapper - INFO - ✓ Fine-Tuned XTTS Backbone loaded. Device: cuda, Embedding Dim: 1024
+2026-09-07 08:29:26,373 - flowedit.alignment.whisper_aligner - INFO - Loading Whisper model: base
+/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/pyannote/audio/core/io.py:48: UserWarning: 
+torchcodec is not installed correctly so built-in audio decoding will fail. Solutions are:
+* use audio preloaded in-memory as a {'waveform': (channel, time) torch.Tensor, 'sample_rate': int} dictionary;
+* fix torchcodec installation. Error message was:
+
+Could not load libtorchcodec. Likely causes:
+          1. FFmpeg is not properly installed in your environment. We support
+             versions 4, 5, 6 and 7.
+          2. The PyTorch version (2.8.0+cu128) is not compatible with
+             this version of TorchCodec. Refer to the version compatibility
+             table:
+             https://github.com/pytorch/torchcodec?tab=readme-ov-file#installing-torchcodec.
+          3. Another runtime dependency; see exceptions below.
+        The following exceptions were raised as we tried to load libtorchcodec:
+        
+[start of libtorchcodec loading traceback]
+FFmpeg version 7: libavutil.so.59: cannot open shared object file: No such file or directory
+FFmpeg version 6: /home/rsurya/anaconda3/bin/../lib/libstdc++.so.6: version `GLIBCXX_3.4.32' not found (required by /lib/x86_64-linux-gnu/libavfilter.so.9)
+FFmpeg version 5: libavutil.so.57: cannot open shared object file: No such file or directory
+FFmpeg version 4: libavutil.so.56: cannot open shared object file: No such file or directory
+[end of libtorchcodec loading traceback].
+  warnings.warn(
+2026-09-07 08:29:27 - whisperx.asr - INFO - No language specified, language will be detected for each audio file (increases inference time)
+2026-09-07 08:29:27 - whisperx.vads.pyannote - INFO - Performing voice activity detection using Pyannote...
+INFO: Lightning automatically upgraded your loaded checkpoint from v1.5.4 to v2.6.5. To apply the upgrade to your files permanently, run `python -m lightning.pytorch.utilities.upgrade_checkpoint ../.venv/lib/python3.13/site-packages/whisperx/assets/pytorch_model.bin`
+2026-09-07 08:29:27,517 - lightning.pytorch.utilities.migration.utils - INFO - Lightning automatically upgraded your loaded checkpoint from v1.5.4 to v2.6.5. To apply the upgrade to your files permanently, run `python -m lightning.pytorch.utilities.upgrade_checkpoint ../.venv/lib/python3.13/site-packages/whisperx/assets/pytorch_model.bin`
+2026-09-07 08:29:27,556 - flowedit.alignment.whisper_aligner - INFO - Whisper model (whisperx) loaded successfully
+2026-09-07 08:29:27,556 - flowedit.pipeline.correction_loop - INFO - ✓ FlowEdit Pipeline ready in 36.12s (Embedding dim d=1024)
+2026-09-07 08:29:27,557 - flowedit.memory.hopfield_memory - INFO - ✓ Loaded 4 valid Hopfield Memory entries (d=1024, gate_tau=4.00) from ./corrections.pt
+2026-09-07 08:29:27,557 - flowedit.pipeline.inference - INFO - Initializing FlowEdit inference pipeline...
+2026-09-07 08:29:27,557 - flowedit.pipeline.inference - INFO - ✓ Inference pipeline ready. Memory has 4 corrections.
+2026-09-07 08:29:27,557 - flowedit.api - INFO - FlowEdit API ready. Loaded memory entries: 4
+INFO:     Application startup complete.
+/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/torchaudio/_backend/utils.py:213: UserWarning: In 2.9, this function's implementation will be changed to use torchaudio.load_with_torchcodec` under the hood. Some parameters like ``normalize``, ``format``, ``buffer_size``, and ``backend`` will be ignored. We recommend that you port your code to rely directly on TorchCodec's decoder instead: https://docs.pytorch.org/torchcodec/stable/generated/torchcodec.decoders.AudioDecoder.html#torchcodec.decoders.AudioDecoder.
+  warnings.warn(
+2026-09-07 08:29:27,915 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:29:29,084 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmprcnsqf2q.wav
+2026-09-07 08:29:29,090 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:29:31,013 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp2a3da_li.wav
+2026-09-07 08:29:31,015 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:29:32,995 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpqxrxuekp.wav
+INFO:     10.61.10.186:54161 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.61.10.186:51996 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/pyannote/audio/utils/reproducibility.py:74: ReproducibilityWarning: TensorFloat-32 (TF32) has been disabled as it might lead to reproducibility issues and lower accuracy.
+It can be re-enabled by calling
+   >>> import torch
+   >>> torch.backends.cuda.matmul.allow_tf32 = True
+   >>> torch.backends.cudnn.allow_tf32 = True
+See https://github.com/pyannote/pyannote-audio/issues/1370 for more details.
+
+  warnings.warn(
+2026-09-07 08:29:45,583 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:29:46,760 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp5uzqopx_.wav
+INFO:     10.61.10.186:50133 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.61.10.186:61602 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 08:29:56,253 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:29:57,243 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpsf314p2o.wav
+INFO:     10.61.10.186:61606 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.61.10.186:61204 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 08:30:07,472 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:30:08,806 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpqqgjmovs.wav
+INFO:     10.61.10.186:61207 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 08:30:12,482 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:30:13,559 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpzynjnl9l.wav
+INFO:     10.61.10.186:61207 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.61.10.186:56188 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 08:33:23,018 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:33:25,127 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp611qsrny.wav
+INFO:     10.61.10.186:54531 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.61.10.186:58414 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+INFO:     10.61.10.186:58414 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 08:33:36,472 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:33:37,661 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpt58u69t9.wav
+2026-09-07 08:33:37,665 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:33:38,821 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpz8phcw06.wav
+INFO:     10.61.10.186:58421 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 08:33:39,527 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:33:40,681 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpbr0iwviv.wav
+INFO:     10.61.10.186:58421 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.61.10.186:58903 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 08:35:57,669 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:35:59,597 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp00rfvvsi.wav
+INFO:     10.61.10.186:50063 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.61.10.186:63507 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 08:36:10,389 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:36:11,587 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpdbe5gsme.wav
+INFO:     10.61.10.186:63510 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.61.10.186:50086 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 08:36:20,664 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:36:21,831 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp4ms34wez.wav
+INFO:     10.61.10.186:50089 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.61.10.186:64604 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 08:36:38,741 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:36:39,754 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpfkg50380.wav
+INFO:     10.61.10.186:53159 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.61.10.186:60844 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 08:42:20,409 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:42:22,473 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpa__h_5x1.wav
+INFO:     10.63.11.102:56261 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.11.102:58485 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 08:42:32,581 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:42:33,580 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpigryzl9h.wav
+INFO:     10.63.11.102:57498 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 08:42:34,150 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:42:35,369 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpgk4lod6t.wav
+INFO:     10.63.11.102:57498 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 08:42:35,998 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:42:37,202 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpd7aef_ou.wav
+INFO:     10.63.11.102:57498 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.11.102:61053 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 08:42:47,200 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:42:48,363 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpahwumfvv.wav
+INFO:     10.63.11.102:61056 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.11.102:49673 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 08:43:08,077 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:43:09,181 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpczr6wvhu.wav
+INFO:     10.63.11.102:52713 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 08:45:26,394 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:45:28,355 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpi8yru472.wav
+INFO:     10.63.11.102:49251 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.11.102:63766 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 08:45:40,926 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:45:41,941 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp3feliluj.wav
+INFO:     10.63.11.102:63769 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.11.102:57983 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 08:45:51,012 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:45:54,719 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpp2vbz397.wav
+INFO:     10.63.11.102:57986 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.11.102:64738 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 08:46:23,055 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 08:46:24,126 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp0ayrnh5s.wav
+INFO:     10.63.11.102:55667 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.11.102:56624 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/torchaudio/_backend/utils.py:213: UserWarning: In 2.9, this function's implementation will be changed to use torchaudio.load_with_torchcodec` under the hood. Some parameters like ``normalize``, ``format``, ``buffer_size``, and ``backend`` will be ignored. We recommend that you port your code to rely directly on TorchCodec's decoder instead: https://docs.pytorch.org/torchcodec/stable/generated/torchcodec.decoders.AudioDecoder.html#torchcodec.decoders.AudioDecoder.
+  warnings.warn(
+2026-09-07 09:49:50,418 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 09:49:51,390 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp0hhs3azs.wav
+INFO:     10.63.10.130:51955 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:51956 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 09:49:51 - whisperx.vads.pyannote - WARNING - No active speech found in audio
+2026-09-07 09:49:51 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 09:49:51 - whisperx.asr - INFO - Detected language: en (0.47) in first 30s of audio
+INFO:     10.63.10.130:54011 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 09:49:59 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 09:49:59 - whisperx.asr - INFO - Detected language: en (0.45) in first 30s of audio
+2026-09-07 09:49:59,914 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 09:50:00,888 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpn_grqyzs.wav
+INFO:     10.63.10.130:54014 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 09:50:01,068 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 09:50:02,024 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpn3p3ohfo.wav
+INFO:     10.63.10.130:54015 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:57448 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 09:50:02 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 09:50:02 - whisperx.asr - INFO - Detected language: en (0.69) in first 30s of audio
+2026-09-07 09:50:02,949 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 09:50:03,776 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmplr77v3gi.wav
+INFO:     10.63.10.130:57451 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 09:50:03,969 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 09:50:04,978 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp53r9l8ee.wav
+INFO:     10.63.10.130:57411 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 09:50:05,201 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 09:50:06,312 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmphqya4xc4.wav
+INFO:     10.63.10.130:57413 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:55515 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 09:50:08 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 09:50:08 - whisperx.asr - INFO - Detected language: en (0.71) in first 30s of audio
+2026-09-07 09:50:09,027 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 09:50:09,811 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpb0_o_eux.wav
+INFO:     10.63.10.130:55517 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 09:50:09,974 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 09:50:11,055 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp_o7i94zk.wav
+INFO:     10.63.10.130:55518 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 09:50:11,275 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 09:50:12,539 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpdc0vh69e.wav
+INFO:     10.63.10.130:62968 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:62969 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 09:50:12 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 09:50:12 - whisperx.asr - INFO - Detected language: en (0.80) in first 30s of audio
+2026-09-07 09:50:13,050 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 09:50:14,064 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmps19kr36b.wav
+INFO:     10.63.10.130:50362 - "POST /api/synthesize HTTP/1.1" 200 OK
+/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/torchaudio/_backend/utils.py:213: UserWarning: In 2.9, this function's implementation will be changed to use torchaudio.load_with_torchcodec` under the hood. Some parameters like ``normalize``, ``format``, ``buffer_size``, and ``backend`` will be ignored. We recommend that you port your code to rely directly on TorchCodec's decoder instead: https://docs.pytorch.org/torchcodec/stable/generated/torchcodec.decoders.AudioDecoder.html#torchcodec.decoders.AudioDecoder.
+  warnings.warn(
+2026-09-07 09:50:21,966 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 09:50:22,936 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpmjx13zf8.wav
+INFO:     10.63.10.130:65454 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:56066 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 09:50:32 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 09:50:32 - whisperx.asr - INFO - Detected language: en (0.54) in first 30s of audio
+2026-09-07 09:50:32,938 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 09:50:33,865 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpgswphgvg.wav
+INFO:     10.63.10.130:52064 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 09:50:34,080 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 09:50:35,159 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpfpralfv5.wav
+INFO:     10.63.10.130:52065 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 09:50:35,504 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 09:50:36,770 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpqe7fllzi.wav
+INFO:     10.63.10.130:59077 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 09:58:51,934 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 09:58:53,238 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp03tr0v1t.wav
+INFO:     10.63.10.130:65232 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:65233 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 09:58:53 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 09:58:53 - whisperx.asr - INFO - Detected language: en (0.40) in first 30s of audio
+INFO:     10.63.10.130:64736 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 09:58:54 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 09:58:54 - whisperx.asr - INFO - Detected language: en (0.52) in first 30s of audio
+2026-09-07 09:58:54,521 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 09:58:55,743 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpovi__6nv.wav
+2026-09-07 09:59:05,930 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 09:59:06,917 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpreq1b5sj.wav
+INFO:     10.63.10.130:49242 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 09:59:07 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 09:59:07 - whisperx.asr - INFO - Detected language: hi (0.73) in first 30s of audio
+INFO:     10.63.10.130:49244 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 09:59:11,371 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 09:59:12,658 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpuxqxkixf.wav
+INFO:     10.63.10.130:55946 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 09:59:12 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 09:59:12 - whisperx.asr - INFO - Detected language: hi (0.71) in first 30s of audio
+2026-09-07 09:59:29,225 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 09:59:30,376 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmplc0z7w8j.wav
+INFO:     10.63.10.130:58917 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:54027 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 09:59:31 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 09:59:31 - whisperx.asr - INFO - Detected language: en (0.45) in first 30s of audio
+2026-09-07 09:59:31,633 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 09:59:32,580 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpsoy0ubjk.wav
+INFO:     10.63.10.130:54030 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 09:59:32,748 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 09:59:34,072 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp4olfkd7b.wav
+INFO:     10.63.10.130:59713 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 09:59:34,342 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 09:59:35,711 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpn8onhil2.wav
+INFO:     10.63.10.130:59714 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:57800 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 09:59:41 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 09:59:41 - whisperx.asr - INFO - Detected language: en (0.44) in first 30s of audio
+2026-09-07 09:59:41,718 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 09:59:43,039 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpuyv3gc3x.wav
+INFO:     10.63.10.130:57805 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 09:59:43 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 09:59:43 - whisperx.asr - INFO - Detected language: en (0.80) in first 30s of audio
+INFO:     10.63.10.130:57803 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 09:59:44,088 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 09:59:45,821 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp7548uvxo.wav
+INFO:     10.63.10.130:65014 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 09:59:45 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 09:59:46 - whisperx.asr - INFO - Detected language: hi (0.62) in first 30s of audio
+INFO:     10.63.10.130:65016 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:62321 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 09:59:46 - whisperx.vads.pyannote - WARNING - No active speech found in audio
+2026-09-07 09:59:46 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 09:59:46 - whisperx.asr - INFO - Detected language: en (0.48) in first 30s of audio
+2026-09-07 09:59:46,405 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 09:59:47,611 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp7pyqf8s7.wav
+INFO:     10.63.10.130:62323 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:50668 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 09:59:56 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 09:59:56 - whisperx.asr - INFO - Detected language: de (0.18) in first 30s of audio
+2026-09-07 09:59:57,745 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 09:59:59,601 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpvay7llud.wav
+INFO:     10.63.10.130:52755 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 09:59:59 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 09:59:59 - whisperx.asr - INFO - Detected language: en (0.34) in first 30s of audio
+INFO:     10.63.10.130:52756 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 10:00:03,944 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:00:05,397 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp0jwjurq3.wav
+INFO:     10.63.10.130:60173 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 10:00:05 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 10:00:05 - whisperx.asr - INFO - Detected language: hi (0.30) in first 30s of audio
+INFO:     10.63.10.130:60175 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 10:00:19,529 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:00:20,650 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpspb6bi8x.wav
+INFO:     10.63.10.130:49992 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:49990 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 10:00:20 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 10:00:20 - whisperx.asr - INFO - Detected language: hi (0.70) in first 30s of audio
+2026-09-07 10:00:32,583 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:00:33,672 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmptf7ll3jn.wav
+INFO:     10.63.10.130:58552 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:58550 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 10:00:33 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 10:00:33 - whisperx.asr - INFO - Detected language: hi (0.71) in first 30s of audio
+INFO:     10.63.10.130:53848 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 10:00:38 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 10:00:38 - whisperx.asr - INFO - Detected language: hi (0.64) in first 30s of audio
+2026-09-07 10:00:40,068 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:00:41,253 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpqdogt_dc.wav
+2026-09-07 10:01:51,415 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:01:52,610 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpvxsgnxtn.wav
+INFO:     10.63.10.130:51446 - "POST /api/synthesize HTTP/1.1" 200 OK
+WARNING:  StatReload detected changes in 'flowedit/config.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-09-07 10:02:02,549 - flowedit.api - INFO - Shutting down FlowEdit API...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [986458]
+INFO:     Started server process [1034076]
+INFO:     Waiting for application startup.
+2026-09-07 10:02:04,978 - flowedit.api - INFO - Starting up FlowEdit API...
+2026-09-07 10:02:04,978 - flowedit.pipeline.correction_loop - INFO - ============================================================
+2026-09-07 10:02:04,978 - flowedit.pipeline.correction_loop - INFO - Initializing FlowEdit Pipeline (arXiv:2606.20518)...
+2026-09-07 10:02:04,978 - flowedit.pipeline.correction_loop - INFO - ============================================================
+2026-09-07 10:02:04,978 - flowedit.backbone.xtts_wrapper - INFO - Resolved XTTS model directory: /home/rsurya/projects/flow_edit/../text_to_speech/app/model
+2026-09-07 10:02:04,978 - flowedit.backbone.xtts_wrapper - INFO - Loading Fine-Tuned XTTS Backbone on device 'cuda'...
+2026-09-07 10:02:04,978 - flowedit.backbone.xtts_wrapper - INFO -   Model Dir:   /home/rsurya/projects/text_to_speech/app/model
+2026-09-07 10:02:04,978 - flowedit.backbone.xtts_wrapper - INFO -   Checkpoint:  /home/rsurya/projects/text_to_speech/app/model/model.pth
+2026-09-07 10:02:04,978 - flowedit.backbone.xtts_wrapper - INFO -   Config:      /home/rsurya/projects/text_to_speech/app/model/config.json
+2026-09-07 10:02:04,978 - flowedit.backbone.xtts_wrapper - INFO -   Vocab:       /home/rsurya/projects/text_to_speech/app/model/vocab.json
+2026-09-07 10:02:26,712 - flowedit.backbone.xtts_wrapper - INFO - XTTS Discrete VAE loaded successfully from /home/rsurya/projects/text_to_speech/app/model/dvae.pth
+WARNING:  StatReload detected changes in 'flowedit/alignment/__init__.py'. Reloading...
+2026-09-07 10:02:41,791 - flowedit.backbone.xtts_wrapper - INFO - ✓ Base XTTS Model loaded for raw baseline comparison from /home/rsurya/projects/text_to_speech/app/model/base_model.pth
+2026-09-07 10:02:41,791 - flowedit.backbone.xtts_wrapper - INFO - ✓ Fine-Tuned XTTS Backbone loaded. Device: cuda, Embedding Dim: 1024
+2026-09-07 10:02:41,791 - flowedit.alignment.whisper_aligner - INFO - Loading Whisper model: base
+/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/pyannote/audio/core/io.py:48: UserWarning: 
+torchcodec is not installed correctly so built-in audio decoding will fail. Solutions are:
+* use audio preloaded in-memory as a {'waveform': (channel, time) torch.Tensor, 'sample_rate': int} dictionary;
+* fix torchcodec installation. Error message was:
+
+Could not load libtorchcodec. Likely causes:
+          1. FFmpeg is not properly installed in your environment. We support
+             versions 4, 5, 6 and 7.
+          2. The PyTorch version (2.8.0+cu128) is not compatible with
+             this version of TorchCodec. Refer to the version compatibility
+             table:
+             https://github.com/pytorch/torchcodec?tab=readme-ov-file#installing-torchcodec.
+          3. Another runtime dependency; see exceptions below.
+        The following exceptions were raised as we tried to load libtorchcodec:
+        
+[start of libtorchcodec loading traceback]
+FFmpeg version 7: libavutil.so.59: cannot open shared object file: No such file or directory
+FFmpeg version 6: /home/rsurya/anaconda3/bin/../lib/libstdc++.so.6: version `GLIBCXX_3.4.32' not found (required by /lib/x86_64-linux-gnu/libavfilter.so.9)
+FFmpeg version 5: libavutil.so.57: cannot open shared object file: No such file or directory
+FFmpeg version 4: libavutil.so.56: cannot open shared object file: No such file or directory
+[end of libtorchcodec loading traceback].
+  warnings.warn(
+2026-09-07 10:02:43 - whisperx.asr - INFO - No language specified, language will be detected for each audio file (increases inference time)
+2026-09-07 10:02:43 - whisperx.vads.pyannote - INFO - Performing voice activity detection using Pyannote...
+INFO: Lightning automatically upgraded your loaded checkpoint from v1.5.4 to v2.6.5. To apply the upgrade to your files permanently, run `python -m lightning.pytorch.utilities.upgrade_checkpoint ../.venv/lib/python3.13/site-packages/whisperx/assets/pytorch_model.bin`
+2026-09-07 10:02:43,285 - lightning.pytorch.utilities.migration.utils - INFO - Lightning automatically upgraded your loaded checkpoint from v1.5.4 to v2.6.5. To apply the upgrade to your files permanently, run `python -m lightning.pytorch.utilities.upgrade_checkpoint ../.venv/lib/python3.13/site-packages/whisperx/assets/pytorch_model.bin`
+2026-09-07 10:02:43,325 - flowedit.alignment.whisper_aligner - INFO - Whisper model (whisperx) loaded successfully
+2026-09-07 10:02:43,325 - flowedit.pipeline.correction_loop - INFO - ✓ FlowEdit Pipeline ready in 38.35s (Embedding dim d=1024)
+2026-09-07 10:02:43,327 - flowedit.memory.hopfield_memory - INFO - ✓ Loaded 4 valid Hopfield Memory entries (d=1024, gate_tau=4.00) from ./corrections.pt
+2026-09-07 10:02:43,327 - flowedit.pipeline.inference - INFO - Initializing FlowEdit inference pipeline...
+2026-09-07 10:02:43,327 - flowedit.pipeline.inference - INFO - ✓ Inference pipeline ready. Memory has 4 corrections.
+2026-09-07 10:02:43,327 - flowedit.api - INFO - FlowEdit API ready. Loaded memory entries: 4
+INFO:     Application startup complete.
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-09-07 10:02:43,428 - flowedit.api - INFO - Shutting down FlowEdit API...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [1034076]
+Process SpawnProcess-9:
+Traceback (most recent call last):
+  File "/home/rsurya/anaconda3/lib/python3.13/multiprocessing/process.py", line 313, in _bootstrap
+    self.run()
+    ~~~~~~~~^^
+  File "/home/rsurya/anaconda3/lib/python3.13/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+    ~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 77, in run
+    return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 81, in serve
+    await self._serve(sockets)
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 88, in _serve
+    config.load()
+    ~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/config.py", line 494, in load
+    self.loaded_app = self.load_app()
+                      ~~~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/config.py", line 428, in load_app
+    return import_from_string(self.app)
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/importer.py", line 22, in import_from_string
+    raise exc from None
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+  File "/home/rsurya/anaconda3/lib/python3.13/importlib/__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1026, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/api/main.py", line 32, in <module>
+    from flowedit.pipeline.correction_loop import CorrectionLoop
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/pipeline/__init__.py", line 1, in <module>
+    from .correction_loop import CorrectionLoop
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/pipeline/correction_loop.py", line 28, in <module>
+    from flowedit.alignment.whisper_aligner import WhisperAligner, AlignmentResult
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/alignment/__init__.py", line 2, in <module>
+    from .homograph_resolver import HomographContextResolver, SenseProfile
+ModuleNotFoundError: No module named 'flowedit.alignment.homograph_resolver'
+WARNING:  StatReload detected changes in 'flowedit/api/main.py'. Reloading...
+Process SpawnProcess-10:
+Traceback (most recent call last):
+  File "/home/rsurya/anaconda3/lib/python3.13/multiprocessing/process.py", line 313, in _bootstrap
+    self.run()
+    ~~~~~~~~^^
+  File "/home/rsurya/anaconda3/lib/python3.13/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+    ~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 77, in run
+    return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 81, in serve
+    await self._serve(sockets)
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 88, in _serve
+    config.load()
+    ~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/config.py", line 494, in load
+    self.loaded_app = self.load_app()
+                      ~~~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/config.py", line 428, in load_app
+    return import_from_string(self.app)
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/importer.py", line 22, in import_from_string
+    raise exc from None
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+  File "/home/rsurya/anaconda3/lib/python3.13/importlib/__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1026, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/api/main.py", line 32, in <module>
+    from flowedit.pipeline.correction_loop import CorrectionLoop
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/pipeline/__init__.py", line 1, in <module>
+    from .correction_loop import CorrectionLoop
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/pipeline/correction_loop.py", line 28, in <module>
+    from flowedit.alignment.whisper_aligner import WhisperAligner, AlignmentResult
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/alignment/__init__.py", line 2, in <module>
+    from .homograph_resolver import HomographContextResolver, SenseProfile
+ModuleNotFoundError: No module named 'flowedit.alignment.homograph_resolver'
+WARNING:  StatReload detected changes in 'flowedit/api/ui_html.py'. Reloading...
+Process SpawnProcess-11:
+Traceback (most recent call last):
+  File "/home/rsurya/anaconda3/lib/python3.13/multiprocessing/process.py", line 313, in _bootstrap
+    self.run()
+    ~~~~~~~~^^
+  File "/home/rsurya/anaconda3/lib/python3.13/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+    ~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 77, in run
+    return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 81, in serve
+    await self._serve(sockets)
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 88, in _serve
+    config.load()
+    ~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/config.py", line 494, in load
+    self.loaded_app = self.load_app()
+                      ~~~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/config.py", line 428, in load_app
+    return import_from_string(self.app)
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/importer.py", line 22, in import_from_string
+    raise exc from None
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+  File "/home/rsurya/anaconda3/lib/python3.13/importlib/__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1026, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/api/main.py", line 32, in <module>
+    from flowedit.pipeline.correction_loop import CorrectionLoop
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/pipeline/__init__.py", line 1, in <module>
+    from .correction_loop import CorrectionLoop
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/pipeline/correction_loop.py", line 28, in <module>
+    from flowedit.alignment.whisper_aligner import WhisperAligner, AlignmentResult
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/alignment/__init__.py", line 2, in <module>
+    from .homograph_resolver import HomographContextResolver, SenseProfile
+ModuleNotFoundError: No module named 'flowedit.alignment.homograph_resolver'
+WARNING:  StatReload detected changes in 'flowedit/memory/__init__.py'. Reloading...
+Process SpawnProcess-12:
+Traceback (most recent call last):
+  File "/home/rsurya/anaconda3/lib/python3.13/multiprocessing/process.py", line 313, in _bootstrap
+    self.run()
+    ~~~~~~~~^^
+  File "/home/rsurya/anaconda3/lib/python3.13/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+    ~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 77, in run
+    return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 81, in serve
+    await self._serve(sockets)
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 88, in _serve
+    config.load()
+    ~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/config.py", line 494, in load
+    self.loaded_app = self.load_app()
+                      ~~~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/config.py", line 428, in load_app
+    return import_from_string(self.app)
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/importer.py", line 22, in import_from_string
+    raise exc from None
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+  File "/home/rsurya/anaconda3/lib/python3.13/importlib/__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1026, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/api/main.py", line 32, in <module>
+    from flowedit.pipeline.correction_loop import CorrectionLoop
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/pipeline/__init__.py", line 1, in <module>
+    from .correction_loop import CorrectionLoop
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/pipeline/correction_loop.py", line 28, in <module>
+    from flowedit.alignment.whisper_aligner import WhisperAligner, AlignmentResult
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/alignment/__init__.py", line 2, in <module>
+    from .homograph_resolver import HomographContextResolver, SenseProfile
+ModuleNotFoundError: No module named 'flowedit.alignment.homograph_resolver'
+WARNING:  StatReload detected changes in 'flowedit/memory/s3_storage.py'. Reloading...
+Process SpawnProcess-13:
+Traceback (most recent call last):
+  File "/home/rsurya/anaconda3/lib/python3.13/multiprocessing/process.py", line 313, in _bootstrap
+    self.run()
+    ~~~~~~~~^^
+  File "/home/rsurya/anaconda3/lib/python3.13/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+    ~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 77, in run
+    return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 81, in serve
+    await self._serve(sockets)
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 88, in _serve
+    config.load()
+    ~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/config.py", line 494, in load
+    self.loaded_app = self.load_app()
+                      ~~~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/config.py", line 428, in load_app
+    return import_from_string(self.app)
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/importer.py", line 22, in import_from_string
+    raise exc from None
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+  File "/home/rsurya/anaconda3/lib/python3.13/importlib/__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1026, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/api/main.py", line 32, in <module>
+    from flowedit.pipeline.correction_loop import CorrectionLoop
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/pipeline/__init__.py", line 1, in <module>
+    from .correction_loop import CorrectionLoop
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/pipeline/correction_loop.py", line 28, in <module>
+    from flowedit.alignment.whisper_aligner import WhisperAligner, AlignmentResult
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/alignment/__init__.py", line 2, in <module>
+    from .homograph_resolver import HomographContextResolver, SenseProfile
+ModuleNotFoundError: No module named 'flowedit.alignment.homograph_resolver'
+WARNING:  StatReload detected changes in 'flowedit/pipeline/inference.py'. Reloading...
+Process SpawnProcess-14:
+Traceback (most recent call last):
+  File "/home/rsurya/anaconda3/lib/python3.13/multiprocessing/process.py", line 313, in _bootstrap
+    self.run()
+    ~~~~~~~~^^
+  File "/home/rsurya/anaconda3/lib/python3.13/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+    ~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 77, in run
+    return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 81, in serve
+    await self._serve(sockets)
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 88, in _serve
+    config.load()
+    ~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/config.py", line 494, in load
+    self.loaded_app = self.load_app()
+                      ~~~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/config.py", line 428, in load_app
+    return import_from_string(self.app)
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/importer.py", line 22, in import_from_string
+    raise exc from None
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+  File "/home/rsurya/anaconda3/lib/python3.13/importlib/__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1026, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/api/main.py", line 32, in <module>
+    from flowedit.pipeline.correction_loop import CorrectionLoop
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/pipeline/__init__.py", line 1, in <module>
+    from .correction_loop import CorrectionLoop
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/pipeline/correction_loop.py", line 28, in <module>
+    from flowedit.alignment.whisper_aligner import WhisperAligner, AlignmentResult
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/alignment/__init__.py", line 2, in <module>
+    from .homograph_resolver import HomographContextResolver, SenseProfile
+ModuleNotFoundError: No module named 'flowedit.alignment.homograph_resolver'
+WARNING:  StatReload detected changes in 'flowedit/utils/audio.py'. Reloading...
+Process SpawnProcess-15:
+Traceback (most recent call last):
+  File "/home/rsurya/anaconda3/lib/python3.13/multiprocessing/process.py", line 313, in _bootstrap
+    self.run()
+    ~~~~~~~~^^
+  File "/home/rsurya/anaconda3/lib/python3.13/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+    ~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 77, in run
+    return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/rsurya/anaconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 81, in serve
+    await self._serve(sockets)
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 88, in _serve
+    config.load()
+    ~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/config.py", line 494, in load
+    self.loaded_app = self.load_app()
+                      ~~~~~~~~~~~~~^^
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/config.py", line 428, in load_app
+    return import_from_string(self.app)
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/importer.py", line 22, in import_from_string
+    raise exc from None
+  File "/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/uvicorn/importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+  File "/home/rsurya/anaconda3/lib/python3.13/importlib/__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1026, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/api/main.py", line 32, in <module>
+    from flowedit.pipeline.correction_loop import CorrectionLoop
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/pipeline/__init__.py", line 1, in <module>
+    from .correction_loop import CorrectionLoop
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/pipeline/correction_loop.py", line 28, in <module>
+    from flowedit.alignment.whisper_aligner import WhisperAligner, AlignmentResult
+  File "/home/rsurya/projects/flow_edit/Flowedit/flowedit/alignment/__init__.py", line 2, in <module>
+    from .homograph_resolver import HomographContextResolver, SenseProfile
+ModuleNotFoundError: No module named 'flowedit.alignment.homograph_resolver'
+WARNING:  StatReload detected changes in 'flowedit/config.py'. Reloading...
+INFO:     Started server process [1055030]
+INFO:     Waiting for application startup.
+2026-09-07 10:36:48,280 - flowedit.api - INFO - Starting up FlowEdit API...
+2026-09-07 10:36:48,280 - flowedit.pipeline.correction_loop - INFO - ============================================================
+2026-09-07 10:36:48,280 - flowedit.pipeline.correction_loop - INFO - Initializing FlowEdit Pipeline (arXiv:2606.20518)...
+2026-09-07 10:36:48,280 - flowedit.pipeline.correction_loop - INFO - ============================================================
+2026-09-07 10:36:48,280 - flowedit.backbone.xtts_wrapper - INFO - Resolved XTTS model directory: /home/rsurya/projects/flow_edit/../text_to_speech/app/model
+2026-09-07 10:36:48,280 - flowedit.backbone.xtts_wrapper - INFO - Loading Fine-Tuned XTTS Backbone on device 'cuda'...
+2026-09-07 10:36:48,280 - flowedit.backbone.xtts_wrapper - INFO -   Model Dir:   /home/rsurya/projects/text_to_speech/app/model
+2026-09-07 10:36:48,280 - flowedit.backbone.xtts_wrapper - INFO -   Checkpoint:  /home/rsurya/projects/text_to_speech/app/model/model.pth
+2026-09-07 10:36:48,280 - flowedit.backbone.xtts_wrapper - INFO -   Config:      /home/rsurya/projects/text_to_speech/app/model/config.json
+2026-09-07 10:36:48,280 - flowedit.backbone.xtts_wrapper - INFO -   Vocab:       /home/rsurya/projects/text_to_speech/app/model/vocab.json
+2026-09-07 10:37:10,293 - flowedit.backbone.xtts_wrapper - INFO - XTTS Discrete VAE loaded successfully from /home/rsurya/projects/text_to_speech/app/model/dvae.pth
+WARNING:  StatReload detected changes in 'flowedit/memory/s3_storage.py'. Reloading...
+2026-09-07 10:37:25,517 - flowedit.backbone.xtts_wrapper - INFO - ✓ Base XTTS Model loaded for raw baseline comparison from /home/rsurya/projects/text_to_speech/app/model/base_model.pth
+2026-09-07 10:37:25,517 - flowedit.backbone.xtts_wrapper - INFO - ✓ Fine-Tuned XTTS Backbone loaded. Device: cuda, Embedding Dim: 1024
+2026-09-07 10:37:25,518 - flowedit.alignment.whisper_aligner - INFO - Loading Whisper model: base
+/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/pyannote/audio/core/io.py:48: UserWarning: 
+torchcodec is not installed correctly so built-in audio decoding will fail. Solutions are:
+* use audio preloaded in-memory as a {'waveform': (channel, time) torch.Tensor, 'sample_rate': int} dictionary;
+* fix torchcodec installation. Error message was:
+
+Could not load libtorchcodec. Likely causes:
+          1. FFmpeg is not properly installed in your environment. We support
+             versions 4, 5, 6 and 7.
+          2. The PyTorch version (2.8.0+cu128) is not compatible with
+             this version of TorchCodec. Refer to the version compatibility
+             table:
+             https://github.com/pytorch/torchcodec?tab=readme-ov-file#installing-torchcodec.
+          3. Another runtime dependency; see exceptions below.
+        The following exceptions were raised as we tried to load libtorchcodec:
+        
+[start of libtorchcodec loading traceback]
+FFmpeg version 7: libavutil.so.59: cannot open shared object file: No such file or directory
+FFmpeg version 6: /home/rsurya/anaconda3/bin/../lib/libstdc++.so.6: version `GLIBCXX_3.4.32' not found (required by /lib/x86_64-linux-gnu/libavfilter.so.9)
+FFmpeg version 5: libavutil.so.57: cannot open shared object file: No such file or directory
+FFmpeg version 4: libavutil.so.56: cannot open shared object file: No such file or directory
+[end of libtorchcodec loading traceback].
+  warnings.warn(
+2026-09-07 10:37:26 - whisperx.asr - INFO - No language specified, language will be detected for each audio file (increases inference time)
+2026-09-07 10:37:26 - whisperx.vads.pyannote - INFO - Performing voice activity detection using Pyannote...
+INFO: Lightning automatically upgraded your loaded checkpoint from v1.5.4 to v2.6.5. To apply the upgrade to your files permanently, run `python -m lightning.pytorch.utilities.upgrade_checkpoint ../.venv/lib/python3.13/site-packages/whisperx/assets/pytorch_model.bin`
+2026-09-07 10:37:26,982 - lightning.pytorch.utilities.migration.utils - INFO - Lightning automatically upgraded your loaded checkpoint from v1.5.4 to v2.6.5. To apply the upgrade to your files permanently, run `python -m lightning.pytorch.utilities.upgrade_checkpoint ../.venv/lib/python3.13/site-packages/whisperx/assets/pytorch_model.bin`
+2026-09-07 10:37:27,021 - flowedit.alignment.whisper_aligner - INFO - Whisper model (whisperx) loaded successfully
+2026-09-07 10:37:27,021 - flowedit.pipeline.correction_loop - INFO - ✓ FlowEdit Pipeline ready in 38.74s (Embedding dim d=1024)
+2026-09-07 10:37:27,023 - flowedit.memory.hopfield_memory - INFO - ✓ Loaded 4 valid Hopfield Memory entries (d=1024, gate_tau=4.00) from ./corrections.pt
+2026-09-07 10:37:27,023 - flowedit.pipeline.inference - INFO - Initializing FlowEdit inference pipeline...
+2026-09-07 10:37:27,023 - flowedit.pipeline.inference - INFO - ✓ Inference pipeline ready. Memory has 4 corrections.
+2026-09-07 10:37:27,023 - flowedit.api - INFO - FlowEdit API ready. Loaded memory entries: 4
+INFO:     Application startup complete.
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-09-07 10:37:27,124 - flowedit.api - INFO - Shutting down FlowEdit API...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [1055030]
+INFO:     Started server process [1055762]
+INFO:     Waiting for application startup.
+2026-09-07 10:37:30,466 - flowedit.api - INFO - Starting up FlowEdit API...
+2026-09-07 10:37:30,466 - flowedit.pipeline.correction_loop - INFO - ============================================================
+2026-09-07 10:37:30,466 - flowedit.pipeline.correction_loop - INFO - Initializing FlowEdit Pipeline (arXiv:2606.20518)...
+2026-09-07 10:37:30,466 - flowedit.pipeline.correction_loop - INFO - ============================================================
+2026-09-07 10:37:30,467 - flowedit.backbone.xtts_wrapper - INFO - Resolved XTTS model directory: /home/rsurya/projects/flow_edit/../text_to_speech/app/model
+2026-09-07 10:37:30,467 - flowedit.backbone.xtts_wrapper - INFO - Loading Fine-Tuned XTTS Backbone on device 'cuda'...
+2026-09-07 10:37:30,467 - flowedit.backbone.xtts_wrapper - INFO -   Model Dir:   /home/rsurya/projects/text_to_speech/app/model
+2026-09-07 10:37:30,467 - flowedit.backbone.xtts_wrapper - INFO -   Checkpoint:  /home/rsurya/projects/text_to_speech/app/model/model.pth
+2026-09-07 10:37:30,467 - flowedit.backbone.xtts_wrapper - INFO -   Config:      /home/rsurya/projects/text_to_speech/app/model/config.json
+2026-09-07 10:37:30,467 - flowedit.backbone.xtts_wrapper - INFO -   Vocab:       /home/rsurya/projects/text_to_speech/app/model/vocab.json
+2026-09-07 10:37:52,461 - flowedit.backbone.xtts_wrapper - INFO - XTTS Discrete VAE loaded successfully from /home/rsurya/projects/text_to_speech/app/model/dvae.pth
+2026-09-07 10:38:07,719 - flowedit.backbone.xtts_wrapper - INFO - ✓ Base XTTS Model loaded for raw baseline comparison from /home/rsurya/projects/text_to_speech/app/model/base_model.pth
+2026-09-07 10:38:07,719 - flowedit.backbone.xtts_wrapper - INFO - ✓ Fine-Tuned XTTS Backbone loaded. Device: cuda, Embedding Dim: 1024
+2026-09-07 10:38:07,719 - flowedit.alignment.whisper_aligner - INFO - Loading Whisper model: base
+/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/pyannote/audio/core/io.py:48: UserWarning: 
+torchcodec is not installed correctly so built-in audio decoding will fail. Solutions are:
+* use audio preloaded in-memory as a {'waveform': (channel, time) torch.Tensor, 'sample_rate': int} dictionary;
+* fix torchcodec installation. Error message was:
+
+Could not load libtorchcodec. Likely causes:
+          1. FFmpeg is not properly installed in your environment. We support
+             versions 4, 5, 6 and 7.
+          2. The PyTorch version (2.8.0+cu128) is not compatible with
+             this version of TorchCodec. Refer to the version compatibility
+             table:
+             https://github.com/pytorch/torchcodec?tab=readme-ov-file#installing-torchcodec.
+          3. Another runtime dependency; see exceptions below.
+        The following exceptions were raised as we tried to load libtorchcodec:
+        
+[start of libtorchcodec loading traceback]
+FFmpeg version 7: libavutil.so.59: cannot open shared object file: No such file or directory
+FFmpeg version 6: /home/rsurya/anaconda3/bin/../lib/libstdc++.so.6: version `GLIBCXX_3.4.32' not found (required by /lib/x86_64-linux-gnu/libavfilter.so.9)
+FFmpeg version 5: libavutil.so.57: cannot open shared object file: No such file or directory
+FFmpeg version 4: libavutil.so.56: cannot open shared object file: No such file or directory
+[end of libtorchcodec loading traceback].
+  warnings.warn(
+2026-09-07 10:38:08 - whisperx.asr - INFO - No language specified, language will be detected for each audio file (increases inference time)
+2026-09-07 10:38:08 - whisperx.vads.pyannote - INFO - Performing voice activity detection using Pyannote...
+INFO: Lightning automatically upgraded your loaded checkpoint from v1.5.4 to v2.6.5. To apply the upgrade to your files permanently, run `python -m lightning.pytorch.utilities.upgrade_checkpoint ../.venv/lib/python3.13/site-packages/whisperx/assets/pytorch_model.bin`
+2026-09-07 10:38:09,084 - lightning.pytorch.utilities.migration.utils - INFO - Lightning automatically upgraded your loaded checkpoint from v1.5.4 to v2.6.5. To apply the upgrade to your files permanently, run `python -m lightning.pytorch.utilities.upgrade_checkpoint ../.venv/lib/python3.13/site-packages/whisperx/assets/pytorch_model.bin`
+2026-09-07 10:38:09,124 - flowedit.alignment.whisper_aligner - INFO - Whisper model (whisperx) loaded successfully
+2026-09-07 10:38:09,125 - flowedit.pipeline.correction_loop - INFO - ✓ FlowEdit Pipeline ready in 38.66s (Embedding dim d=1024)
+2026-09-07 10:38:09,126 - flowedit.memory.hopfield_memory - INFO - ✓ Loaded 4 valid Hopfield Memory entries (d=1024, gate_tau=4.00) from ./corrections.pt
+2026-09-07 10:38:09,126 - flowedit.pipeline.inference - INFO - Initializing FlowEdit inference pipeline...
+2026-09-07 10:38:09,127 - flowedit.pipeline.inference - INFO - ✓ Inference pipeline ready. Memory has 4 corrections.
+2026-09-07 10:38:09,127 - flowedit.api - INFO - FlowEdit API ready. Loaded memory entries: 4
+INFO:     Application startup complete.
+/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/torchaudio/_backend/utils.py:213: UserWarning: In 2.9, this function's implementation will be changed to use torchaudio.load_with_torchcodec` under the hood. Some parameters like ``normalize``, ``format``, ``buffer_size``, and ``backend`` will be ignored. We recommend that you port your code to rely directly on TorchCodec's decoder instead: https://docs.pytorch.org/torchcodec/stable/generated/torchcodec.decoders.AudioDecoder.html#torchcodec.decoders.AudioDecoder.
+  warnings.warn(
+2026-09-07 10:38:09,729 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:38:11,235 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp8o62b7z2.wav
+2026-09-07 10:38:11,299 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:38:12,302 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpq___hjyc.wav
+2026-09-07 10:38:12,305 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:38:13,392 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpc5o06re8.wav
+2026-09-07 10:38:13,395 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:38:14,347 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmprjp93z8v.wav
+2026-09-07 10:38:14,426 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:38:15,327 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpu_7vitx8.wav
+2026-09-07 10:38:15,330 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:38:16,211 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpt96d4cbg.wav
+2026-09-07 10:38:16,214 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:38:17,240 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpjwl94ib7.wav
+INFO:     10.63.10.130:59023 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.63.10.130:58799 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/pyannote/audio/utils/reproducibility.py:74: ReproducibilityWarning: TensorFloat-32 (TF32) has been disabled as it might lead to reproducibility issues and lower accuracy.
+It can be re-enabled by calling
+   >>> import torch
+   >>> torch.backends.cuda.matmul.allow_tf32 = True
+   >>> torch.backends.cudnn.allow_tf32 = True
+See https://github.com/pyannote/pyannote-audio/issues/1370 for more details.
+
+  warnings.warn(
+2026-09-07 10:38:17 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 10:38:17 - whisperx.asr - INFO - Detected language: ko (0.46) in first 30s of audio
+INFO:     10.63.10.130:52519 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 10:38:17 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 10:38:17 - whisperx.asr - INFO - Detected language: en (0.88) in first 30s of audio
+INFO:     10.63.10.130:54242 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 10:38:18 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 10:38:18 - whisperx.asr - INFO - Detected language: en (0.85) in first 30s of audio
+INFO:     10.63.10.130:52082 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 10:38:18 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 10:38:18 - whisperx.asr - INFO - Detected language: hi (0.47) in first 30s of audio
+INFO:     10.63.10.130:52213 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 10:38:18 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 10:38:18 - whisperx.asr - INFO - Detected language: hi (0.61) in first 30s of audio
+2026-09-07 10:38:28,522 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:38:29,680 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp409avw_z.wav
+INFO:     10.63.10.130:52534 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:51742 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 10:38:38 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 10:38:38 - whisperx.asr - INFO - Detected language: en (0.78) in first 30s of audio
+2026-09-07 10:38:38,364 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:38:39,420 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmplqz98z5j.wav
+INFO:     10.63.10.130:51745 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:50668 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 10:38:48 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 10:38:49 - whisperx.asr - INFO - Detected language: en (0.71) in first 30s of audio
+2026-09-07 10:38:49,362 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:38:50,908 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp0rv63lv5.wav
+INFO:     10.63.10.130:50670 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 10:38:51,821 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:38:55,246 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp_srkobi1.wav
+INFO:     10.63.10.130:55206 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:51854 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 10:38:55 - whisperx.vads.pyannote - WARNING - No active speech found in audio
+2026-09-07 10:38:55 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 10:38:55 - whisperx.asr - INFO - Detected language: en (0.58) in first 30s of audio
+INFO:     10.63.10.130:60809 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 10:39:12 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 10:39:12 - whisperx.asr - INFO - Detected language: en (0.87) in first 30s of audio
+2026-09-07 10:39:13,337 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:39:15,360 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp5mxhj49t.wav
+INFO:     10.63.10.130:60811 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:55333 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 10:39:25 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 10:39:25 - whisperx.asr - INFO - Detected language: en (0.85) in first 30s of audio
+2026-09-07 10:39:25,295 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:39:27,574 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpvjtigxio.wav
+INFO:     10.63.10.130:62976 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:52977 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 10:39:36 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 10:39:36 - whisperx.asr - INFO - Detected language: en (0.90) in first 30s of audio
+INFO:     10.63.10.130:57643 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 10:39:43 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 10:39:43 - whisperx.asr - INFO - Detected language: en (0.92) in first 30s of audio
+2026-09-07 10:40:13,889 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:40:15,332 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp5rd8r5zn.wav
+INFO:     10.63.10.130:62969 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:62236 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 10:40:23 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 10:40:23 - whisperx.asr - INFO - Detected language: en (0.93) in first 30s of audio
+INFO:     10.63.10.130:62238 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 10:40:25 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 10:40:25 - whisperx.asr - INFO - Detected language: en (0.85) in first 30s of audio
+2026-09-07 10:40:25,377 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:40:26,597 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpkuhqs88d.wav
+INFO:     10.63.10.130:57593 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 10:40:26,862 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:40:28,235 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpirqqci1u.wav
+INFO:     10.63.10.130:57595 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 10:40:37,885 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:40:38,975 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpf1dfiifq.wav
+INFO:     10.63.10.130:62189 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:52989 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 10:40:48 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 10:40:48 - whisperx.asr - INFO - Detected language: en (0.94) in first 30s of audio
+2026-09-07 10:40:49,204 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:40:50,194 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmprpjkob3r.wav
+INFO:     10.63.10.130:52993 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:49671 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 10:40:59 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 10:40:59 - whisperx.asr - INFO - Detected language: en (0.58) in first 30s of audio
+2026-09-07 10:40:59,988 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:41:01,490 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpr6f68wko.wav
+INFO:     10.63.10.130:49673 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:52865 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 10:41:10 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 10:41:10 - whisperx.asr - INFO - Detected language: en (0.73) in first 30s of audio
+2026-09-07 10:41:10,427 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:41:11,619 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpy7jph1z8.wav
+INFO:     10.63.10.130:52868 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 10:41:11,891 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:41:13,407 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpj4sh_y95.wav
+INFO:     10.63.10.130:62968 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:49228 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 10:41:23 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 10:41:23 - whisperx.asr - INFO - Detected language: en (0.80) in first 30s of audio
+2026-09-07 10:41:25,175 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:41:26,354 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpp1r7tzgu.wav
+INFO:     10.63.10.130:59888 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:59887 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 10:41:26 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 10:41:26 - whisperx.asr - INFO - Detected language: en (0.92) in first 30s of audio
+2026-09-07 10:41:27,422 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:41:28,385 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpgbm_c62k.wav
+INFO:     10.63.10.130:58377 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:65515 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 10:41:38 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 10:41:39 - whisperx.asr - INFO - Detected language: en (0.74) in first 30s of audio
+/home/rsurya/projects/flow_edit/.venv/lib/python3.13/site-packages/torchaudio/_backend/utils.py:213: UserWarning: In 2.9, this function's implementation will be changed to use torchaudio.load_with_torchcodec` under the hood. Some parameters like ``normalize``, ``format``, ``buffer_size``, and ``backend`` will be ignored. We recommend that you port your code to rely directly on TorchCodec's decoder instead: https://docs.pytorch.org/torchcodec/stable/generated/torchcodec.decoders.AudioDecoder.html#torchcodec.decoders.AudioDecoder.
+  warnings.warn(
+2026-09-07 10:44:35,371 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:44:37,575 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp2uptxnms.wav
+INFO:     10.65.8.114:49680 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.65.8.114:60861 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 10:44:49,502 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:44:50,777 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpfq1gifmf.wav
+INFO:     10.65.8.114:60864 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 10:44:54,529 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:44:55,616 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpepey71_p.wav
+INFO:     10.65.8.114:60864 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.65.8.114:50502 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 10:45:03,410 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:45:07,305 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp8_ehkyi8.wav
+INFO:     10.65.8.114:50505 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 10:45:19,489 - flowedit.memory.hopfield_memory - INFO - [Hopfield Retrieve] Active word corrections: [('Anurag', 9, 'phonetic=None', 'gate=1.00')]
+2026-09-07 10:45:19,494 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] INJECTION ACTIVE: [('Anurag', 9, None)] (gate_max=1.000, delta_norm=5.1142, scale=1.0).
+2026-09-07 10:45:19,499 - flowedit.backbone.xtts_wrapper - INFO - [XTTS Hook] Successfully injected refined embeddings at GPT token positions 1..29 (delta norm: 5.1142)
+2026-09-07 10:45:21,081 - flowedit.backbone.xtts_wrapper - INFO - [XTTS Hook] Successfully injected refined embeddings at GPT token positions 1..29 (delta norm: 5.1142)
+2026-09-07 10:45:21,178 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpiufyqk6t.wav
+INFO:     10.65.8.114:60547 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 10:46:10,629 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:46:11,890 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpcuvow935.wav
+INFO:     10.63.10.130:64464 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:62426 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 10:46:19 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 10:46:19 - whisperx.asr - INFO - Detected language: en (0.89) in first 30s of audio
+2026-09-07 10:46:20,105 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:46:21,133 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpbsika2bd.wav
+INFO:     10.63.10.130:62429 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 10:46:21 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 10:46:21 - whisperx.asr - INFO - Detected language: es (0.24) in first 30s of audio
+INFO:     10.63.10.130:62430 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 10:46:22,019 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:46:23,228 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmphev9_j6g.wav
+INFO:     10.63.10.130:54902 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 10:46:23,530 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:46:24,455 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp6fs3nzep.wav
+INFO:     10.63.10.130:65532 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:49300 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 10:46:32 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 10:46:32 - whisperx.asr - INFO - Detected language: en (0.57) in first 30s of audio
+2026-09-07 10:46:34,597 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:46:35,654 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpk15wen16.wav
+INFO:     10.63.10.130:64309 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.63.10.130:64308 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 10:46:35 - whisperx.asr - WARNING - Audio is shorter than 30s, language detection may be inaccurate
+2026-09-07 10:46:35 - whisperx.asr - INFO - Detected language: en (0.57) in first 30s of audio
+2026-09-07 10:46:36,647 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:46:38,633 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmprpiat82g.wav
+INFO:     10.63.10.130:53863 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 10:46:39,127 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:46:42,494 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp5u5pmoji.wav
+INFO:     10.63.10.130:53865 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.65.8.114:57193 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 10:47:48,855 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:47:50,258 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpeip33xe9.wav
+INFO:     10.65.8.114:57197 - "POST /api/synthesize HTTP/1.1" 200 OK
+2026-09-07 10:47:54,410 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:47:55,373 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmpq5fp4z89.wav
+INFO:     10.65.8.114:57197 - "POST /api/synthesize HTTP/1.1" 200 OK
+INFO:     10.65.8.114:59188 - "POST /api/transcribe/stream HTTP/1.1" 200 OK
+2026-09-07 10:48:11,510 - flowedit.refiner.hopfield_refiner - INFO - [Hopfield Refiner] Memory gate INACTIVE. Direct baseline synthesis.
+2026-09-07 10:48:15,275 - flowedit.pipeline.inference - INFO - Saved synthesized audio to /tmp/tmp8tlolrez.wav
+INFO:     10.65.8.114:59190 - "POST /api/synthesize HTTP/1.1" 200 OK

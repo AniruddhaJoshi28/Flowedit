@@ -98,15 +98,25 @@ class XTTSBackbone(TTSBackbone):
             candidates.append(model_dir)
 
         # 2. Environment variables
-        for env_var in ["FLOWEDIT_XTTS_DIR", "FLOWEDIT_MODEL_DIR", "MODEL_DIR"]:
+        for env_var in ["FLOWEDIT_XTTS_DIR", "FLOWEDIT_MODEL_DIR", "MODEL_DIR", "XTTS_MODEL_DIR"]:
             env_val = os.environ.get(env_var, "")
             if env_val:
                 candidates.append(env_val)
 
-        # 3. Path relative to this file, workspace, or sibling folders
+        # 3. Fine-tuned server paths (IITD server & user specified)
+        candidates.append("/home/rsurya/projects/flow_edit/Flowedit/model")
+        candidates.append(os.path.expanduser("~/projects/flow_edit/Flowedit/model"))
+
+        # 4. Path relative to this file, workspace, or sibling folders
         pkg_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         flowedit_root = os.path.dirname(pkg_dir)
         workspace_root = os.path.dirname(flowedit_root)
+
+        candidates.append(os.path.join(flowedit_root, "model"))
+        candidates.append(os.path.join(flowedit_root, "models"))
+        candidates.append(os.path.join(workspace_root, "Flowedit", "model"))
+        candidates.append(os.path.join(workspace_root, "model"))
+        candidates.append(os.path.join(pkg_dir, "model"))
 
         candidates.append(os.path.join(workspace_root, "text_to_speech", "app", "model"))
         candidates.append(os.path.join(workspace_root, "..", "text_to_speech", "app", "model"))
@@ -123,6 +133,7 @@ class XTTSBackbone(TTSBackbone):
         # User home folder project conventions (e.g. Linux / Windows servers)
         try:
             home = os.path.expanduser("~")
+            candidates.append(os.path.join(home, "projects", "flow_edit", "Flowedit", "model"))
             candidates.append(os.path.join(home, "projects", "text_to_speech", "app", "model"))
             candidates.append(os.path.join(home, "projects", "flow_edit", "text_to_speech", "app", "model"))
         except Exception:
@@ -137,7 +148,7 @@ class XTTSBackbone(TTSBackbone):
                 vocab_check = os.path.join(candidate, "vocab.json")
                 config_check = os.path.join(candidate, "config.json")
                 if os.path.isfile(vocab_check) or os.path.isfile(config_check):
-                    logger.info(f"Resolved XTTS model directory: {candidate}")
+                    logger.info(f"Resolved fine-tuned XTTS model directory: {candidate}")
                     return os.path.abspath(candidate)
 
         for candidate in candidates:
@@ -147,7 +158,7 @@ class XTTSBackbone(TTSBackbone):
         checked_paths = "\n  ".join(f"- {c}" for c in candidates if c)
         raise FileNotFoundError(
             f"Fine-tuned XTTS model directory not found. Checked paths:\n  {checked_paths}\n"
-            "Please ensure text_to_speech/app/model is present or set FLOWEDIT_XTTS_DIR or config.backbone.xtts_model_dir."
+            "Please ensure /home/rsurya/projects/flow_edit/Flowedit/model or FLOWEDIT_MODEL_DIR is present."
         )
 
     def load_model(self) -> None:
@@ -254,6 +265,19 @@ class XTTSBackbone(TTSBackbone):
                     num_layers=2,
                     use_transposed_convs=False,
                 )
+                if not os.path.isfile(dvae_path):
+                    for d_cand in [
+                        "/home/rsurya/projects/flow_edit/Flowedit/model/dvae.pth",
+                        os.path.expanduser("~/projects/flow_edit/Flowedit/model/dvae.pth"),
+                        os.path.join(model_dir, "dvae.pth"),
+                        os.path.join(os.path.dirname(model_dir), "model", "dvae.pth"),
+                        os.path.join(os.path.dirname(model_dir), "flowedit", "resources", "dvae.pth"),
+                        "/home/rsurya/projects/text_to_speech/app/model/dvae.pth",
+                    ]:
+                        if d_cand and os.path.isfile(d_cand):
+                            dvae_path = d_cand
+                            break
+
                 if os.path.isfile(dvae_path):
                     dvae_ckpt = torch.load(dvae_path, map_location="cpu", weights_only=False)
                     state = dvae_ckpt.get("model", dvae_ckpt.get("state_dict", dvae_ckpt))
@@ -263,7 +287,7 @@ class XTTSBackbone(TTSBackbone):
                     self.model.dvae = dvae
                     logger.info(f"XTTS Discrete VAE loaded successfully from {dvae_path}")
                 else:
-                    logger.warning(f"XTTS Discrete VAE file not found at {dvae_path}. Latent optimization will load DVAE dynamically if available.")
+                    logger.info(f"XTTS Discrete VAE file not found at {dvae_path}. Latent optimization will load DVAE dynamically if available.")
             except Exception as e:
                 logger.warning(f"Could not load Discrete VAE: {e}")
 

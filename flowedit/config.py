@@ -155,7 +155,17 @@ class BackboneConfig:
     backbone_type: str = "xtts"
 
     # XTTS Model checkpoint & configuration paths
-    xtts_model_dir: str = ""
+    xtts_model_dir: str = field(
+        default_factory=lambda: os.getenv(
+            "FLOWEDIT_MODEL_DIR",
+            os.getenv(
+                "FLOWEDIT_XTTS_DIR",
+                "/home/rsurya/projects/flow_edit/Flowedit/model"
+                if os.path.isdir("/home/rsurya/projects/flow_edit/Flowedit/model")
+                else ""
+            )
+        )
+    )
     xtts_checkpoint: str = "model.pth"
     xtts_config_file: str = "config.json"
     xtts_vocab_file: str = "vocab.json"
