@@ -7,13 +7,18 @@ Paper Section 3.2 (Stage 3 & Inference):
      where Mem(Q) = softmax(β Q K^T) V, β = 1/√d."
 """
 
+import os
 import time
 import logging
 from typing import Optional, Dict, Any, Tuple
 from pathlib import Path
 
 import torch
-import soundfile as sf
+import numpy as np
+try:
+    import soundfile as sf
+except ImportError:
+    sf = None
 
 from flowedit.config import FlowEditConfig
 from flowedit.backbone import create_backbone, TTSBackbone
@@ -66,20 +71,22 @@ class FlowEditInference:
     def synthesize(
         self,
         text: str,
-        speaker_wav: str,
+        speaker_wav: Optional[str] = None,
         language: str = "en",
         user_ref_text: Optional[str] = None,
         output_path: Optional[str] = None,
+        speaker_name: Optional[str] = "female",
         **kwargs,
     ) -> Dict[str, Any]:
         """Synthesize speech with automatic Hopfield memory pronunciation retrieval.
 
         Args:
             text: Input carrier sentence
-            speaker_wav: Speaker voice audio
+            speaker_wav: Speaker voice audio (optional, defaults to preset voice)
             language: Language code
             user_ref_text: Optional speaker text
             output_path: Optional output .wav path
+            speaker_name: Preset voice name if speaker_wav not provided ('female'/'blessing' or 'male'/'michael')
 
         Returns:
             Dict containing waveform, sample_rate, is_modified, and diagnostics
@@ -87,6 +94,17 @@ class FlowEditInference:
         self._ensure_ready()
         t0 = time.time()
         text = normalize_indic_phonetics(text)
+
+        # Ensure speaker_wav is valid; if not provided or missing, resolve to hardcoded preset voice
+        if not speaker_wav or not os.path.isfile(speaker_wav):
+            from flowedit.api.main import get_hardcoded_voice_path
+            target = "michael" if (speaker_name or "").strip().lower() in ("male", "man", "michael") else "blessing"
+            resolved = get_hardcoded_voice_path(target)
+            if resolved and os.path.isfile(resolved):
+                speaker_wav = resolved
+                logger.info(f"Using hardcoded {target} voice for synthesis: {speaker_wav}")
+            else:
+                raise FileNotFoundError(f"Speaker audio not provided and hardcoded voice for '{target}' not found on disk.")
 
         # Autonomous Memory Check 1: S3 Spelling Store (deterministic phonetic respelling via shared HomographContextResolver)
         from flowedit.memory.s3_storage import s3_spelling_store
@@ -112,7 +130,17 @@ class FlowEditInference:
         sr = refine_res.sample_rate
 
         if output_path:
-            sf.write(output_path, waveform.squeeze().cpu().numpy(), sr)
+            wav_np = waveform.squeeze().cpu().numpy()
+            if sf is not None:
+                sf.write(output_path, wav_np, sr)
+            else:
+                import wave
+                int16_d = (np.clip(wav_np, -1.0, 1.0) * 32767.0).astype(np.int16)
+                with wave.open(output_path, "wb") as wf:
+                    wf.setnchannels(1 if wav_np.ndim == 1 else wav_np.shape[1])
+                    wf.setsampwidth(2)
+                    wf.setframerate(sr)
+                    wf.writeframes(int16_d.tobytes())
             logger.info(f"Saved synthesized audio to {output_path}")
 
         elapsed_ms = (time.time() - t0) * 1000.0

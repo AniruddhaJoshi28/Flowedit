@@ -127,16 +127,39 @@ class AudioPreprocessor:
 
         # Step 6: Resample if necessary
         if sr != sr_out:
+            resampled = False
             if T is not None and hasattr(T, "Resample"):
-                resampler = T.Resample(sr, sr_out)
-                waveform = resampler(waveform)
-            else:
+                try:
+                    resampler = T.Resample(sr, sr_out)
+                    waveform = resampler(waveform)
+                    resampled = True
+                except Exception as e_resamp:
+                    logger.debug(f"torchaudio T.Resample failed ({e_resamp}), falling back...")
+            if not resampled:
                 try:
                     import scipy.signal
-                    resampled = scipy.signal.resample(waveform.squeeze().numpy(), int(waveform.shape[-1] * sr_out / sr))
-                    waveform = torch.from_numpy(resampled).unsqueeze(0).float()
+                    resampled_np = scipy.signal.resample(waveform.squeeze().numpy(), int(waveform.shape[-1] * sr_out / sr))
+                    waveform = torch.from_numpy(resampled_np).unsqueeze(0).float()
+                    resampled = True
                 except Exception:
                     pass
+            if not resampled:
+                # Robust pure-PyTorch 1D linear interpolation fallback (zero extra dependencies)
+                try:
+                    target_length = max(1, int(round(waveform.shape[-1] * (float(sr_out) / float(sr)))))
+                    # waveform is [1, T] -> interpolate expects [N, C, L]
+                    w_3d = waveform.unsqueeze(0)
+                    w_resampled = torch.nn.functional.interpolate(
+                        w_3d,
+                        size=target_length,
+                        mode="linear",
+                        align_corners=False
+                    )
+                    waveform = w_resampled.squeeze(0)
+                    resampled = True
+                    logger.debug(f"Resampled audio from {sr}Hz to {sr_out}Hz using torch linear interpolation.")
+                except Exception as e_interp:
+                    logger.warning(f"Could not resample audio from {sr}Hz to {sr_out}Hz: {e_interp}")
 
         # Step 7: Conservative peak normalization
         peak_val = torch.max(torch.abs(waveform)).item()

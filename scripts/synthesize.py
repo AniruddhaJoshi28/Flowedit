@@ -57,7 +57,11 @@ Examples:
     )
     parser.add_argument(
         "--speaker-wav", 
-        help="Speaker reference audio for voice cloning"
+        help="Speaker reference audio for voice cloning (optional, defaults to preset voice)"
+    )
+    parser.add_argument(
+        "--speaker-name", default="female",
+        help="Preset speaker voice name if --speaker-wav is not provided: 'female' (Blessing) or 'male' (Michael)"
     )
     parser.add_argument(
         "--output", default="./output.wav",
@@ -119,8 +123,9 @@ Examples:
         datefmt="%H:%M:%S",
     )
 
-    # Build config
+    # Build config (XTTS-v2 backbone by default)
     config = FlowEditConfig()
+    config.backbone.backbone_type = "xtts"
     config.backbone.device = args.device
 
     # Initialize inference pipeline
@@ -144,8 +149,8 @@ Examples:
         return
 
     # Validate required args for synthesis
-    if not args.text or not args.speaker_wav:
-        parser.error("--text and --speaker-wav are required for synthesis")
+    if not args.text:
+        parser.error("--text is required for synthesis")
 
     if args.compare:
         # Comparison mode: generate both versions
@@ -154,6 +159,7 @@ Examples:
             speaker_wav=args.speaker_wav,
             language=args.language,
             output_dir=args.output_dir,
+            speaker_name=args.speaker_name,
         )
 
         corrected = result["corrected"]
@@ -161,9 +167,9 @@ Examples:
 
         print(f"\n📊 Comparison Results:")
         print(f"   Text: \"{args.text}\"")
-        print(f"   Corrections applied: {corrected['corrections_applied']} tokens")
-        print(f"   Corrected inference: {corrected['inference_time_ms']:.0f}ms")
-        print(f"   Baseline inference:  {baseline['inference_time_ms']:.0f}ms")
+        print(f"   Corrections applied: {corrected.get('corrections_applied', 0)} tokens")
+        print(f"   Corrected inference: {corrected.get('inference_time_ms', 0):.0f}ms")
+        print(f"   Baseline inference:  {baseline.get('inference_time_ms', 0):.0f}ms")
         print(f"   Saved to: {args.output_dir}/")
 
     else:
@@ -174,6 +180,7 @@ Examples:
             language=args.language,
             output_path=args.output,
             return_gate_info=args.gate_info,
+            speaker_name=args.speaker_name,
         )
 
         print(f"\n🔊 Synthesis complete!")

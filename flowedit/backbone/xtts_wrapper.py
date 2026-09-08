@@ -19,6 +19,16 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
+try:
+    import librosa
+except ImportError:
+    librosa = None
+
+try:
+    import soundfile as sf
+except ImportError:
+    sf = None
+
 from flowedit.config import BackboneConfig
 from flowedit.backbone.base import TTSBackbone
 
@@ -375,8 +385,15 @@ class XTTSBackbone(TTSBackbone):
         if cache_key in self._speaker_cache:
             return self._speaker_cache[cache_key]
 
-        import librosa
-        import soundfile as sf
+        if not audio_path or not os.path.exists(audio_path):
+            try:
+                from flowedit.api.main import get_hardcoded_voice_path
+                hardcoded_spk = get_hardcoded_voice_path("blessing")
+                if hardcoded_spk and os.path.exists(hardcoded_spk):
+                    audio_path = hardcoded_spk
+                    logger.info(f"[XTTS] Defaulting to hardcoded Blessing voice: {audio_path}")
+            except Exception:
+                pass
 
         if not audio_path or not os.path.exists(audio_path):
             raise FileNotFoundError(f"Speaker reference audio not found: {audio_path}")
@@ -386,19 +403,40 @@ class XTTSBackbone(TTSBackbone):
 
         try:
             # XTTS input conditioning expects 22050 Hz mono WAV
-            y, sr = librosa.load(audio_path, sr=22050, mono=True)
-
-            # High-fidelity custom voice preprocessing: trim silence and peak normalize
-            if len(y) > 0:
-                import numpy as np
-                y_trimmed, _ = librosa.effects.trim(y, top_db=25)
-                if len(y_trimmed) > sr * 0.5:
-                    y = y_trimmed
+            if librosa is not None:
+                y, sr = librosa.load(audio_path, sr=22050, mono=True)
+                # High-fidelity custom voice preprocessing: trim silence and peak normalize
+                if len(y) > 0:
+                    y_trimmed, _ = librosa.effects.trim(y, top_db=25)
+                    if len(y_trimmed) > sr * 0.5:
+                        y = y_trimmed
+                    max_amp = float(np.max(np.abs(y)))
+                    if max_amp > 1e-4:
+                        y = (y / max_amp) * 0.95
+            else:
+                import torchaudio
+                wav_t, orig_sr = torchaudio.load(audio_path)
+                if wav_t.shape[0] > 1:
+                    wav_t = torch.mean(wav_t, dim=0, keepdim=True)
+                if orig_sr != 22050:
+                    wav_t = torchaudio.functional.resample(wav_t, orig_sr, 22050)
+                y = wav_t.squeeze(0).cpu().numpy()
+                sr = 22050
                 max_amp = float(np.max(np.abs(y)))
                 if max_amp > 1e-4:
                     y = (y / max_amp) * 0.95
 
-            sf.write(processed_path, y, 22050, subtype="PCM_16")
+            try:
+                import soundfile as sf
+                sf.write(processed_path, y, 22050, subtype="PCM_16")
+            except Exception:
+                import wave
+                int16_y = (np.clip(y, -1.0, 1.0) * 32767.0).astype(np.int16)
+                with wave.open(processed_path, "wb") as wf:
+                    wf.setnchannels(1)
+                    wf.setsampwidth(2)
+                    wf.setframerate(22050)
+                    wf.writeframes(int16_y.tobytes())
 
             # High-fidelity conditioning parameters (up to 30s reference audio)
             gpt_cond_len = self._get_config_value("gpt_cond_len", 30)
