@@ -8,7 +8,6 @@ Paper Section 3.2 (Stage 3 & Inference):
 """
 
 import os
-import os
 import time
 import logging
 from typing import Optional, Dict, Any, Tuple
@@ -17,11 +16,7 @@ from pathlib import Path
 import torch
 import numpy as np
 try:
-    import numpy as np
-try:
     import soundfile as sf
-except ImportError:
-    sf = None
 except ImportError:
     sf = None
 
@@ -76,11 +71,10 @@ class FlowEditInference:
     def synthesize(
         self,
         text: str,
-        speaker_wav: Optional[Optional[str] = None] = None,
+        speaker_wav: Optional[str] = None,
         language: str = "en",
         user_ref_text: Optional[str] = None,
         output_path: Optional[str] = None,
-        speaker_name: Optional[str] = "female",
         speaker_name: Optional[str] = "female",
         **kwargs,
     ) -> Dict[str, Any]:
@@ -88,11 +82,10 @@ class FlowEditInference:
 
         Args:
             text: Input carrier sentence
-            speaker_wav: Speaker voice audio (optional, defaults to preset voice) (optional, defaults to preset voice)
+            speaker_wav: Speaker voice audio (optional, defaults to preset voice)
             language: Language code
             user_ref_text: Optional speaker text
             output_path: Optional output .wav path
-            speaker_name: Preset voice name if speaker_wav not provided ('female'/'blessing' or 'male'/'michael')
             speaker_name: Preset voice name if speaker_wav not provided ('female'/'blessing' or 'male'/'michael')
 
         Returns:
@@ -107,7 +100,7 @@ class FlowEditInference:
             target = "michael" if (speaker_name or "").strip().lower() in ("male", "man", "michael") else "blessing"
             resolved = None
             try:
-                from flowedit.api.main import get_hardcoded_voice_path
+                from flowedit.utils.voice_finder import get_hardcoded_voice_path
                 resolved = get_hardcoded_voice_path(target)
             except Exception:
                 pass
