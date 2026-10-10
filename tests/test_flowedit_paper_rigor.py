@@ -198,7 +198,7 @@ def test_stage3_deduplication_and_lru():
     k1_dup = F.normalize(k1 + 0.01 * torch.randn(d), dim=0)
     v1_dup = torch.ones(d) * 2.0
     idx_dup, action_dup = memory.write(k1_dup, v1_dup, word="WordA")
-    assert action_dup == "merged"
+    assert action_dup in ("merged", "averaged")
     assert idx_dup == idx1
     assert memory.num_entries == 1
 

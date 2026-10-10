@@ -1649,7 +1649,7 @@ HTML_CONTENT = r"""<!DOCTYPE html>
                     const dlEl = document.getElementById(`dl-${mKey}`);
                     const statusEl = document.getElementById(`status-${mKey}`);
                     const metricsEl = document.getElementById(`metrics-${mKey}`);
-                    const isMemActive = resp.headers.get('X-Memory-Active') === 'True';
+                    const isMemActive = resp.headers.get('X-Memory-Active') === 'True' || resp.headers.get('X-Hopfield-Active') === 'True';
 
                     audioEl.src = audioUrl;
                     audioEl.style.display = 'block';
@@ -1659,7 +1659,16 @@ HTML_CONTENT = r"""<!DOCTYPE html>
 
                     document.getElementById(`ttfa-${mKey}`).textContent = `${elapsedSec}s`;
                     document.getElementById(`dur-${mKey}`).textContent = (blob.size / (24000 * 2)).toFixed(2) + 's';
-                    document.getElementById(`mem-${mKey}`).textContent = isMemActive ? '✓ Refined' : 'Standard';
+                    const memBadge = document.getElementById(`mem-${mKey}`);
+                    if (isMemActive) {
+                        memBadge.textContent = '✓ Hopfield Memory';
+                        memBadge.style.color = '#16A34A';
+                        memBadge.style.fontWeight = '700';
+                    } else {
+                        memBadge.textContent = isBase ? 'Base (No Memory)' : 'Standard';
+                        memBadge.style.color = 'var(--text-muted)';
+                        memBadge.style.fontWeight = '600';
+                    }
                     metricsEl.style.display = 'flex';
                     statusEl.textContent = '✓ Ready';
                     statusEl.style.color = '#22C55E';

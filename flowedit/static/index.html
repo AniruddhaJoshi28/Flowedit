@@ -1359,7 +1359,16 @@
 
                     document.getElementById(`ttfa-${modelKey}`).textContent = elapsedSec + 's';
                     document.getElementById(`dur-${modelKey}`).textContent = (blob.size / (24000 * 2)).toFixed(2) + 's';
-                    document.getElementById(`mem-${modelKey}`).textContent = isMemActive ? '✓ Refined' : 'Standard';
+                    const memBadge = document.getElementById(`mem-${modelKey}`);
+                    if (isMemActive) {
+                        memBadge.textContent = '✓ Hopfield Memory';
+                        memBadge.style.color = '#16A34A';
+                        memBadge.style.fontWeight = '700';
+                    } else {
+                        memBadge.textContent = isBase ? 'Base (No Memory)' : 'Standard';
+                        memBadge.style.color = 'var(--text-muted)';
+                        memBadge.style.fontWeight = '600';
+                    }
                     metricsEl.style.display = 'flex';
                     statusEl.textContent = '✓ Ready';
                     statusEl.style.color = '#22C55E';

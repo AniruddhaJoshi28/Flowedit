@@ -87,13 +87,29 @@ class HopfieldRefiner(nn.Module):
         if has_active_delta:
             import re
             synth_text = text
-            # If reference audio phonetic pronunciation is stored, substitute the target word
-            for span in retrieval.matched_spans:
-                p_text = getattr(span, "phonetic_text", None)
-                if p_text and p_text.strip().lower() != span.word.strip().lower():
-                    pattern = r'\b' + re.escape(span.word) + r'\b'
-                    synth_text = re.sub(pattern, p_text.strip(), synth_text, flags=re.IGNORECASE)
-                    logger.info(f"[Hopfield Refiner] Applied reference pronunciation conditioning: '{span.word}' → '{p_text.strip()}' in synthesis text")
+            # If reference audio phonetic pronunciation is stored, substitute only the matched spans
+            spans_with_phonetics = [
+                s for s in retrieval.matched_spans
+                if getattr(s, "phonetic_text", None) and s.phonetic_text.strip().lower() != s.word.strip().lower()
+            ]
+            if spans_with_phonetics:
+                # Sort from end to beginning so character replacements don't shift earlier character offsets
+                spans_with_phonetics = sorted(
+                    spans_with_phonetics,
+                    key=lambda s: getattr(s, "char_start", 0) if getattr(s, "char_start", None) is not None else -1,
+                    reverse=True
+                )
+                for span in spans_with_phonetics:
+                    p_text = span.phonetic_text.strip()
+                    c_s = getattr(span, "char_start", None)
+                    c_e = getattr(span, "char_end", None)
+                    if c_s is not None and c_e is not None and 0 <= c_s < c_e <= len(synth_text):
+                        synth_text = synth_text[:c_s] + p_text + synth_text[c_e:]
+                        logger.info(f"[Hopfield Refiner] Applied span-specific pronunciation '{span.word}' → '{p_text}' at chars [{c_s}:{c_e}]")
+                    else:
+                        pattern = r'\b' + re.escape(span.word) + r'\b'
+                        synth_text = re.sub(pattern, p_text, synth_text, count=1, flags=re.IGNORECASE)
+                        logger.info(f"[Hopfield Refiner] Applied pronunciation '{span.word}' → '{p_text}' in synthesis text")
 
             scale = float(kwargs.get("correction_scale") or getattr(self.config, "correction_scale", 1.0))
             scaled_delta = retrieval.retrieved_delta.to(

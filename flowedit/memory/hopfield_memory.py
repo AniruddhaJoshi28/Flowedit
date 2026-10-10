@@ -144,6 +144,8 @@ class MatchedWordSpan:
     gate_value: float
     carrier_text: str
     phonetic_text: Optional[str] = None
+    char_start: Optional[int] = None
+    char_end: Optional[int] = None
 
 
 @dataclass
@@ -468,6 +470,24 @@ class HopfieldMemory(nn.Module):
         pattern = re.escape(word_clean)
         return [m.span() for m in re.finditer(pattern, text_clean, flags=re.IGNORECASE)]
 
+    @staticmethod
+    def _context_word_similarity(text: str, char_start: int, char_end: int, carrier_text: str) -> float:
+        """Topical context similarity between window around matched span and stored carrier sentence."""
+        if not carrier_text:
+            return 1.0
+        win_start = max(0, char_start - 24)
+        win_end = min(len(text), char_end + 24)
+        local_words = set(re.findall(r'\b[a-zA-Z]{2,}\b', text[win_start:win_end].lower()))
+        carrier_words = set(re.findall(r'\b[a-zA-Z]{2,}\b', carrier_text.lower()))
+        content_local = local_words - GRAMMAR_STOPWORDS
+        content_carrier = carrier_words - GRAMMAR_STOPWORDS
+        if not content_carrier or not content_local:
+            intersection = local_words & carrier_words
+            union = local_words | carrier_words
+            return len(intersection) / max(1, len(union))
+        intersection = content_local & content_carrier
+        return len(intersection) / max(1, len(content_carrier))
+
     def _char_span_to_token_span(
         self,
         char_start: int,
@@ -513,7 +533,39 @@ class HopfieldMemory(nn.Module):
 
         seq_len, dim = Q.shape
 
-        valid_entries = [e for e in self.entries if e.key.shape[-1] == dim]
+        def _adapt_entry_to_dim(entry: MemoryEntry, target_dim: int) -> MemoryEntry:
+            if entry.key.shape[-1] == target_dim:
+                return entry
+
+            def _resample(t):
+                if t is None:
+                    return None
+                if t.shape[-1] == target_dim:
+                    return t
+                orig_s = t.shape
+                d_curr = orig_s[-1]
+                flat = t.reshape(-1, 1, d_curr).float()
+                res = F.interpolate(flat, size=target_dim, mode='linear', align_corners=True)
+                new_s = list(orig_s[:-1]) + [target_dim]
+                return res.reshape(new_s).to(dtype=t.dtype, device=t.device)
+
+            return MemoryEntry(
+                key=_resample(entry.key),
+                value=_resample(entry.value),
+                word=entry.word,
+                carrier_text=entry.carrier_text,
+                token_indices=entry.token_indices,
+                language=entry.language,
+                access_count=entry.access_count,
+                last_access_step=entry.last_access_step,
+                metadata=entry.metadata,
+                full_delta=_resample(entry.full_delta),
+                word_delta=_resample(entry.word_delta),
+                carrier_texts=entry.carrier_texts,
+                phonetic_text=entry.phonetic_text,
+            )
+
+        valid_entries = [_adapt_entry_to_dim(e, dim) for e in self.entries]
         if not valid_entries:
             zeros_delta = torch.zeros_like(query_embeddings)
             zeros_gate = torch.zeros(1, seq_len, 1, device=device, dtype=dtype)
@@ -646,8 +698,12 @@ class HopfieldMemory(nn.Module):
                     m_idx = best_m_idx
                     entry = best_entry
 
-                    # Gate threshold check: for exact word matches in carrier text, activate injection
-                    if g_occ >= 0.20 or s_occ >= 3.0 or (entry.word.strip().lower() in text.lower()):
+                    # Gate threshold check: for homographs / repeated words, require contextual alignment
+                    lex_sim = self._context_word_similarity(text, c_start, c_end, entry.carrier_text)
+                    is_homograph = (len(char_spans) > 1)
+                    is_active_match = (g_occ >= 0.15 or s_occ >= 2.0 or lex_sim >= 0.35) if is_homograph else (g_occ >= 0.10 or s_occ >= 1.5 or (entry.word.strip().lower() in text.lower()))
+
+                    if is_active_match:
                         processed_token_spans.add((span_start, span_end))
 
                         matched_spans.append(
@@ -660,6 +716,8 @@ class HopfieldMemory(nn.Module):
                                 gate_value=1.0,
                                 carrier_text=entry.carrier_text,
                                 phonetic_text=entry.phonetic_text,
+                                char_start=c_start,
+                                char_end=c_end,
                             )
                         )
 

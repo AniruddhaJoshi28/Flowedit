@@ -291,17 +291,34 @@ class F5TTSBackbone(TTSBackbone):
             from flowedit.utils.voice_finder import get_preset_voice_transcript
             prompt_text = get_preset_voice_transcript(audio_path, for_f5=True) or ""
 
-        # 2. For Blessing preset, trim to 5.2s (sentence 1) to match optimal F5-TTS prompt length (3-6s)
+        # 2. For Blessing and Michael presets, trim to exact clean clause to match verbatim in-context prompt
         name_lower = os.path.basename(str(audio_path or "")).lower()
         is_blessing = "blessing" in name_lower or "female" in name_lower or "default" in name_lower
+        is_michael = "michael" in name_lower or "male" in name_lower or "man" in name_lower
         ref_waveform = prepared_audio.waveform
-        if is_blessing and ref_waveform.shape[-1] > int(6.0 * 24000):
-            ref_waveform = ref_waveform[:, :int(5.2 * 24000)]
-            logger.info("Trimmed Blessing reference audio to 5.2s for optimal F5-TTS in-context flow.")
+
+        if is_blessing and ref_waveform.shape[-1] > int(5.2 * 24000):
+            # Sentence 1 ends at 4.45s, 4.80s is clean room tone/silence before sentence 2 starts
+            ref_waveform = ref_waveform[:, :int(4.80 * 24000)]
+            logger.info("Trimmed Blessing reference audio to clean 4.80s clause for optimal F5-TTS conditioning.")
+        elif is_michael and ref_waveform.shape[-1] > int(8.0 * 24000):
+            # Clause 1 ends at 7.45s, 7.52s is clean silence before 'proximal' starts
+            ref_waveform = ref_waveform[:, :int(7.52 * 24000)]
+            logger.info("Trimmed Michael reference audio to clean 7.52s clause for optimal F5-TTS conditioning.")
+        elif ref_waveform.shape[-1] > int(8.0 * 24000):
+            # F5-TTS diffusion conditioning collapses on prompts >8s; trim generic audio to 6.0s
+            ref_waveform = ref_waveform[:, :int(6.0 * 24000)]
+            logger.info("Trimmed long custom reference audio to 6.0s for stable F5-TTS conditioning.")
+
+        # Ensure clean audio normalization without digital clipping
+        ref_np = ref_waveform.squeeze(0).cpu().numpy()
+        max_val = float(np.max(np.abs(ref_np)))
+        if max_val > 0.98:
+            ref_np = ref_np * (0.95 / max_val)
 
         processed_fd, processed_path = tempfile.mkstemp(suffix=".wav")
         os.close(processed_fd)
-        sf.write(processed_path, ref_waveform.squeeze(0).cpu().numpy(), 24000)
+        sf.write(processed_path, ref_np, 24000)
 
         # 3. If still empty (custom audio upload), perform safe transcription fallback
         if not prompt_text:
@@ -771,7 +788,7 @@ class F5TTSBackbone(TTSBackbone):
             "gen_text": text,
             "speed": 1.0,           # Stable 1.0 speed avoids phase distortion
             "nfe_step": 32,          # 32 ODE steps
-            "cfg_strength": 1.8,     # 1.8 prevents high-frequency clipping/static
+            "cfg_strength": 2.0,     # Standard F5-TTS CFG
             "target_rms": 0.1,
             "sway_sampling_coef": -1.0,
         }

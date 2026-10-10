@@ -89,9 +89,15 @@ def is_f5tts_installed() -> bool:
 
 
 def get_f5_pipelines() -> Tuple[Optional[CorrectionLoop], Optional[FlowEditInference]]:
-    """Lazy-load F5-TTS pipeline on demand when requested."""
-    global f5_correction_pipeline, f5_inference_pipeline
+    """Lazy-load F5-TTS pipeline on demand when requested, ensuring shared Hopfield Memory."""
+    global f5_correction_pipeline, f5_inference_pipeline, correction_pipeline
     if f5_inference_pipeline is not None and f5_correction_pipeline is not None:
+        # Keep memory synchronized if active pipeline has entries
+        if (correction_pipeline is not None and correction_pipeline.memory is not None 
+            and (f5_correction_pipeline.memory is None or f5_correction_pipeline.memory.num_entries != correction_pipeline.memory.num_entries)):
+            f5_correction_pipeline.memory = correction_pipeline.memory
+            f5_inference_pipeline.memory = correction_pipeline.memory
+            f5_inference_pipeline.refiner.memory = correction_pipeline.memory
         return f5_correction_pipeline, f5_inference_pipeline
 
     if not is_f5tts_installed():
@@ -108,7 +114,18 @@ def get_f5_pipelines() -> Tuple[Optional[CorrectionLoop], Optional[FlowEditInfer
 
         corr = CorrectionLoop(f5_cfg)
         corr.load_models()
-        if os.path.exists(F5_MEMORY_PATH):
+
+        # Connect directly to the shared Hopfield Memory from our implemented pipeline
+        if correction_pipeline is not None and correction_pipeline.memory is not None and correction_pipeline.memory.num_entries > 0:
+            corr.memory = correction_pipeline.memory
+            logger.info(f"✓ Linked shared Hopfield Memory ({corr.memory.num_entries} entries) to F5-TTS Paper pipeline.")
+        elif os.path.exists(MEMORY_PATH):
+            try:
+                corr.memory.load(MEMORY_PATH)
+                logger.info(f"✓ Loaded shared Hopfield Memory from {MEMORY_PATH} ({corr.memory.num_entries} entries) for F5-TTS.")
+            except Exception as e:
+                logger.warning(f"Could not load memory from {MEMORY_PATH}: {e}")
+        elif os.path.exists(F5_MEMORY_PATH):
             try:
                 corr.memory.load(F5_MEMORY_PATH)
             except Exception as e:
@@ -119,7 +136,7 @@ def get_f5_pipelines() -> Tuple[Optional[CorrectionLoop], Optional[FlowEditInfer
 
         f5_correction_pipeline = corr
         f5_inference_pipeline = inf
-        logger.info("✓ F5-TTS Paper Backbone Plugin ready.")
+        logger.info("✓ F5-TTS Paper Backbone Plugin ready with shared Hopfield Memory.")
         return f5_correction_pipeline, f5_inference_pipeline
     except Exception as e:
         logger.error(f"F5-TTS pipeline initialization error: {e}", exc_info=True)
@@ -501,7 +518,7 @@ async def correct_pronunciation(
                 )
             raise HTTPException(status_code=503, detail="F5-TTS pipeline could not be initialized.")
         target_corr = f5_corr
-        target_mem_path = F5_MEMORY_PATH
+        target_mem_path = MEMORY_PATH
 
     try:
         result = target_corr.correct(
@@ -519,11 +536,22 @@ async def correct_pronunciation(
         if not result.success:
             raise HTTPException(status_code=400, detail=result.error_message)
 
-        # Auto-persist memory to disk
+        # Auto-persist shared memory to disk and keep both pipelines synchronized
         try:
-            target_corr.memory.save(target_mem_path)
+            target_corr.memory.save(MEMORY_PATH)
+            if correction_pipeline:
+                correction_pipeline.memory = target_corr.memory
+                if inference_pipeline:
+                    inference_pipeline.memory = target_corr.memory
+                    inference_pipeline.refiner.memory = target_corr.memory
+            if f5_correction_pipeline:
+                f5_correction_pipeline.memory = target_corr.memory
+                if f5_inference_pipeline:
+                    f5_inference_pipeline.memory = target_corr.memory
+                    f5_inference_pipeline.refiner.memory = target_corr.memory
+            logger.info(f"✓ Synchronized and saved {target_corr.memory.num_entries} Hopfield memory entries to {MEMORY_PATH}.")
         except Exception as e:
-            logger.warning(f"Could not auto-save memory to {target_mem_path}: {e}")
+            logger.warning(f"Could not auto-save memory to {MEMORY_PATH}: {e}")
 
         return JSONResponse({
             "success": True,
@@ -594,6 +622,7 @@ async def synthesize_text(
                     "X-FlowEdit-Engine": "f5tts-paper",
                     "X-FlowEdit-Mode": "paper-continuous-flow",
                     "X-Memory-Active": str(result.get("is_modified", False)),
+                    "X-Hopfield-Active": str(result.get("hopfield_active", False) or result.get("is_modified", False)),
                     "X-Architecture": "CFM-DiT-ODE32",
                 },
             )
