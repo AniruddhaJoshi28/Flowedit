@@ -1,0 +1,59 @@
+{
+  "version": "1.0",
+  "updated_at": "2026-09-08T12:50:59.555838+00:00",
+  "total_words": 2,
+  "words": {
+    "read": {
+      "word": "read",
+      "default_spell": "red",
+      "senses": [
+        {
+          "sense_id": "ctx_she_read_the_5e4544",
+          "display_name": "Context: L:she [read] R:the",
+          "spell_as": "red",
+          "carrier_text": "Yesterday she read the book",
+          "context_window": "yesterday she read the book",
+          "left_tokens": [
+            "yesterday",
+            "she"
+          ],
+          "right_tokens": [
+            "the",
+            "book"
+          ],
+          "immediate_left": "she",
+          "immediate_right": "the",
+          "context_clues": [
+            "yesterday",
+            "she",
+            "book"
+          ],
+          "language": "en",
+          "updated_at": "2026-09-07T12:45:03.368615+00:00"
+        }
+      ],
+      "created_at": "2026-09-07T12:45:03.368615+00:00"
+    },
+    "mihir": {
+      "word": "Mihir",
+      "default_spell": "Mee-heer",
+      "senses": [
+        {
+          "sense_id": "default",
+          "display_name": "Context: [mihir]",
+          "spell_as": "Mee-heer",
+          "carrier_text": "Mihir",
+          "context_window": "mihir",
+          "left_tokens": [],
+          "right_tokens": [],
+          "immediate_left": "",
+          "immediate_right": "",
+          "context_clues": [],
+          "language": "en",
+          "updated_at": "2026-09-08T11:36:31.982666+00:00"
+        }
+      ],
+      "created_at": "2026-09-08T11:36:31.982666+00:00"
+    }
+  }
+}

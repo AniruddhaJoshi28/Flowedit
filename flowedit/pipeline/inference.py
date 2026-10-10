@@ -8,6 +8,7 @@ Paper Section 3.2 (Stage 3 & Inference):
 """
 
 import os
+import os
 import time
 import logging
 from typing import Optional, Dict, Any, Tuple
@@ -16,7 +17,11 @@ from pathlib import Path
 import torch
 import numpy as np
 try:
+    import numpy as np
+try:
     import soundfile as sf
+except ImportError:
+    sf = None
 except ImportError:
     sf = None
 
@@ -71,10 +76,11 @@ class FlowEditInference:
     def synthesize(
         self,
         text: str,
-        speaker_wav: Optional[str] = None,
+        speaker_wav: Optional[Optional[str] = None] = None,
         language: str = "en",
         user_ref_text: Optional[str] = None,
         output_path: Optional[str] = None,
+        speaker_name: Optional[str] = "female",
         speaker_name: Optional[str] = "female",
         **kwargs,
     ) -> Dict[str, Any]:
@@ -82,10 +88,11 @@ class FlowEditInference:
 
         Args:
             text: Input carrier sentence
-            speaker_wav: Speaker voice audio (optional, defaults to preset voice)
+            speaker_wav: Speaker voice audio (optional, defaults to preset voice) (optional, defaults to preset voice)
             language: Language code
             user_ref_text: Optional speaker text
             output_path: Optional output .wav path
+            speaker_name: Preset voice name if speaker_wav not provided ('female'/'blessing' or 'male'/'michael')
             speaker_name: Preset voice name if speaker_wav not provided ('female'/'blessing' or 'male'/'michael')
 
         Returns:
@@ -94,6 +101,49 @@ class FlowEditInference:
         self._ensure_ready()
         t0 = time.time()
         text = normalize_indic_phonetics(text)
+
+        # Ensure speaker_wav is valid; if not provided or missing, resolve to preset voice
+        if not speaker_wav or not os.path.isfile(speaker_wav):
+            target = "michael" if (speaker_name or "").strip().lower() in ("male", "man", "michael") else "blessing"
+            resolved = None
+            try:
+                from flowedit.api.main import get_hardcoded_voice_path
+                resolved = get_hardcoded_voice_path(target)
+            except Exception:
+                pass
+
+            if not resolved or not os.path.isfile(resolved):
+                # Robust self-contained fallback without relying on api.main
+                target_filename = f"{target}.wav"
+                curr_file = os.path.abspath(__file__)
+                flowedit_root = os.path.dirname(os.path.dirname(os.path.dirname(curr_file)))
+                pkg_dir = os.path.dirname(os.path.dirname(curr_file))
+                workspace_root = os.path.dirname(flowedit_root)
+
+                cands = [
+                    # Primary confirmed IIT server path
+                    f"/home/rsurya/projects/flow_edit/{target_filename}",
+                    f"/home/rsurya/projects/flow_edit/Flowedit/model/{target_filename}",
+                    f"/home/rsurya/projects/flow_edit/Flowedit/deploy_voices/{target_filename}",
+                    f"/home/rsurya/projects/flow_edit/Flowedit/flowedit/resources/{target_filename}",
+                    os.path.join(flowedit_root, "model", target_filename),
+                    os.path.join(flowedit_root, "deploy_voices", target_filename),
+                    os.path.join(pkg_dir, "resources", target_filename),
+                    os.path.join(workspace_root, target_filename),
+                    # Fallback to default_speaker.wav
+                    os.path.join(pkg_dir, "resources", "default_speaker.wav"),
+                    f"/home/rsurya/projects/flow_edit/Flowedit/flowedit/resources/default_speaker.wav",
+                ]
+                for c in cands:
+                    if c and os.path.isfile(c) and os.path.getsize(c) > 1000:
+                        resolved = os.path.abspath(c)
+                        break
+
+            if resolved and os.path.isfile(resolved):
+                speaker_wav = resolved
+                logger.info(f"Using resolved {target} voice for synthesis: {speaker_wav}")
+            else:
+                raise FileNotFoundError(f"Speaker audio not provided and voice reference for '{target}' not found on disk.")
 
         # Ensure speaker_wav is valid; if not provided or missing, resolve to hardcoded preset voice
         if not speaker_wav or not os.path.isfile(speaker_wav):

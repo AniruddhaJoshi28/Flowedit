@@ -11,8 +11,8 @@ from typing import Optional, Dict
 
 logger = logging.getLogger(__name__)
 
-MICHAEL_VOICE_FILE_PATH: Optional[str] = None
-BLEING_VOICE_FILE_PATH: Optional[str] = None
+MICHAEL_VOICE_FILE_PATH: Optional[str] = os.environ.get("FLOWEDIT_MICHAEL_VOICE", "/home/rsurya/projects/flow_edit/michael.wav")
+BLESSING_VOICE_FILE_PATH: Optional[str] = os.environ.get("FLOWEDIT_BLESSING_VOICE", "/home/rsurya/projects/flow_edit/blessing.wav")
 
 HARDCODED_DEFAULT_VOICES = {
     "female": "blessing",
@@ -39,10 +39,10 @@ def get_hardcoded_voice_path(target_name: str) -> Optional[str]:
     is_male = "male" in target_lower or "michael" in target_lower or "man" in target_lower
 
     # 1. Direct explicit file path if configured above
-    if is_male and MICHAEL_VOICE_FILE_PATH and os.path.isfile(MICHAEL_VOICE_FILE_PATH):
+    if is_male and MICHAEL_VOICE_FILE_PATH and os.path.isfile(MICHAEL_VOICE_FILE_PATH) and os.path.getsize(MICHAEL_VOICE_FILE_PATH) > 1000:
         return os.path.abspath(MICHAEL_VOICE_FILE_PATH)
-    if not is_male and BLEING_VOICE_FILE_PATH and os.path.isfile(BLEING_VOICE_FILE_PATH):
-        return os.path.abspath(BLEING_VOICE_FILE_PATH)
+    if not is_male and BLESSING_VOICE_FILE_PATH and os.path.isfile(BLESSING_VOICE_FILE_PATH) and os.path.getsize(BLESSING_VOICE_FILE_PATH) > 1000:
+        return os.path.abspath(BLESSING_VOICE_FILE_PATH)
 
     voice_key = HARDCODED_DEFAULT_VOICES.get(target_lower, "michael" if is_male else "blessing")
     filename = f"{voice_key}.wav"
@@ -53,6 +53,11 @@ def get_hardcoded_voice_path(target_name: str) -> Optional[str]:
     workspace_root = os.path.abspath(os.path.join(flowedit_root, ".."))
 
     candidate_locations = [
+        # Primary confirmed IIT server paths
+        f"/home/rsurya/projects/flow_edit/{filename}",
+        f"/home/rsurya/projects/flow_edit/Flowedit/model/{filename}",
+        f"/home/rsurya/projects/flow_edit/Flowedit/deploy_voices/{filename}",
+        f"/home/rsurya/projects/flow_edit/Flowedit/flowedit/resources/{filename}",
         os.path.join(flowedit_root, "deploy_voices", filename),
         os.path.abspath(os.path.join(pkg_flowedit_dir, "resources", filename)),
         os.path.join(workspace_root, "deploy_voices", filename),
