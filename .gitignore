@@ -58,5 +58,6 @@ Thumbs.db
 .idea/
 *.swp
 temp_packages/
+scratch/
 .env
 .venv

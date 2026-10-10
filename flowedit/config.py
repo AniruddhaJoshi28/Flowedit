@@ -167,7 +167,7 @@ class BackboneConfig:
     vocoder_local_path: str = ""
 
     # Device & dtype
-    device: str = "cuda" if torch.cuda.is_available() else "cpu"
+    device: str = field(default_factory=lambda: os.environ.get("FLOWEDIT_DEVICE", "cuda" if torch.cuda.is_available() else "cpu"))
     optimization_dtype: str = "float32"
     inference_dtype: str = "float32"
 

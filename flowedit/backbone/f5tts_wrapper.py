@@ -63,6 +63,68 @@ class F5TTSBackbone(TTSBackbone):
                     return te.dim
         return 512
 
+    def _resolve_f5_paths(self) -> Tuple[str, str, str]:
+        """Automatically discover F5-TTS checkpoint, vocab, and vocoder files if present locally."""
+        ckpt_file = getattr(self.config, 'f5tts_ckpt_file', "") or os.environ.get("FLOWEDIT_F5TTS_CKPT", "")
+        vocab_file = getattr(self.config, 'f5tts_vocab_file', "") or os.environ.get("FLOWEDIT_F5TTS_VOCAB", "")
+        vocoder_local_path = getattr(self.config, 'vocoder_local_path', "") or os.environ.get("FLOWEDIT_VOCODER_DIR", "")
+
+        pkg_dir = os.path.dirname(os.path.abspath(__file__))
+        flowedit_root = os.path.abspath(os.path.join(pkg_dir, "..", ".."))
+        workspace_root = os.path.abspath(os.path.join(flowedit_root, ".."))
+
+        # Candidate checkpoint locations
+        if not ckpt_file or not os.path.isfile(ckpt_file):
+            candidate_ckpts = [
+                os.path.join(flowedit_root, "models", "f5tts", "model_1200000.safetensors"),
+                os.path.join(flowedit_root, "models", "f5tts", "model_1200000.pt"),
+                os.path.join(flowedit_root, "models", "model_1200000.safetensors"),
+                os.path.join(workspace_root, "models", "f5tts", "model_1200000.safetensors"),
+            ]
+            # Hugging Face hub cache candidate
+            try:
+                hf_hub = os.path.expanduser("~/.cache/huggingface/hub/models--SWivid--F5-TTS/snapshots")
+                if os.path.isdir(hf_hub):
+                    for snap in os.listdir(hf_hub):
+                        snap_dir = os.path.join(hf_hub, snap)
+                        cand = os.path.join(snap_dir, "F5TTS_Base", "model_1200000.safetensors")
+                        if os.path.isfile(cand):
+                            candidate_ckpts.append(cand)
+            except Exception:
+                pass
+
+            for cand in candidate_ckpts:
+                if cand and os.path.isfile(cand) and os.path.getsize(cand) > 100000:
+                    ckpt_file = os.path.abspath(cand)
+                    logger.info(f"Discovered local F5-TTS checkpoint: {ckpt_file}")
+                    break
+
+        # Candidate vocabulary locations
+        if not vocab_file or not os.path.isfile(vocab_file):
+            candidate_vocabs = [
+                os.path.join(flowedit_root, "models", "f5tts", "vocab.txt"),
+                os.path.join(flowedit_root, "data", "Emilia_ZH_EN_pinyin", "vocab.txt"),
+                os.path.join(workspace_root, "models", "f5tts", "vocab.txt"),
+            ]
+            try:
+                hf_hub = os.path.expanduser("~/.cache/huggingface/hub/models--SWivid--F5-TTS/snapshots")
+                if os.path.isdir(hf_hub):
+                    for snap in os.listdir(hf_hub):
+                        snap_dir = os.path.join(hf_hub, snap)
+                        cand = os.path.join(snap_dir, "F5TTS_Base", "vocab.txt")
+                        if os.path.isfile(cand):
+                            candidate_vocabs.append(cand)
+            except Exception:
+                pass
+
+            for cand in candidate_vocabs:
+                if cand and os.path.isfile(cand) and os.path.getsize(cand) > 50:
+                    vocab_file = os.path.abspath(cand)
+                    logger.info(f"Discovered local F5-TTS vocab: {vocab_file}")
+                    break
+
+        return ckpt_file, vocab_file, vocoder_local_path
+
     def load_model(self) -> None:
         """Load F5-TTS model, tokenizer vocab, and vocoder."""
         logger.info(f"Loading F5-TTS backbone on device '{self.device}'...")
@@ -70,9 +132,7 @@ class F5TTSBackbone(TTSBackbone):
             from f5_tts.api import F5TTS
             import f5_tts.api as f5_api
 
-            ckpt_file = getattr(self.config, 'f5tts_ckpt_file', "")
-            vocab_file = getattr(self.config, 'f5tts_vocab_file', "")
-            vocoder_local_path = getattr(self.config, 'vocoder_local_path', "")
+            ckpt_file, vocab_file, vocoder_local_path = self._resolve_f5_paths()
 
             import inspect
             sig = inspect.signature(F5TTS.__init__)

@@ -114,6 +114,9 @@ class XTTSBackbone(TTSBackbone):
         candidates.append(os.path.join(flowedit_root, "text_to_speech", "app", "model"))
         candidates.append(os.path.join(os.getcwd(), "text_to_speech", "app", "model"))
         candidates.append(os.path.join(os.getcwd(), "..", "text_to_speech", "app", "model"))
+        candidates.append(os.path.join(flowedit_root, "models"))
+        candidates.append(os.path.join(workspace_root, "models"))
+        candidates.append(os.path.join(os.getcwd(), "models"))
         candidates.append(os.path.join(flowedit_root, "models", "xtts"))
         candidates.append(os.path.join(workspace_root, "models", "xtts"))
         candidates.append(os.path.join(flowedit_root, "flowedit", "Xtts"))
@@ -131,12 +134,13 @@ class XTTSBackbone(TTSBackbone):
         # Standard hardcoded fallback for server environment
         candidates.append("/home/rsurya/projects/text_to_speech/app/model")
 
-        # Find the first existing candidate directory containing vocab.json or config.json
+        # Find the first existing candidate directory containing model.pth, vocab.json, or config.json
         for candidate in candidates:
             if candidate and os.path.isdir(candidate):
+                model_check = os.path.join(candidate, "model.pth")
                 vocab_check = os.path.join(candidate, "vocab.json")
                 config_check = os.path.join(candidate, "config.json")
-                if os.path.isfile(vocab_check) or os.path.isfile(config_check):
+                if os.path.isfile(model_check) or os.path.isfile(vocab_check) or os.path.isfile(config_check):
                     logger.info(f"Resolved XTTS model directory: {candidate}")
                     return os.path.abspath(candidate)
 

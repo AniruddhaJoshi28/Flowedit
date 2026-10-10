@@ -97,7 +97,7 @@ class FlowEditInference:
 
         # Ensure speaker_wav is valid; if not provided or missing, resolve to hardcoded preset voice
         if not speaker_wav or not os.path.isfile(speaker_wav):
-            from flowedit.api.main import get_hardcoded_voice_path
+            from flowedit.utils.voice_finder import get_hardcoded_voice_path
             target = "michael" if (speaker_name or "").strip().lower() in ("male", "man", "michael") else "blessing"
             resolved = get_hardcoded_voice_path(target)
             if resolved and os.path.isfile(resolved):
