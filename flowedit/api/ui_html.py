@@ -1423,6 +1423,36 @@ HTML_CONTENT = r"""<!DOCTYPE html>
             document.getElementById('charCount').textContent = val.length + ' characters';
         }
 
+        function switchTab(tabId) {
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            const target = document.getElementById('tab-' + tabId);
+            if (target) target.classList.add('active');
+
+            const tabOrder = ['studio', 'learner', 'memory', 'transcribe'];
+            const idx = tabOrder.indexOf(tabId);
+            const navButtons = document.querySelectorAll('.header-center .nav-tab');
+            if (idx >= 0 && navButtons[idx]) {
+                navButtons[idx].classList.add('active');
+            }
+
+            if (tabId === 'memory') {
+                if (typeof loadMemoryEntries === 'function') loadMemoryEntries();
+                if (typeof loadS3SpellingEntries === 'function') loadS3SpellingEntries();
+            } else if (tabId === 'learner') {
+                if (typeof loadS3SpellingEntries === 'function') loadS3SpellingEntries();
+            }
+        }
+
+        function setPrompt(text) {
+            const input = document.getElementById('promptInput');
+            if (input) {
+                input.value = text;
+                updateCharCount();
+            }
+        }
+
         function selectEngine(engineKey) {
             _activeEngine = engineKey;
             const optX = document.getElementById('opt-xtts');

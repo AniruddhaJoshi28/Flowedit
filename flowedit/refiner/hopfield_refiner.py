@@ -116,25 +116,44 @@ class HopfieldRefiner(nn.Module):
                 device=base_embeddings.device, dtype=base_embeddings.dtype
             ) * scale
 
-            # Safety constraint: allow full perturbation energy learned from reference audio
+            # Check backbone space compatibility:
+            # XTTS continuous delta (learned in d=1024 discrete space) must not be injected into F5-TTS DiT (d=512)
+            # because coordinates across different architectures destroy flow-matching trajectories into noise.
+            backbone_dim = getattr(backbone, "embedding_dim", 1024)
+            is_backbone_compatible = True
+            for span in retrieval.matched_spans:
+                if span.entry_index < len(self.memory.entries):
+                    entry = self.memory.entries[span.entry_index]
+                    entry_dim = entry.key.shape[-1] if hasattr(entry, "key") else 1024
+                    if entry_dim != backbone_dim and not getattr(span, "phonetic_text", None):
+                        is_backbone_compatible = False
+                        logger.info(
+                            f"[Hopfield Refiner] Entry '{span.word}' was trained in {entry_dim}d space. "
+                            f"Current backbone uses {backbone_dim}d space. Bypassing continuous delta to preserve audio clarity."
+                        )
+                        break
+
+            # Safety constraint: bound perturbation norm
             active_mask = (scaled_delta.abs().sum(dim=-1) > 1e-5)
             if active_mask.any():
                 local_base_norm = base_embeddings[active_mask].norm().item()
                 local_delta_norm = scaled_delta[active_mask].norm().item()
-                alpha_cap = float(getattr(self.config, "max_relative_delta", 1.50))
+                alpha_cap = 0.30 if backbone_dim == 512 else float(getattr(self.config, "max_relative_delta", 1.50))
                 max_allowed_norm = alpha_cap * local_base_norm
                 if local_delta_norm > max_allowed_norm and max_allowed_norm > 0:
                     scaled_delta = scaled_delta * (max_allowed_norm / local_delta_norm)
-                    logger.info(f"[Hopfield Refiner] Capped excessive delta norm from {local_delta_norm:.4f} to {max_allowed_norm:.4f} (alpha={alpha_cap})")
+                    logger.info(f"[Hopfield Refiner] Capped delta norm from {local_delta_norm:.4f} to {max_allowed_norm:.4f} (alpha={alpha_cap})")
 
             match_info = (
                 [(s.word, s.start_pos, getattr(s, "phonetic_text", None)) for s in retrieval.matched_spans]
                 if retrieval.matched_spans
                 else [(retrieval.matched_word, 0, None)]
             )
+            should_inject_delta = (synth_text == text) and is_backbone_compatible
             logger.info(
                 f"[Hopfield Refiner] INJECTION ACTIVE: {match_info} "
-                f"(gate_max={retrieval.gate_values.max().item():.3f}, delta_norm={scaled_delta.norm().item():.4f}, scale={scale})."
+                f"(gate_max={retrieval.gate_values.max().item():.3f}, delta_norm={scaled_delta.norm().item():.4f}, "
+                f"inject_delta={should_inject_delta}, scale={scale})."
             )
 
             waveform, sr = backbone.synthesize_direct(
@@ -142,7 +161,7 @@ class HopfieldRefiner(nn.Module):
                 speaker_conditioning=speaker_conditioning,
                 language=language,
                 user_ref_text=user_ref_text,
-                text_embedding_delta=scaled_delta if synth_text == text else None,
+                text_embedding_delta=scaled_delta if should_inject_delta else None,
                 **kwargs,
             )
 

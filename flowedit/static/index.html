@@ -1153,16 +1153,21 @@
             document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             
-            if (tabId === 'studio') {
-                document.querySelectorAll('.nav-tab')[0].classList.add('active');
-                document.getElementById('tab-studio').classList.add('active');
+            const target = document.getElementById('tab-' + tabId);
+            if (target) target.classList.add('active');
+
+            const tabOrder = ['studio', 'learner', 'memory', 'transcribe'];
+            const idx = tabOrder.indexOf(tabId);
+            const navButtons = document.querySelectorAll('.header-center .nav-tab');
+            if (idx >= 0 && navButtons[idx]) {
+                navButtons[idx].classList.add('active');
+            }
+
+            if (tabId === 'memory') {
+                if (typeof loadMemoryEntries === 'function') loadMemoryEntries();
+                if (typeof loadS3SpellingEntries === 'function') loadS3SpellingEntries();
             } else if (tabId === 'learner') {
-                document.querySelectorAll('.nav-tab')[1].classList.add('active');
-                document.getElementById('tab-learner').classList.add('active');
-            } else if (tabId === 'memory') {
-                document.querySelectorAll('.nav-tab')[2].classList.add('active');
-                document.getElementById('tab-memory').classList.add('active');
-                loadMemoryEntries();
+                if (typeof loadS3SpellingEntries === 'function') loadS3SpellingEntries();
             }
         }
 

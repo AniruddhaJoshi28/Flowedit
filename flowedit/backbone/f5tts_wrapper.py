@@ -297,17 +297,26 @@ class F5TTSBackbone(TTSBackbone):
         is_michael = "michael" in name_lower or "male" in name_lower or "man" in name_lower
         ref_waveform = prepared_audio.waveform
 
-        if is_blessing and ref_waveform.shape[-1] > int(5.2 * 24000):
-            # Sentence 1 ends at 4.45s, 4.80s is clean room tone/silence before sentence 2 starts
-            ref_waveform = ref_waveform[:, :int(4.80 * 24000)]
-            logger.info("Trimmed Blessing reference audio to clean 4.80s clause for optimal F5-TTS conditioning.")
-        elif is_michael and ref_waveform.shape[-1] > int(8.0 * 24000):
-            # Clause 1 ends at 7.45s, 7.52s is clean silence before 'proximal' starts
-            ref_waveform = ref_waveform[:, :int(7.52 * 24000)]
-            logger.info("Trimmed Michael reference audio to clean 7.52s clause for optimal F5-TTS conditioning.")
+        if is_blessing and ref_waveform.shape[-1] > int(5.0 * 24000):
+            # Clause 1 ends at 4.20s; clean room tone up to 4.50s before clause 2 starts at 4.94s
+            ref_waveform = ref_waveform[:, :int(4.50 * 24000)]
+            fade_len = int(0.025 * 24000)
+            fade = torch.linspace(1.0, 0.0, fade_len, device=ref_waveform.device)
+            ref_waveform[:, -fade_len:] = ref_waveform[:, -fade_len:] * fade
+            logger.info("Trimmed Blessing reference audio to clean 4.50s clause with fade-out for optimal F5-TTS conditioning.")
+        elif is_michael and ref_waveform.shape[-1] > int(7.8 * 24000):
+            # Clause 1 'branches' ends at 7.33s before 'proximal' starts at 7.34s
+            ref_waveform = ref_waveform[:, :int(7.33 * 24000)]
+            fade_len = int(0.025 * 24000)
+            fade = torch.linspace(1.0, 0.0, fade_len, device=ref_waveform.device)
+            ref_waveform[:, -fade_len:] = ref_waveform[:, -fade_len:] * fade
+            logger.info("Trimmed Michael reference audio to clean 7.33s clause with fade-out for optimal F5-TTS conditioning.")
         elif ref_waveform.shape[-1] > int(8.0 * 24000):
-            # F5-TTS diffusion conditioning collapses on prompts >8s; trim generic audio to 6.0s
+            # F5-TTS diffusion conditioning collapses on prompts >8s; trim generic custom audio to 6.0s
             ref_waveform = ref_waveform[:, :int(6.0 * 24000)]
+            fade_len = int(0.025 * 24000)
+            fade = torch.linspace(1.0, 0.0, fade_len, device=ref_waveform.device)
+            ref_waveform[:, -fade_len:] = ref_waveform[:, -fade_len:] * fade
             logger.info("Trimmed long custom reference audio to 6.0s for stable F5-TTS conditioning.")
 
         # Ensure clean audio normalization without digital clipping
@@ -319,6 +328,16 @@ class F5TTSBackbone(TTSBackbone):
         processed_fd, processed_path = tempfile.mkstemp(suffix=".wav")
         os.close(processed_fd)
         sf.write(processed_path, ref_np, 24000)
+
+        # Flush stale caches in F5-TTS infer utilities to guarantee newly trimmed audio is used
+        try:
+            import f5_tts.infer.utils_infer as u_inf
+            if hasattr(u_inf, "_ref_audio_cache") and isinstance(u_inf._ref_audio_cache, dict):
+                u_inf._ref_audio_cache.clear()
+            if hasattr(u_inf, "_ref_text_cache") and isinstance(u_inf._ref_text_cache, dict):
+                u_inf._ref_text_cache.clear()
+        except Exception:
+            pass
 
         # 3. If still empty (custom audio upload), perform safe transcription fallback
         if not prompt_text:
@@ -764,7 +783,7 @@ class F5TTSBackbone(TTSBackbone):
                     end_pos = min(L_out, start_pos + L_delta)
                     actual_delta_len = end_pos - start_pos
 
-                    t_delta = torch.clamp(t_delta, -1.5, 1.5)
+                    t_delta = torch.clamp(t_delta, -0.4, 0.4)
                     out = raw_out.clone()
                     if actual_delta_len > 0:
                         out[:, start_pos:end_pos, :] = out[:, start_pos:end_pos, :] + t_delta[:, :actual_delta_len, :]
@@ -784,8 +803,8 @@ class F5TTSBackbone(TTSBackbone):
 
         infer_kwargs = {
             "ref_file": temp_ref,
-            "ref_text": ref_text,
-            "gen_text": text,
+            "ref_text": ref_text.strip(),
+            "gen_text": text.strip(),
             "speed": 1.0,           # Stable 1.0 speed avoids phase distortion
             "nfe_step": 32,          # 32 ODE steps
             "cfg_strength": 2.0,     # Standard F5-TTS CFG
@@ -809,6 +828,10 @@ class F5TTSBackbone(TTSBackbone):
                     wav = torch.from_numpy(wav).float()
                 if wav.dim() == 1:
                     wav = wav.unsqueeze(0)
+                # Amplitude safety normalization between -0.95 and +0.95 to eliminate digital clipping
+                max_amp = float(wav.abs().max().item())
+                if max_amp > 0.98:
+                    wav = wav * (0.95 / max_amp)
                 return wav, sr
             return torch.zeros(1, 24000), 24000
 
