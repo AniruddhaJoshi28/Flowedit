@@ -641,101 +641,6 @@ HTML_CONTENT = r"""<!DOCTYPE html>
             color: #2563EB;
         }
 
-        /* Side-by-Side Comparison Matrix */
-        .comparison-matrix-card {
-            grid-column: 1 / -1;
-            background: #FFFFFF;
-            border-radius: var(--radius-lg);
-            border: 1px solid var(--border-subtle);
-            box-shadow: var(--shadow-sm);
-            padding: 1.5rem;
-            margin-top: 1rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .matrix-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid var(--border-subtle);
-            padding-bottom: 0.75rem;
-        }
-
-        .matrix-header h3 {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 15px;
-            font-weight: 800;
-            color: var(--text-main);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .matrix-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-        }
-
-        .matrix-table th {
-            text-align: left;
-            padding: 8px 12px;
-            background: #F8FAFC;
-            font-weight: 700;
-            color: var(--text-muted);
-            border-bottom: 1px solid var(--border-subtle);
-            text-transform: uppercase;
-            font-size: 10px;
-            letter-spacing: 0.05em;
-        }
-
-        .matrix-table td {
-            padding: 10px 12px;
-            border-bottom: 1px solid #F1F5F9;
-            vertical-align: middle;
-            line-height: 1.4;
-        }
-
-        .matrix-table tr:hover {
-            background: #FAFAFA;
-        }
-
-        .matrix-pillar {
-            font-weight: 700;
-            color: var(--text-main);
-            min-width: 180px;
-        }
-
-        .matrix-badge-ours {
-            display: inline-block;
-            background: #ECFDF5;
-            color: #065F46;
-            border: 1px solid #A7F3D0;
-            padding: 3px 8px;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 11px;
-        }
-
-        .matrix-badge-paper {
-            display: inline-block;
-            background: #EFF6FF;
-            color: #1E40AF;
-            border: 1px solid #BFDBFE;
-            padding: 3px 8px;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 11px;
-        }
-
-        .matrix-advantage {
-            color: #B91C1C;
-            font-weight: 600;
-            font-size: 11.5px;
-        }
-
         .metrics-row {
             display: flex;
             gap: 1rem;
@@ -1051,45 +956,31 @@ HTML_CONTENT = r"""<!DOCTYPE html>
                     </div>
                     <div class="model-picker">
                         <!-- Option 1: Our Implementation -->
-                        <div class="model-option" id="opt-xtts" onclick="selectEngine('xtts')">
+                        <div class="model-option selected" id="opt-xtts" onclick="selectEngine('xtts')">
                             <div class="model-option-left">
                                 <div class="custom-checkbox">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
                                 </div>
                                 <div>
                                     <span class="model-name">Our Implementation</span>
-                                    <div style="font-size:10px; color:var(--text-muted);">XTTS-v2 • Discrete Hopfield</div>
+                                    <div style="font-size:10px; color:var(--text-muted);">XTTS-v2 • Discrete Hopfield Memory</div>
                                 </div>
                             </div>
                             <span class="model-pill">Our System</span>
                         </div>
 
-                        <!-- Option 2: Paper Plugin -->
+                        <!-- Option 2: FlowEdit Paper -->
                         <div class="model-option" id="opt-f5tts" onclick="selectEngine('f5tts')">
                             <div class="model-option-left">
                                 <div class="custom-checkbox">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
                                 </div>
                                 <div>
-                                    <span class="model-name">F5-TTS Plugin (Paper)</span>
-                                    <div style="font-size:10px; color:var(--text-muted);">CFM DiT • 32 ODE Steps</div>
+                                    <span class="model-name">FlowEdit Paper</span>
+                                    <div style="font-size:10px; color:var(--text-muted);">F5-TTS CFM DiT • Continuous Flow</div>
                                 </div>
                             </div>
                             <span class="model-pill" style="background:#2563EB;">Paper Mode</span>
-                        </div>
-
-                        <!-- Option 3: Side-by-Side Manager Comparison -->
-                        <div class="model-option selected" id="opt-compare" onclick="selectEngine('compare')">
-                            <div class="model-option-left">
-                                <div class="custom-checkbox">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-                                </div>
-                                <div>
-                                    <span class="model-name">Side-by-Side Comparison</span>
-                                    <div style="font-size:10px; color:var(--text-muted);">Simultaneous Live Synthesis</div>
-                                </div>
-                            </div>
-                            <span class="model-pill" style="background:#059669;">Executive Demo</span>
                         </div>
                     </div>
                     <div style="margin-top: 8px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px;">
@@ -1519,7 +1410,7 @@ HTML_CONTENT = r"""<!DOCTYPE html>
     <div class="toast" id="toast"></div>
 
     <script>
-        let _activeEngine = 'compare'; // Default to side-by-side comparison mode for manager demo!
+        let _activeEngine = 'xtts'; // Default to Our Implementation!
         let _learnerBackbone = 'xtts';
         let _selectedSpeaker = 'female';
         let _customSpeakerFile = null;
@@ -1536,15 +1427,11 @@ HTML_CONTENT = r"""<!DOCTYPE html>
             _activeEngine = engineKey;
             const optX = document.getElementById('opt-xtts');
             const optF = document.getElementById('opt-f5tts');
-            const optC = document.getElementById('opt-compare');
             if (optX) optX.classList.toggle('selected', engineKey === 'xtts');
             if (optF) optF.classList.toggle('selected', engineKey === 'f5tts');
-            if (optC) optC.classList.toggle('selected', engineKey === 'compare');
 
-            if (engineKey === 'compare') {
-                showToast('Executive Demo Mode: Synthesizing Our System vs Paper Plugin side-by-side.');
-            } else if (engineKey === 'f5tts') {
-                showToast('F5-TTS Paper Plugin Active: Continuous CFM DiT backbone.');
+            if (engineKey === 'f5tts') {
+                showToast('FlowEdit Paper Active: Continuous CFM DiT backbone.');
             } else {
                 showToast('Our Implementation Active: Fine-Tuned XTTS-v2 + Discrete Hopfield Memory.');
             }
@@ -1695,181 +1582,10 @@ HTML_CONTENT = r"""<!DOCTYPE html>
             const grid = document.getElementById('outputsGrid');
             grid.innerHTML = '';
 
-            const isCompareMode = (_activeEngine === 'compare');
             const includeBaseline = document.getElementById('includeBaselineToggle') && document.getElementById('includeBaselineToggle').checked;
 
-            if (isCompareMode) {
-                // ─────────────────────────────────────────────────────────────
-                // Executive Side-by-Side Comparison Mode
-                // ─────────────────────────────────────────────────────────────
-                grid.innerHTML = `
-                    <!-- Card 1: Our Implementation -->
-                    <div class="output-card finetuned" id="card-xtts">
-                        <div class="output-card-header">
-                            <div class="output-tag finetuned">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-                                🚀 Our Implementation (FlowEdit-XTTS)
-                            </div>
-                            <span style="font-size:11px; font-weight:700; color:var(--primary);" id="status-xtts">Synthesizing...</span>
-                        </div>
-                        <div class="metrics-row" id="metrics-xtts">
-                            <div class="metric-item"><span class="metric-label">Engine</span><span class="metric-value">XTTS-v2</span></div>
-                            <div class="metric-item"><span class="metric-label">Latency</span><span class="metric-value" id="ttfa-xtts">Calculating...</span></div>
-                            <div class="metric-item"><span class="metric-label">Syllable Timing</span><span class="metric-value" style="color:#059669;">1D Interp</span></div>
-                            <div class="metric-item"><span class="metric-label">Zero Forgetting</span><span class="metric-value" style="color:#059669;">100% Math</span></div>
-                        </div>
-                        <div style="font-size:11px; font-weight:700; color:var(--text-main); margin-top:2px;">Corrected Synthesis (Hopfield Memory):</div>
-                        <div class="player-row">
-                            <audio id="audio-xtts" controls style="display:none;"></audio>
-                            <a id="dl-xtts" class="dl-button" style="display:none;" title="Download Our WAV">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                            </a>
-                        </div>
-                        <div id="baseline-xtts-row" style="display:none; margin-top:4px;">
-                            <div style="font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:4px;">Base Uncorrected Audio:</div>
-                            <audio id="audio-xtts-base" controls style="width:100%; height:36px;"></audio>
-                        </div>
-                    </div>
-
-                    <!-- Card 2: Paper Plugin -->
-                    <div class="output-card f5tts" id="card-f5tts">
-                        <div class="output-card-header">
-                            <div class="output-tag f5tts">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-                                📜 Paper's Ideology (FlowEdit F5-TTS)
-                            </div>
-                            <span style="font-size:11px; font-weight:700; color:#2563EB;" id="status-f5tts">Synthesizing...</span>
-                        </div>
-                        <div class="metrics-row" id="metrics-f5tts">
-                            <div class="metric-item"><span class="metric-label">Engine</span><span class="metric-value">F5-TTS DiT</span></div>
-                            <div class="metric-item"><span class="metric-label">ODE Steps</span><span class="metric-value">N=32 Euler</span></div>
-                            <div class="metric-item"><span class="metric-label">Syllable Timing</span><span class="metric-value" style="color:#D97706;">Mean Vector</span></div>
-                            <div class="metric-item"><span class="metric-label">Voice Timbre</span><span class="metric-value" style="color:#DC2626;">Overfits Prompt</span></div>
-                        </div>
-                        <div style="font-size:11px; font-weight:700; color:var(--text-main); margin-top:2px;">Paper Model Output:</div>
-                        <div class="player-row">
-                            <audio id="audio-f5tts" controls style="display:none;"></audio>
-                            <a id="dl-f5tts" class="dl-button" style="display:none;" title="Download Paper WAV">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                            </a>
-                            <div id="f5tts-standby-banner" style="display:none; font-size:11px; color:#475569; background:#F1F5F9; border-radius:6px; padding:8px 12px; line-height:1.4; width:100%;">
-                                <strong>F5-TTS Paper Plugin Notice:</strong> To synthesize live F5-TTS audio on the IIT server, run <code>pip install f5-tts</code>.
-                            </div>
-                        </div>
-                        <div id="baseline-f5tts-row" style="display:none; margin-top:4px;">
-                            <div style="font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:4px;">Base Uncorrected Audio:</div>
-                            <audio id="audio-f5tts-base" controls style="width:100%; height:36px;"></audio>
-                        </div>
-                    </div>
-                `;
-
-                try {
-                    const formData = new FormData();
-                    formData.append('text', text);
-                    formData.append('language', 'en');
-                    formData.append('speaker_name', _selectedSpeaker);
-                    formData.append('include_baseline', includeBaseline ? 'true' : 'false');
-                    if (_customSpeakerFile) {
-                        formData.append('speaker_wav', _customSpeakerFile);
-                    }
-
-                    const resp = await fetch('/api/compare', { method: 'POST', body: formData });
-                    const res = await resp.json();
-                    if (!resp.ok) throw new Error(res.detail || 'Comparison failed');
-
-                    // 1. Populate XTTS Card
-                    const audioX = document.getElementById('audio-xtts');
-                    const dlX = document.getElementById('dl-xtts');
-                    const stX = document.getElementById('status-xtts');
-                    audioX.src = res.xtts.audio_url;
-                    audioX.style.display = 'block';
-                    dlX.href = res.xtts.audio_url;
-                    dlX.download = 'flowedit_xtts_our_system.wav';
-                    dlX.style.display = 'flex';
-                    stX.textContent = `✓ Generated in ${res.xtts.latency_ms}ms`;
-                    stX.style.color = '#10B981';
-                    document.getElementById('ttfa-xtts').textContent = `${(res.xtts.latency_ms/1000).toFixed(2)}s`;
-
-                    if (includeBaseline && res.xtts.baseline_url) {
-                        document.getElementById('baseline-xtts-row').style.display = 'block';
-                        document.getElementById('audio-xtts-base').src = res.xtts.baseline_url;
-                    }
-
-                    // 2. Populate F5-TTS Card
-                    const audioF = document.getElementById('audio-f5tts');
-                    const dlF = document.getElementById('dl-f5tts');
-                    const stF = document.getElementById('status-f5tts');
-                    if (res.f5tts.audio_url) {
-                        audioF.src = res.f5tts.audio_url;
-                        audioF.style.display = 'block';
-                        dlF.href = res.f5tts.audio_url;
-                        dlF.download = 'flowedit_f5tts_paper.wav';
-                        dlF.style.display = 'flex';
-                        stF.textContent = `✓ Generated in ${res.f5tts.latency_ms}ms`;
-                        stF.style.color = '#2563EB';
-                        if (includeBaseline && res.f5tts.baseline_url) {
-                            document.getElementById('baseline-f5tts-row').style.display = 'block';
-                            document.getElementById('audio-f5tts-base').src = res.f5tts.baseline_url;
-                        }
-                    } else {
-                        stF.textContent = 'Plugin Standby';
-                        stF.style.color = '#64748B';
-                        document.getElementById('f5tts-standby-banner').style.display = 'block';
-                    }
-
-                    // 3. Render Executive Telemetry Comparison Matrix Table
-                    let matrixHtml = `
-                        <div class="comparison-matrix-card">
-                            <div class="matrix-header">
-                                <h3>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="#DC2626" stroke-width="2.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                                    Technical Architectural Audit: Why Our Implementation Outperforms the Paper
-                                </h3>
-                                <span style="font-size:11px; font-weight:700; color:var(--text-muted);">Verified on Enterprise Backbones</span>
-                            </div>
-                            <table class="matrix-table">
-                                <thead>
-                                    <tr>
-                                        <th>Architectural Dimension</th>
-                                        <th>Our Implementation (XTTS-v2)</th>
-                                        <th>Paper Ideology (F5-TTS)</th>
-                                        <th>Technical Advantage & Impact</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                    `;
-
-                    (res.comparative_matrix || []).forEach(row => {
-                        matrixHtml += `
-                            <tr>
-                                <td class="matrix-pillar">${row.pillar}</td>
-                                <td><span class="matrix-badge-ours">${row.ours}</span></td>
-                                <td><span class="matrix-badge-paper">${row.paper}</span></td>
-                                <td class="matrix-advantage">${row.why_better}</td>
-                            </tr>
-                        `;
-                    });
-
-                    matrixHtml += `
-                                </tbody>
-                            </table>
-                        </div>
-                    `;
-                    grid.insertAdjacentHTML('beforeend', matrixHtml);
-
-                    audioX.play().catch(()=>{});
-                    showToast('✓ Comparative synthesis completed successfully!');
-                } catch(e) {
-                    showToast('Comparison Error: ' + e.message);
-                } finally {
-                    btn.disabled = false;
-                    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg> Generate Speech`;
-                }
-                return;
-            }
-
             // ─────────────────────────────────────────────────────────────
-            // Single Engine Synthesis Mode (XTTS or F5-TTS)
+            // Synthesis Execution (Our Implementation or FlowEdit Paper)
             // ─────────────────────────────────────────────────────────────
             const activeBb = _activeEngine;
             const modelsToRun = includeBaseline ? [activeBb, `${activeBb}_base`] : [activeBb];
@@ -1879,8 +1595,8 @@ HTML_CONTENT = r"""<!DOCTYPE html>
                 const endpoint = isBase ? '/api/baseline' : '/api/synthesize';
                 const isF5 = mKey.startsWith('f5tts');
                 const cardTitle = isBase 
-                    ? (isF5 ? 'F5-TTS Base Baseline' : 'XTTS Base Baseline') 
-                    : (isF5 ? 'F5-TTS Paper Plugin ($d=512$)' : 'Our Fine-Tuned XTTS ($d=1024$)');
+                    ? (isF5 ? 'FlowEdit Paper Base (Uncorrected)' : 'Our System Base (Uncorrected)') 
+                    : (isF5 ? 'FlowEdit Paper (F5-TTS CFM DiT)' : 'Our Implementation (Fine-Tuned XTTS-v2)');
                 const tagClass = isF5 ? 'f5tts' : 'finetuned';
 
                 const card = document.createElement('div');

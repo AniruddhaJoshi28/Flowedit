@@ -25,6 +25,30 @@ HARDCODED_DEFAULT_VOICES = {
     "michael.wav": "michael",
 }
 
+PRESET_VOICE_TRANSCRIPTS = {
+    "blessing": "In oncology, delivery or breakthrough therapy is a high-stakes mission. It's not just about the medicine, it's about the dedicated ecosystem that surrounds the patient to ensure safety acts.",
+    "michael": "The sensibility of the palm remains normal because the superficial sensory branch of the median nerve branches proximal to the TCL and travels superficial to it.",
+}
+
+# Optimal trimmed sentence for Flow-Matching DiT (F5-TTS) in-context prompt:
+PRESET_VOICE_F5_TRANSCRIPTS = {
+    "blessing": "In oncology, delivery or breakthrough therapy is a high-stakes mission.",
+    "michael": "The sensibility of the palm remains normal because the superficial sensory branch of the median nerve branches proximal to the TCL and travels superficial to it.",
+}
+
+
+def get_preset_voice_transcript(target_name_or_path: str, for_f5: bool = False) -> Optional[str]:
+    """Retrieve verified ground-truth reference text for preset voices to eliminate F5-TTS noise."""
+    if not target_name_or_path:
+        return None
+    name_lower = os.path.basename(str(target_name_or_path)).lower()
+    transcripts = PRESET_VOICE_F5_TRANSCRIPTS if for_f5 else PRESET_VOICE_TRANSCRIPTS
+    if "michael" in name_lower or "male" in name_lower or "man" in name_lower:
+        return transcripts["michael"]
+    if "blessing" in name_lower or "female" in name_lower or "woman" in name_lower or "default" in name_lower:
+        return transcripts["blessing"]
+    return None
+
 
 def get_hardcoded_voice_path(target_name: str) -> Optional[str]:
     """Find the exact hardcoded path for blessing or michael across project candidate directories."""

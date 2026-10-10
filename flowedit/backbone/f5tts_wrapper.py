@@ -278,47 +278,59 @@ class F5TTSBackbone(TTSBackbone):
         language: str = "en",
         ref_text: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Extract speaker conditioning from reference audio."""
+        """Extract speaker conditioning from reference audio, ensuring clean verbatim prompt for F5-TTS."""
         prepared_audio = validate_reference_audio(audio_path, target_sample_rate=24000)
 
         cache_key = f"{prepared_audio.checksum}_{language}_{ref_text}"
         if cache_key in self._speaker_cache:
             return self._speaker_cache[cache_key]
 
+        # 1. Resolve ground-truth prompt text (critical: F5-TTS DiT requires exact matching prompt text)
+        prompt_text = ref_text.strip() if ref_text and ref_text.strip() else ""
+        if not prompt_text:
+            from flowedit.utils.voice_finder import get_preset_voice_transcript
+            prompt_text = get_preset_voice_transcript(audio_path, for_f5=True) or ""
+
+        # 2. For Blessing preset, trim to 5.2s (sentence 1) to match optimal F5-TTS prompt length (3-6s)
+        name_lower = os.path.basename(str(audio_path or "")).lower()
+        is_blessing = "blessing" in name_lower or "female" in name_lower or "default" in name_lower
+        ref_waveform = prepared_audio.waveform
+        if is_blessing and ref_waveform.shape[-1] > int(6.0 * 24000):
+            ref_waveform = ref_waveform[:, :int(5.2 * 24000)]
+            logger.info("Trimmed Blessing reference audio to 5.2s for optimal F5-TTS in-context flow.")
 
         processed_fd, processed_path = tempfile.mkstemp(suffix=".wav")
         os.close(processed_fd)
-        sf.write(processed_path, prepared_audio.waveform.squeeze(0).cpu().numpy(), 24000)
+        sf.write(processed_path, ref_waveform.squeeze(0).cpu().numpy(), 24000)
 
-        prompt_text = ref_text
+        # 3. If still empty (custom audio upload), perform safe transcription fallback
         if not prompt_text:
             try:
-                import whisperx
-                device = "cuda" if self.device == "cuda" and torch.cuda.is_available() else "cpu"
-                compute_type = "float16" if device == "cuda" else "int8"
-                whisper_model_path = os.environ.get("FLOWEDIT_WHISPER_MODEL", "base")
+                import faster_whisper
+                fw_model = faster_whisper.WhisperModel("base", device="cpu", compute_type="int8")
+                segs, _ = fw_model.transcribe(processed_path, language=language)
+                prompt_text = " ".join(s.text.strip() for s in segs).strip()
+            except Exception:
                 try:
-                    _whisper = whisperx.load_model(whisper_model_path, device=device, compute_type=compute_type)
-                except Exception:
+                    import whisperx
+                    device = "cuda" if self.device == "cuda" and torch.cuda.is_available() else "cpu"
+                    compute_type = "float16" if device == "cuda" else "int8"
                     _whisper = whisperx.load_model("base", device=device, compute_type=compute_type)
-                audio_np = whisperx.load_audio(prepared_audio.source_path)
-                ref_result = _whisper.transcribe(audio_np, language=language)
-                if "segments" in ref_result and ref_result["segments"]:
-                    prompt_text = " ".join([seg["text"] for seg in ref_result["segments"]]).strip()
-                else:
-                    prompt_text = "."
-            except Exception as e:
-                logger.warning(f"Transcription failed: {e}")
-                prompt_text = "."
+                    audio_np, _ = sf.read(processed_path)
+                    ref_result = _whisper.transcribe(audio_np, language=language)
+                    if "segments" in ref_result and ref_result["segments"]:
+                        prompt_text = " ".join([seg["text"] for seg in ref_result["segments"]]).strip()
+                except Exception as e:
+                    logger.warning(f"Reference audio transcription notice: {e}")
 
-        if not prompt_text:
-            prompt_text = "."
+        if not prompt_text or prompt_text == ".":
+            prompt_text = "In oncology, delivery of breakthrough therapy is a high-stakes mission."
 
         res = {
             "audio_path": prepared_audio.source_path,
             "processed_audio_path": processed_path,
             "text": prompt_text,
-            "duration_seconds": prepared_audio.duration_seconds,
+            "duration_seconds": float(ref_waveform.shape[-1]) / 24000.0,
             "checksum": prepared_audio.checksum,
         }
         self._speaker_cache[cache_key] = res
@@ -735,6 +747,7 @@ class F5TTSBackbone(TTSBackbone):
                     end_pos = min(L_out, start_pos + L_delta)
                     actual_delta_len = end_pos - start_pos
 
+                    t_delta = torch.clamp(t_delta, -1.5, 1.5)
                     out = raw_out.clone()
                     if actual_delta_len > 0:
                         out[:, start_pos:end_pos, :] = out[:, start_pos:end_pos, :] + t_delta[:, :actual_delta_len, :]
@@ -756,10 +769,11 @@ class F5TTSBackbone(TTSBackbone):
             "ref_file": temp_ref,
             "ref_text": ref_text,
             "gen_text": text,
-            "speed": planned.dynamic_speed_factor,
-            "nfe_step": 32,
-            "cfg_strength": 2.0,
+            "speed": 1.0,           # Stable 1.0 speed avoids phase distortion
+            "nfe_step": 32,          # 32 ODE steps
+            "cfg_strength": 1.8,     # 1.8 prevents high-frequency clipping/static
             "target_rms": 0.1,
+            "sway_sampling_coef": -1.0,
         }
 
         import inspect
