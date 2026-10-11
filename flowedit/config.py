@@ -175,6 +175,7 @@ class BackboneConfig:
     f5tts_ckpt_file: str = ""
     f5tts_vocab_file: str = ""
     vocoder_local_path: str = ""
+    f5tts_model_name: str = ""  # e.g. "F5TTS_Base" or "F5TTS_v1_Base"
 
     # Device & dtype
     device: str = field(default_factory=lambda: os.environ.get("FLOWEDIT_DEVICE", "cuda" if torch.cuda.is_available() else "cpu"))

@@ -26,13 +26,13 @@ HARDCODED_DEFAULT_VOICES = {
 }
 
 PRESET_VOICE_TRANSCRIPTS = {
-    "blessing": "In oncology, delivery or breakthrough therapy is a high-stakes mission. It's not just about the medicine, it's about the dedicated ecosystem that surrounds the patient to ensure safety acts.",
+    "blessing": "In oncology, delivery of breakthrough therapy is a high-stakes mission. It's not just about the medicine, it's about the dedicated ecosystem that surrounds the patient to ensure safety acts.",
     "michael": "The sensibility of the palm remains normal because the superficial sensory branch of the median nerve branches proximal to the TCL and travels superficial to it.",
 }
 
 # Optimal trimmed sentence for Flow-Matching DiT (F5-TTS) in-context prompt:
 PRESET_VOICE_F5_TRANSCRIPTS = {
-    "blessing": "In oncology, delivery or breakthrough therapy is a high-stakes mission.",
+    "blessing": "In oncology, delivery of breakthrough therapy is a high-stakes mission.",
     "michael": "The sensibility of the palm remains normal because the superficial sensory branch of the median nerve branches.",
 }
 

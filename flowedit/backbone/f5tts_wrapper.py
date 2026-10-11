@@ -63,33 +63,42 @@ class F5TTSBackbone(TTSBackbone):
                     return te.dim
         return 512
 
-    def _resolve_f5_paths(self) -> Tuple[str, str, str]:
-        """Automatically discover F5-TTS checkpoint, vocab, and vocoder files if present locally."""
+    def _resolve_f5_paths(self) -> Tuple[str, str, str, str]:
+        """Automatically discover F5-TTS checkpoint, vocab, vocoder files, and model architecture name."""
         ckpt_file = getattr(self.config, 'f5tts_ckpt_file', "") or os.environ.get("FLOWEDIT_F5TTS_CKPT", "")
         vocab_file = getattr(self.config, 'f5tts_vocab_file', "") or os.environ.get("FLOWEDIT_F5TTS_VOCAB", "")
         vocoder_local_path = getattr(self.config, 'vocoder_local_path', "") or os.environ.get("FLOWEDIT_VOCODER_DIR", "")
+        model_name = getattr(self.config, 'f5tts_model_name', "") or os.environ.get("FLOWEDIT_F5TTS_MODEL", "")
 
         pkg_dir = os.path.dirname(os.path.abspath(__file__))
         flowedit_root = os.path.abspath(os.path.join(pkg_dir, "..", ".."))
         workspace_root = os.path.abspath(os.path.join(flowedit_root, ".."))
 
-        # Candidate checkpoint locations
+        # Candidate checkpoint locations (supports both F5TTS_Base and F5TTS_v1_Base)
         if not ckpt_file or not os.path.isfile(ckpt_file):
             candidate_ckpts = [
+                # v1 checkpoints
+                os.path.join(flowedit_root, "models", "f5tts", "model_1250000.safetensors"),
+                os.path.join(flowedit_root, "models", "model_1250000.safetensors"),
+                os.path.join(workspace_root, "models", "f5tts", "model_1250000.safetensors"),
+                # Base checkpoints
                 os.path.join(flowedit_root, "models", "f5tts", "model_1200000.safetensors"),
                 os.path.join(flowedit_root, "models", "f5tts", "model_1200000.pt"),
                 os.path.join(flowedit_root, "models", "model_1200000.safetensors"),
                 os.path.join(workspace_root, "models", "f5tts", "model_1200000.safetensors"),
             ]
-            # Hugging Face hub cache candidate
+            # Hugging Face hub cache candidates
             try:
                 hf_hub = os.path.expanduser("~/.cache/huggingface/hub/models--SWivid--F5-TTS/snapshots")
                 if os.path.isdir(hf_hub):
                     for snap in os.listdir(hf_hub):
                         snap_dir = os.path.join(hf_hub, snap)
-                        cand = os.path.join(snap_dir, "F5TTS_Base", "model_1200000.safetensors")
-                        if os.path.isfile(cand):
-                            candidate_ckpts.append(cand)
+                        cand_v1 = os.path.join(snap_dir, "F5TTS_v1_Base", "model_1250000.safetensors")
+                        if os.path.isfile(cand_v1):
+                            candidate_ckpts.append(cand_v1)
+                        cand_base = os.path.join(snap_dir, "F5TTS_Base", "model_1200000.safetensors")
+                        if os.path.isfile(cand_base):
+                            candidate_ckpts.append(cand_base)
             except Exception:
                 pass
 
@@ -98,6 +107,19 @@ class F5TTSBackbone(TTSBackbone):
                     ckpt_file = os.path.abspath(cand)
                     logger.info(f"Discovered local F5-TTS checkpoint: {ckpt_file}")
                     break
+
+        # Automatically align model architecture name with checkpoint
+        if not model_name:
+            if ckpt_file:
+                ckpt_lower = ckpt_file.lower()
+                if "1250000" in ckpt_lower or "f5tts_v1" in ckpt_lower or "v1" in ckpt_lower:
+                    model_name = "F5TTS_v1_Base"
+                elif "1200000" in ckpt_lower or "f5tts_base" in ckpt_lower or "base" in ckpt_lower:
+                    model_name = "F5TTS_Base"
+                else:
+                    model_name = "F5TTS_Base"
+            else:
+                model_name = "F5TTS_Base"
 
         # Candidate vocabulary locations
         if not vocab_file or not os.path.isfile(vocab_file):
@@ -111,9 +133,12 @@ class F5TTSBackbone(TTSBackbone):
                 if os.path.isdir(hf_hub):
                     for snap in os.listdir(hf_hub):
                         snap_dir = os.path.join(hf_hub, snap)
-                        cand = os.path.join(snap_dir, "F5TTS_Base", "vocab.txt")
-                        if os.path.isfile(cand):
-                            candidate_vocabs.append(cand)
+                        cand_v1 = os.path.join(snap_dir, "F5TTS_v1_Base", "vocab.txt")
+                        if os.path.isfile(cand_v1):
+                            candidate_vocabs.append(cand_v1)
+                        cand_base = os.path.join(snap_dir, "F5TTS_Base", "vocab.txt")
+                        if os.path.isfile(cand_base):
+                            candidate_vocabs.append(cand_base)
             except Exception:
                 pass
 
@@ -123,7 +148,7 @@ class F5TTSBackbone(TTSBackbone):
                     logger.info(f"Discovered local F5-TTS vocab: {vocab_file}")
                     break
 
-        return ckpt_file, vocab_file, vocoder_local_path
+        return ckpt_file, vocab_file, vocoder_local_path, model_name
 
     def load_model(self) -> None:
         """Load F5-TTS model, tokenizer vocab, and vocoder."""
@@ -132,15 +157,17 @@ class F5TTSBackbone(TTSBackbone):
             from f5_tts.api import F5TTS
             import f5_tts.api as f5_api
 
-            ckpt_file, vocab_file, vocoder_local_path = self._resolve_f5_paths()
+            ckpt_file, vocab_file, vocoder_local_path, model_name = self._resolve_f5_paths()
 
             import inspect
             sig = inspect.signature(F5TTS.__init__)
             params = sig.parameters
 
             init_kwargs = {}
-            if "model_type" in params:
-                init_kwargs["model_type"] = "F5-TTS"
+            if "model" in params:
+                init_kwargs["model"] = model_name
+            elif "model_type" in params:
+                init_kwargs["model_type"] = model_name
             if "ode_method" in params:
                 init_kwargs["ode_method"] = "euler"
             if "use_ema" in params:
@@ -158,11 +185,13 @@ class F5TTSBackbone(TTSBackbone):
             if "vocoder_name" in params:
                 init_kwargs["vocoder_name"] = "vocos"
 
+            logger.info(f"Initializing F5TTS (architecture: {model_name}, ckpt: {ckpt_file or 'Auto-Cached'}, vocab: {vocab_file or 'Default'})")
+
             try:
                 self.tts_api = F5TTS(**init_kwargs)
             except Exception as e_first:
-                logger.warning(f"F5TTS initialization with custom paths failed ({e_first}). Retrying with default Hugging Face download...")
-                # Remove custom local paths and retry
+                logger.warning(f"F5TTS initialization with custom paths failed ({e_first}). Retrying with fallback...")
+                # Remove custom local paths and retry, preserving model architecture name
                 fallback_kwargs = {k: v for k, v in init_kwargs.items() if k not in ("vocoder_local_path", "ckpt_file", "vocab_file")}
                 if ckpt_file and os.path.exists(ckpt_file):
                     fallback_kwargs["ckpt_file"] = ckpt_file
@@ -298,19 +327,22 @@ class F5TTSBackbone(TTSBackbone):
         ref_waveform = prepared_audio.waveform
 
         if is_blessing and ref_waveform.shape[-1] > int(5.0 * 24000):
-            # Clause 1 ends at 4.20s; clean room tone up to 4.50s before clause 2 starts at 4.94s
+            # Clause 1 ends at 4.25s; clean room tone up to 4.50s before clause 2 starts at 4.94s
             ref_waveform = ref_waveform[:, :int(4.50 * 24000)]
             fade_len = int(0.025 * 24000)
             fade = torch.linspace(1.0, 0.0, fade_len, device=ref_waveform.device)
             ref_waveform[:, -fade_len:] = ref_waveform[:, -fade_len:] * fade
             logger.info("Trimmed Blessing reference audio to clean 4.50s clause with fade-out for optimal F5-TTS conditioning.")
-        elif is_michael and ref_waveform.shape[-1] > int(7.8 * 24000):
-            # Clause 1 'branches' ends at 7.33s before 'proximal' starts at 7.34s
-            ref_waveform = ref_waveform[:, :int(7.33 * 24000)]
+        elif is_michael and ref_waveform.shape[-1] > int(7.0 * 24000):
+            # Clause 1 'branches' ends cleanly at 6.40s. Natural silence/pause extends from 6.45s to 7.00s.
+            # Next clause 'proximal' begins at 7.05s.
+            # Trim cleanly at 6.60s with 25ms fade-out during the silent pause to guarantee
+            # 100% verbatim text-audio alignment without cutting into 'proximal'.
+            ref_waveform = ref_waveform[:, :int(6.60 * 24000)]
             fade_len = int(0.025 * 24000)
             fade = torch.linspace(1.0, 0.0, fade_len, device=ref_waveform.device)
             ref_waveform[:, -fade_len:] = ref_waveform[:, -fade_len:] * fade
-            logger.info("Trimmed Michael reference audio to clean 7.33s clause with fade-out for optimal F5-TTS conditioning.")
+            logger.info("Trimmed Michael reference audio to clean 6.60s clause with fade-out for optimal F5-TTS conditioning.")
         elif ref_waveform.shape[-1] > int(8.0 * 24000):
             # F5-TTS diffusion conditioning collapses on prompts >8s; trim generic custom audio to 6.0s
             ref_waveform = ref_waveform[:, :int(6.0 * 24000)]

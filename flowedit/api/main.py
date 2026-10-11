@@ -108,6 +108,7 @@ def get_f5_pipelines() -> Tuple[Optional[CorrectionLoop], Optional[FlowEditInfer
         logger.info("Initializing F5-TTS Paper Backbone Plugin...")
         f5_cfg = FlowEditConfig()
         f5_cfg.backbone.backbone_type = "f5tts"
+        f5_cfg.backbone.f5tts_model_name = os.environ.get("FLOWEDIT_F5TTS_MODEL", "")
         f5_cfg.backbone.f5tts_ckpt_file = os.environ.get("FLOWEDIT_F5TTS_CKPT", "")
         f5_cfg.backbone.f5tts_vocab_file = os.environ.get("FLOWEDIT_F5TTS_VOCAB", "")
         f5_cfg.backbone.vocoder_local_path = os.environ.get("FLOWEDIT_VOCODER_DIR", "")
