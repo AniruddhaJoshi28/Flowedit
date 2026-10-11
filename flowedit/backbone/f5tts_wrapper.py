@@ -301,6 +301,38 @@ class F5TTSBackbone(TTSBackbone):
 
         return embeddings
 
+    @staticmethod
+    def _find_clean_clause_boundary(
+        waveform: torch.Tensor,
+        sr: int = 24000,
+        search_start_sec: float = 4.5,
+        search_end_sec: float = 7.5,
+    ) -> int:
+        """Dynamically detect inter-clause silence pause to prevent bleeding into subsequent words."""
+        wav_1d = waveform.squeeze(0).abs()
+        total_samples = wav_1d.shape[-1]
+        s_start = int(search_start_sec * sr)
+        s_end = min(total_samples, int(search_end_sec * sr))
+        if s_end <= s_start:
+            return total_samples
+
+        win = int(0.03 * sr)   # 30ms window
+        hop = int(0.01 * sr)   # 10ms hop
+        min_rms = 1e9
+        best_sample = s_end
+
+        # Find first sustained silence valley below threshold (energy drops after clause 1 speech)
+        for i in range(s_start, s_end - win, hop):
+            rms = torch.sqrt(torch.mean(wav_1d[i : i + win] ** 2)).item()
+            if rms < 0.007:  # Natural inter-clause pause
+                best_sample = i + int(0.04 * sr)
+                break
+            if rms < min_rms:
+                min_rms = rms
+                best_sample = i + int(0.02 * sr)
+
+        return min(total_samples, max(s_start, best_sample))
+
     def get_speaker_embedding(
         self,
         audio_path: Optional[str] = None,
@@ -326,30 +358,30 @@ class F5TTSBackbone(TTSBackbone):
         is_michael = "michael" in name_lower or "male" in name_lower or "man" in name_lower
         ref_waveform = prepared_audio.waveform
 
-        if is_blessing and ref_waveform.shape[-1] > int(5.0 * 24000):
-            # Clause 1 ends at 4.25s; clean room tone up to 4.50s before clause 2 starts at 4.94s
-            ref_waveform = ref_waveform[:, :int(4.50 * 24000)]
-            fade_len = int(0.025 * 24000)
+        if is_blessing and ref_waveform.shape[-1] > int(4.5 * 24000):
+            # Clause 1 ends at ~4.25s. Detect pause between clause 1 and clause 2
+            cut_sample = self._find_clean_clause_boundary(ref_waveform, 24000, search_start_sec=3.8, search_end_sec=5.0)
+            ref_waveform = ref_waveform[:, :cut_sample]
+            fade_len = min(int(0.030 * 24000), ref_waveform.shape[-1])
             fade = torch.linspace(1.0, 0.0, fade_len, device=ref_waveform.device)
             ref_waveform[:, -fade_len:] = ref_waveform[:, -fade_len:] * fade
-            logger.info("Trimmed Blessing reference audio to clean 4.50s clause with fade-out for optimal F5-TTS conditioning.")
-        elif is_michael and ref_waveform.shape[-1] > int(7.0 * 24000):
-            # Clause 1 'branches' ends cleanly at 6.40s. Natural silence/pause extends from 6.45s to 7.00s.
-            # Next clause 'proximal' begins at 7.05s.
-            # Trim cleanly at 6.60s with 25ms fade-out during the silent pause to guarantee
-            # 100% verbatim text-audio alignment without cutting into 'proximal'.
-            ref_waveform = ref_waveform[:, :int(6.60 * 24000)]
-            fade_len = int(0.025 * 24000)
+            logger.info(f"Trimmed Blessing reference audio to clean {cut_sample / 24000.0:.2f}s clause with fade-out.")
+        elif is_michael and ref_waveform.shape[-1] > int(5.5 * 24000):
+            # Clause 1 'branches' ends cleanly. Find natural inter-clause silence pause before 'proximal' begins
+            cut_sample = self._find_clean_clause_boundary(ref_waveform, 24000, search_start_sec=5.0, search_end_sec=7.2)
+            ref_waveform = ref_waveform[:, :cut_sample]
+            fade_len = min(int(0.030 * 24000), ref_waveform.shape[-1])
             fade = torch.linspace(1.0, 0.0, fade_len, device=ref_waveform.device)
             ref_waveform[:, -fade_len:] = ref_waveform[:, -fade_len:] * fade
-            logger.info("Trimmed Michael reference audio to clean 6.60s clause with fade-out for optimal F5-TTS conditioning.")
-        elif ref_waveform.shape[-1] > int(8.0 * 24000):
-            # F5-TTS diffusion conditioning collapses on prompts >8s; trim generic custom audio to 6.0s
-            ref_waveform = ref_waveform[:, :int(6.0 * 24000)]
-            fade_len = int(0.025 * 24000)
+            logger.info(f"Trimmed Michael reference audio to clean {cut_sample / 24000.0:.2f}s clause with fade-out (preventing proximal boundary bleed).")
+        elif ref_waveform.shape[-1] > int(7.5 * 24000):
+            # Trim generic custom audio at the nearest natural silence valley around 4.8s - 6.5s
+            cut_sample = self._find_clean_clause_boundary(ref_waveform, 24000, search_start_sec=4.8, search_end_sec=6.5)
+            ref_waveform = ref_waveform[:, :cut_sample]
+            fade_len = min(int(0.030 * 24000), ref_waveform.shape[-1])
             fade = torch.linspace(1.0, 0.0, fade_len, device=ref_waveform.device)
             ref_waveform[:, -fade_len:] = ref_waveform[:, -fade_len:] * fade
-            logger.info("Trimmed long custom reference audio to 6.0s for stable F5-TTS conditioning.")
+            logger.info(f"Trimmed custom reference audio to clean {cut_sample / 24000.0:.2f}s clause with fade-out.")
 
         # Ensure clean audio normalization without digital clipping
         ref_np = ref_waveform.squeeze(0).cpu().numpy()
@@ -842,6 +874,7 @@ class F5TTSBackbone(TTSBackbone):
             "cfg_strength": 2.0,     # Standard F5-TTS CFG
             "target_rms": 0.1,
             "sway_sampling_coef": -1.0,
+            "remove_silence": True,
         }
 
         import inspect
@@ -860,6 +893,13 @@ class F5TTSBackbone(TTSBackbone):
                     wav = torch.from_numpy(wav).float()
                 if wav.dim() == 1:
                     wav = wav.unsqueeze(0)
+
+                # Gentle 5ms fade-in on leading onset to prevent transient click or boundary artifact
+                fade_in_len = min(int(0.005 * sr), wav.shape[-1])
+                if fade_in_len > 0:
+                    fade_in = torch.linspace(0.0, 1.0, fade_in_len, device=wav.device)
+                    wav[:, :fade_in_len] = wav[:, :fade_in_len] * fade_in
+
                 # Amplitude safety normalization between -0.95 and +0.95 to eliminate digital clipping
                 max_amp = float(wav.abs().max().item())
                 if max_amp > 0.98:

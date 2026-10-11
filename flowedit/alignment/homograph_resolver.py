@@ -248,9 +248,15 @@ class HomographContextResolver:
         if global_cand is not None:
             return global_cand
 
-        # If only one candidate sense exists for this word, use it
+        # If only one candidate sense exists, only use it if it's global or meets threshold
         if len(candidate_senses) == 1:
-            return candidate_senses[0]
+            single = candidate_senses[0]
+            cand_carrier = (single.get("carrier_text", "") or single.get("context_window", "")).strip()
+            if not cand_carrier or cand_carrier.lower() == word.lower() or single.get("sense_id") == "default":
+                return single
+            if best_cand is not None and best_score >= self.match_threshold:
+                return best_cand
+            return None
 
         return None
 
@@ -259,3 +265,16 @@ class HomographContextResolver:
         dummy_cand = {"carrier_text": text1}
         sim = self.compute_context_similarity(text2, word, dummy_cand)
         return sim >= self.match_threshold
+    def resolve_homograph_phonetic(self, word: str, context_text: str) -> Optional[str]:
+        """Contextually resolve correct phonetic spelling for homographs based on surrounding context.
+        
+        Uses the dynamic S3/local spelling store and generalized sense matching without hardcoding.
+        """
+        if not word or not context_text:
+            return None
+        try:
+            from flowedit.memory.s3_storage import s3_spelling_store
+            return s3_spelling_store.resolve_correction(context_text, word)
+        except Exception:
+            return None
+

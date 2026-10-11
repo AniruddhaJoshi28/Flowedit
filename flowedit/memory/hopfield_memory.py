@@ -706,6 +706,17 @@ class HopfieldMemory(nn.Module):
                     if is_active_match:
                         processed_token_spans.add((span_start, span_end))
 
+                        span_phonetic = entry.phonetic_text
+                        if not span_phonetic:
+                            try:
+                                from flowedit.alignment.homograph_resolver import HomographContextResolver
+                                resolver = HomographContextResolver()
+                                h_p = resolver.resolve_homograph_phonetic(entry.word, entry.carrier_text or text)
+                                if h_p and h_p.strip().lower() != entry.word.strip().lower():
+                                    span_phonetic = h_p.strip()
+                            except Exception:
+                                pass
+
                         matched_spans.append(
                             MatchedWordSpan(
                                 word=entry.word,
@@ -715,7 +726,7 @@ class HopfieldMemory(nn.Module):
                                 score=s_occ,
                                 gate_value=1.0,
                                 carrier_text=entry.carrier_text,
-                                phonetic_text=entry.phonetic_text,
+                                phonetic_text=span_phonetic,
                                 char_start=c_start,
                                 char_end=c_end,
                             )
@@ -743,10 +754,17 @@ class HopfieldMemory(nn.Module):
                             assembled_delta[0, span_start + p, :] += aligned_delta[p, :]
                             gate_map[0, span_start + p, 0] = 1.0
 
-        # 7. Fallback: If no word spans matched, do not inject arbitrary perturbations
+        # 7. Fallback: If text was provided but no word spans matched, do not inject arbitrary perturbations.
+        # If text was NOT provided (pure continuous embedding query, Paper Eq. 6-7), use continuous attention retrieval:
         if not matched_spans:
-            assembled_delta = torch.zeros(1, seq_len, dim, device=device, dtype=dtype)
-            gate_map = torch.zeros(1, seq_len, 1, device=device, dtype=dtype)
+            if not text and gate_seq_clean.max().item() > 0:
+                attn_weights = torch.softmax(scores, dim=-1)  # [S, M]
+                mem_q = torch.matmul(attn_weights, V)          # [S, d]
+                assembled_delta = (gate_seq_clean.unsqueeze(-1) * mem_q).unsqueeze(0)  # [1, S, d]
+                gate_map = gate_seq_clean.unsqueeze(0).unsqueeze(-1)  # [1, S, 1]
+            else:
+                assembled_delta = torch.zeros(1, seq_len, dim, device=device, dtype=dtype)
+                gate_map = torch.zeros(1, seq_len, 1, device=device, dtype=dtype)
 
         is_active = (len(matched_spans) > 0) or (gate_map.max().item() > 0.10)
 
@@ -836,11 +854,13 @@ class HopfieldMemory(nn.Module):
             if k is None or not isinstance(k, torch.Tensor):
                 continue
             if k.shape[-1] != self.d:
-                logger.warning(
-                    f"Skipping incompatible memory entry '{item.get('word')}' with key dimension {k.shape[-1]} "
-                    f"(current model backbone requires dimension {self.d})."
-                )
-                continue
+                # Adapt key and value dimensions to current backbone dimension
+                flat_k = k.reshape(1, 1, -1).float()
+                k = F.interpolate(flat_k, size=self.d, mode='linear', align_corners=True).squeeze(0).squeeze(0).to(dtype=k.dtype, device=k.device)
+                if isinstance(item.get("value"), torch.Tensor):
+                    v = item["value"]
+                    flat_v = v.reshape(1, 1, -1).float()
+                    item["value"] = F.interpolate(flat_v, size=self.d, mode='linear', align_corners=True).squeeze(0).squeeze(0).to(dtype=v.dtype, device=v.device)
 
             word = item.get("word", "")
             carrier_text = item.get("carrier_text", "")
@@ -853,6 +873,18 @@ class HopfieldMemory(nn.Module):
             # Extract word_delta from legacy full_delta if not present
             if word_delta is None and full_delta is not None and word:
                 word_delta = self._extract_word_delta(full_delta, word, carrier_text, token_indices)
+
+            # Auto-enrich missing phonetic_text for known homographs
+            if not phonetic_text and word:
+                try:
+                    from flowedit.alignment.homograph_resolver import HomographContextResolver
+                    resolver = HomographContextResolver()
+                    h_p = resolver.resolve_homograph_phonetic(word, carrier_text)
+                    if h_p and h_p.strip().lower() != word.strip().lower():
+                        phonetic_text = h_p.strip()
+                        logger.info(f"✓ [Hopfield Memory] Enriched entry '{word}' with contextual phonetic pronunciation: '{phonetic_text}'")
+                except Exception:
+                    pass
 
             loaded_entries.append(
                 MemoryEntry(

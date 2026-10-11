@@ -87,6 +87,31 @@ class HopfieldRefiner(nn.Module):
         if has_active_delta:
             import re
             synth_text = text
+
+            # Resolve phonetic pronunciation for matched spans if not explicitly stored
+            from flowedit.alignment.homograph_resolver import HomographContextResolver
+            resolver = HomographContextResolver()
+
+            for span in retrieval.matched_spans:
+                p_text = getattr(span, "phonetic_text", None)
+                if not p_text or p_text.strip().lower() == span.word.strip().lower():
+                    # 1. Check entry stored phonetic_text or metadata
+                    if span.entry_index < len(self.memory.entries):
+                        entry = self.memory.entries[span.entry_index]
+                        c_p = getattr(entry, "phonetic_text", None) or entry.metadata.get("phonetic_text") or entry.metadata.get("phonetic_hint")
+                        if c_p and c_p.strip().lower() != span.word.strip().lower():
+                            span.phonetic_text = c_p.strip()
+                            continue
+                        # 2. Check contextual homograph resolver against entry carrier_text
+                        h_p = resolver.resolve_homograph_phonetic(span.word, entry.carrier_text or text)
+                        if h_p and h_p.strip().lower() != span.word.strip().lower():
+                            span.phonetic_text = h_p.strip()
+                            continue
+                    # 3. Check contextual homograph resolver against full input text
+                    h_p = resolver.resolve_homograph_phonetic(span.word, text)
+                    if h_p and h_p.strip().lower() != span.word.strip().lower():
+                        span.phonetic_text = h_p.strip()
+
             # If reference audio phonetic pronunciation is stored, substitute only the matched spans
             spans_with_phonetics = [
                 s for s in retrieval.matched_spans

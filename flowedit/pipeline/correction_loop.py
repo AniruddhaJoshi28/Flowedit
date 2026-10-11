@@ -250,7 +250,13 @@ class CorrectionLoop:
             # Stage 3: Associative Memory Storage & Cluster Averaging
             # ─────────────────────────────────────────────────────────────
             logger.info("▶ Stage 3: Modern Hopfield Associative Memory Write / Cluster Average")
-            effective_phonetic = phonetic_hint or getattr(alignment, "auto_phonetic_hint", None) or clean_target
+            auto_h_hint = None
+            try:
+                from flowedit.alignment.homograph_resolver import HomographContextResolver
+                auto_h_hint = HomographContextResolver().resolve_homograph_phonetic(primary_target_word, text)
+            except Exception:
+                pass
+            effective_phonetic = phonetic_hint or getattr(alignment, "auto_phonetic_hint", None) or auto_h_hint or clean_target
             if effective_phonetic and effective_phonetic.strip().lower() != primary_target_word.lower():
                 logger.info(f"  ✓ Reference audio pronunciation representation: '{effective_phonetic}'")
 

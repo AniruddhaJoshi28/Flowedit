@@ -345,12 +345,17 @@ class S3SpellingStore:
         if matched_sense and "spell_as" in matched_sense:
             return matched_sense["spell_as"]
 
-        # CRITICAL FALLBACK: If homograph sense matching is ambiguous or returns None,
-        # return the default phonetic spelling or first registered sense spelling
-        if word_dict.get("default_spell"):
-            return word_dict["default_spell"]
-        if senses and "spell_as" in senses[0]:
-            return senses[0]["spell_as"]
+        # Only fall back to default_spell if there is an explicit global/default sense
+        # or if senses were not context-constrained (e.g. no carrier_text specified)
+        has_context_senses = any(
+            (s.get("carrier_text", "").strip() and s.get("sense_id") != "default")
+            for s in senses
+        )
+        if not has_context_senses:
+            if word_dict.get("default_spell"):
+                return word_dict["default_spell"]
+            if senses and "spell_as" in senses[0]:
+                return senses[0]["spell_as"]
 
         return None
 
