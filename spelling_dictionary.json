@@ -61,24 +61,45 @@
       "senses": [
         {
           "sense_id": "ctx_toy_lead",
-          "display_name": "Context: L:of [lead]",
+          "display_name": "Noun (metal): lead /lɛd/",
           "spell_as": "led",
           "carrier_text": "The toy is made up of lead.",
-          "context_window": "toy is made up of lead",
+          "context_window": "toy made pipe metal poisonous poisoning apron shield battery bullet heavy",
           "left_tokens": [
             "toy",
             "is",
             "made",
             "up",
-            "of"
+            "of",
+            "pipe",
+            "metal",
+            "poisonous",
+            "poisoning",
+            "apron",
+            "heavy"
           ],
-          "right_tokens": [],
+          "right_tokens": [
+            "pipe",
+            "metal",
+            "poisonous",
+            "poisoning",
+            "apron"
+          ],
           "immediate_left": "of",
           "immediate_right": "",
           "context_clues": [
             "toy",
             "made",
-            "up"
+            "up",
+            "pipe",
+            "metal",
+            "poisonous",
+            "poisoning",
+            "apron",
+            "heavy",
+            "bullet",
+            "shield",
+            "battery"
           ],
           "language": "en",
           "updated_at": "2026-10-11T12:00:00.000000+00:00"

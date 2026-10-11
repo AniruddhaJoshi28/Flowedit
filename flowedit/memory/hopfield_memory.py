@@ -475,16 +475,17 @@ class HopfieldMemory(nn.Module):
         """Topical context similarity between window around matched span and stored carrier sentence."""
         if not carrier_text:
             return 1.0
-        win_start = max(0, char_start - 24)
-        win_end = min(len(text), char_end + 24)
+        target_w = text[char_start:char_end].strip().lower()
+        win_start = max(0, char_start - 36)
+        win_end = min(len(text), char_end + 36)
         local_words = set(re.findall(r'\b[a-zA-Z]{2,}\b', text[win_start:win_end].lower()))
         carrier_words = set(re.findall(r'\b[a-zA-Z]{2,}\b', carrier_text.lower()))
-        content_local = local_words - GRAMMAR_STOPWORDS
-        content_carrier = carrier_words - GRAMMAR_STOPWORDS
+        content_local = (local_words - GRAMMAR_STOPWORDS) - {target_w}
+        content_carrier = (carrier_words - GRAMMAR_STOPWORDS) - {target_w}
         if not content_carrier or not content_local:
-            intersection = local_words & carrier_words
-            union = local_words | carrier_words
-            return len(intersection) / max(1, len(union))
+            intersection = (local_words & carrier_words) - {target_w}
+            union = (local_words | carrier_words) - {target_w}
+            return len(intersection) / max(1, len(union)) if union else 0.0
         intersection = content_local & content_carrier
         return len(intersection) / max(1, len(content_carrier))
 
@@ -699,9 +700,34 @@ class HopfieldMemory(nn.Module):
                     entry = best_entry
 
                     # Gate threshold check: for homographs / repeated words, require contextual alignment
+                    KNOWN_HOMOGRAPHS = {
+                        "lead", "read", "bow", "tear", "wind", "bass", "close", "record",
+                        "live", "object", "present", "project", "rebel", "subject", "minute",
+                        "row", "sow", "desert", "wound", "refuse"
+                    }
+                    w_lower = entry.word.strip().lower()
+                    is_homograph = (w_lower in KNOWN_HOMOGRAPHS) or (len(candidates) > 1) or (len(char_spans) > 1)
+
+                    carrier_list = getattr(entry, "carrier_texts", None) or ([entry.carrier_text] if entry.carrier_text else [])
                     lex_sim = self._context_word_similarity(text, c_start, c_end, entry.carrier_text)
-                    is_homograph = (len(char_spans) > 1)
-                    is_active_match = (g_occ >= 0.15 or s_occ >= 2.0 or lex_sim >= 0.35) if is_homograph else (g_occ >= 0.10 or s_occ >= 1.5 or (entry.word.strip().lower() in text.lower()))
+                    best_lex_sim = max([self._context_word_similarity(text, c_start, c_end, ct) for ct in carrier_list] or [lex_sim])
+
+                    sense_aligned = False
+                    if is_homograph:
+                        try:
+                            from flowedit.alignment.homograph_resolver import HomographContextResolver
+                            resolver = HomographContextResolver()
+                            for ct in carrier_list:
+                                if ct and resolver.is_same_sense(ct, text, entry.word):
+                                    sense_aligned = True
+                                    break
+                        except Exception:
+                            sense_aligned = False
+
+                    if is_homograph:
+                        is_active_match = (sense_aligned or best_lex_sim >= 0.35 or (g_occ >= 0.25 and s_occ >= 2.0))
+                    else:
+                        is_active_match = (g_occ >= 0.10 or s_occ >= 1.5 or (w_lower in text.lower()))
 
                     if is_active_match:
                         processed_token_spans.add((span_start, span_end))
@@ -874,6 +900,21 @@ class HopfieldMemory(nn.Module):
             if word_delta is None and full_delta is not None and word:
                 word_delta = self._extract_word_delta(full_delta, word, carrier_text, token_indices)
 
+            # Adapt word_delta and full_delta dimensions to self.d if needed
+            if isinstance(word_delta, torch.Tensor) and word_delta.shape[-1] != self.d:
+                d_curr = word_delta.shape[-1]
+                flat_wd = word_delta.reshape(-1, 1, d_curr).float()
+                res_wd = F.interpolate(flat_wd, size=self.d, mode='linear', align_corners=True)
+                new_s = list(word_delta.shape[:-1]) + [self.d]
+                word_delta = res_wd.reshape(new_s).to(dtype=word_delta.dtype, device=word_delta.device)
+
+            if isinstance(full_delta, torch.Tensor) and full_delta.shape[-1] != self.d:
+                d_curr = full_delta.shape[-1]
+                flat_fd = full_delta.reshape(-1, 1, d_curr).float()
+                res_fd = F.interpolate(flat_fd, size=self.d, mode='linear', align_corners=True)
+                new_s = list(full_delta.shape[:-1]) + [self.d]
+                full_delta = res_fd.reshape(new_s).to(dtype=full_delta.dtype, device=full_delta.device)
+
             # Auto-enrich missing phonetic_text for known homographs
             if not phonetic_text and word:
                 try:
@@ -888,8 +929,8 @@ class HopfieldMemory(nn.Module):
 
             loaded_entries.append(
                 MemoryEntry(
-                    key=item["key"],
-                    value=item["value"],
+                    key=k,
+                    value=item.get("value", k),
                     word=word,
                     carrier_text=carrier_text,
                     token_indices=token_indices,

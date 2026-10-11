@@ -149,17 +149,13 @@ class FlowEditInference:
             else:
                 raise FileNotFoundError(f"Speaker audio not provided and hardcoded voice for '{target}' not found on disk.")
 
-        # Autonomous Memory Check 1: S3 Spelling Store (deterministic phonetic respelling via shared HomographContextResolver)
-        from flowedit.memory.s3_storage import s3_spelling_store
-        text, spelling_applied = s3_spelling_store.apply_corrections_to_text(text)
-        if spelling_applied:
-            logger.info(f"[Inference] Autonomous S3 spelling correction applied: {spelling_applied}")
-
         speaker_conditioning = self.backbone.get_speaker_embedding(
             speaker_wav, language=language, ref_text=user_ref_text
         )
 
-        # Autonomous Memory Check 2: Modern Hopfield Continuous Memory (continuous latent delta retrieval)
+        # Autonomous Memory Stage 1: Modern Hopfield Continuous Memory
+        # Pass raw input text so Hopfield Memory can perform associative pattern completion,
+        # contextual homograph disambiguation, and continuous latent delta injection.
         refine_res = self.refiner(
             backbone=self.backbone,
             text=text,
@@ -168,6 +164,39 @@ class FlowEditInference:
             user_ref_text=user_ref_text,
             **kwargs,
         )
+
+        spelling_applied = []
+        if refine_res.is_modified:
+            # Modern Hopfield Memory successfully retrieved and injected corrections
+            matched_spans = refine_res.diagnostics.get("matched_spans", [])
+            for m in matched_spans:
+                w = m.get("word")
+                p = m.get("phonetic_text")
+                if w and p:
+                    spelling_applied.append({
+                        "word": w,
+                        "spell_as": p,
+                        "original_text": text,
+                        "source": "hopfield_memory",
+                    })
+            logger.info(f"[Inference] Modern Hopfield memory correction applied: {spelling_applied}")
+        else:
+            # Autonomous Memory Stage 2: Fallback to S3 Spelling Store
+            # If Hopfield Memory gate was inactive (e.g. word not yet in continuous associative memory),
+            # check the S3 spelling store for deterministic phonetic respelling.
+            from flowedit.memory.s3_storage import s3_spelling_store
+            alt_text, s3_applied = s3_spelling_store.apply_corrections_to_text(text)
+            if s3_applied and alt_text != text:
+                logger.info(f"[Inference] Autonomous S3 spelling correction fallback applied: {s3_applied}")
+                spelling_applied = s3_applied
+                refine_res = self.refiner(
+                    backbone=self.backbone,
+                    text=alt_text,
+                    speaker_conditioning=speaker_conditioning,
+                    language=language,
+                    user_ref_text=user_ref_text,
+                    **kwargs,
+                )
 
         waveform = refine_res.waveform
         sr = refine_res.sample_rate

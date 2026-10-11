@@ -95,9 +95,14 @@ def get_f5_pipelines() -> Tuple[Optional[CorrectionLoop], Optional[FlowEditInfer
         # Keep memory synchronized if active pipeline has entries
         if (correction_pipeline is not None and correction_pipeline.memory is not None 
             and (f5_correction_pipeline.memory is None or f5_correction_pipeline.memory.num_entries != correction_pipeline.memory.num_entries)):
-            f5_correction_pipeline.memory = correction_pipeline.memory
-            f5_inference_pipeline.memory = correction_pipeline.memory
-            f5_inference_pipeline.refiner.memory = correction_pipeline.memory
+            if os.path.exists(MEMORY_PATH):
+                f5_correction_pipeline.memory.load(MEMORY_PATH)
+            else:
+                f5_correction_pipeline.memory.clear()
+                for entry in correction_pipeline.memory.entries:
+                    f5_correction_pipeline.memory.add_entry(entry)
+            f5_inference_pipeline.memory = f5_correction_pipeline.memory
+            f5_inference_pipeline.refiner.memory = f5_correction_pipeline.memory
         return f5_correction_pipeline, f5_inference_pipeline
 
     if not is_f5tts_installed():
@@ -116,16 +121,17 @@ def get_f5_pipelines() -> Tuple[Optional[CorrectionLoop], Optional[FlowEditInfer
         corr = CorrectionLoop(f5_cfg)
         corr.load_models()
 
-        # Connect directly to the shared Hopfield Memory from our implemented pipeline
-        if correction_pipeline is not None and correction_pipeline.memory is not None and correction_pipeline.memory.num_entries > 0:
-            corr.memory = correction_pipeline.memory
-            logger.info(f"✓ Linked shared Hopfield Memory ({corr.memory.num_entries} entries) to F5-TTS Paper pipeline.")
-        elif os.path.exists(MEMORY_PATH):
+        # Connect directly to Hopfield Memory adapted to F5-TTS embedding dimension (d=512)
+        if os.path.exists(MEMORY_PATH):
             try:
                 corr.memory.load(MEMORY_PATH)
-                logger.info(f"✓ Loaded shared Hopfield Memory from {MEMORY_PATH} ({corr.memory.num_entries} entries) for F5-TTS.")
+                logger.info(f"✓ Loaded shared Hopfield Memory from {MEMORY_PATH} ({corr.memory.num_entries} entries, d={corr.memory.d}) for F5-TTS.")
             except Exception as e:
                 logger.warning(f"Could not load memory from {MEMORY_PATH}: {e}")
+        elif correction_pipeline is not None and correction_pipeline.memory is not None and correction_pipeline.memory.num_entries > 0:
+            for entry in correction_pipeline.memory.entries:
+                corr.memory.add_entry(entry)
+            logger.info(f"✓ Transferred {corr.memory.num_entries} entries from XTTS memory to F5-TTS (d={corr.memory.d}).")
         elif os.path.exists(F5_MEMORY_PATH):
             try:
                 corr.memory.load(F5_MEMORY_PATH)
@@ -137,7 +143,7 @@ def get_f5_pipelines() -> Tuple[Optional[CorrectionLoop], Optional[FlowEditInfer
 
         f5_correction_pipeline = corr
         f5_inference_pipeline = inf
-        logger.info("✓ F5-TTS Paper Backbone Plugin ready with shared Hopfield Memory.")
+        logger.info("✓ F5-TTS Paper Backbone Plugin ready with shared Hopfield Memory (d=512).")
         return f5_correction_pipeline, f5_inference_pipeline
     except Exception as e:
         logger.error(f"F5-TTS pipeline initialization error: {e}", exc_info=True)

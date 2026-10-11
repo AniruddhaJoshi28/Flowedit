@@ -632,6 +632,10 @@ class F5TTSBackbone(TTSBackbone):
                 is_tuple = isinstance(output, tuple)
                 raw_out = output[0] if is_tuple else output
                 delta_cast = text_embedding_delta.to(device=raw_out.device, dtype=raw_out.dtype)
+                if delta_cast.shape[-1] != raw_out.shape[-1]:
+                    flat_d = delta_cast.reshape(-1, 1, delta_cast.shape[-1]).float()
+                    res_d = F.interpolate(flat_d, size=raw_out.shape[-1], mode='linear', align_corners=True)
+                    delta_cast = res_d.reshape(list(delta_cast.shape[:-1]) + [raw_out.shape[-1]]).to(dtype=raw_out.dtype)
                 L_delta = delta_cast.shape[1]
                 L_out = raw_out.shape[1]
 
@@ -814,6 +818,10 @@ class F5TTSBackbone(TTSBackbone):
                     is_tuple = isinstance(output, tuple)
                     raw_out = output[0] if is_tuple else output
                     t_delta = text_embedding_delta.to(device=raw_out.device, dtype=raw_out.dtype)
+                    if t_delta.shape[-1] != raw_out.shape[-1]:
+                        flat_d = t_delta.reshape(-1, 1, t_delta.shape[-1]).float()
+                        res_d = F.interpolate(flat_d, size=raw_out.shape[-1], mode='linear', align_corners=True)
+                        t_delta = res_d.reshape(list(t_delta.shape[:-1]) + [raw_out.shape[-1]]).to(dtype=raw_out.dtype)
                     L_delta = t_delta.shape[1]
                     L_out = raw_out.shape[1]
 
@@ -847,7 +855,7 @@ class F5TTSBackbone(TTSBackbone):
                     end_pos = min(L_out, start_pos + L_delta)
                     actual_delta_len = end_pos - start_pos
 
-                    t_delta = torch.clamp(t_delta, -0.4, 0.4)
+                    t_delta = torch.clamp(t_delta, -0.25, 0.25)
                     out = raw_out.clone()
                     if actual_delta_len > 0:
                         out[:, start_pos:end_pos, :] = out[:, start_pos:end_pos, :] + t_delta[:, :actual_delta_len, :]
