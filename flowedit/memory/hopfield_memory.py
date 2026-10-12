@@ -718,7 +718,7 @@ class HopfieldMemory(nn.Module):
                             from flowedit.alignment.homograph_resolver import HomographContextResolver
                             resolver = HomographContextResolver()
                             for ct in carrier_list:
-                                if ct and resolver.is_same_sense(ct, text, entry.word):
+                                if ct and resolver.is_same_sense(ct, text, entry.word, char_offset=c_start):
                                     sense_aligned = True
                                     break
                         except Exception:

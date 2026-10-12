@@ -49,6 +49,7 @@ class HomographContextResolver:
         text: str,
         word: str,
         radius: Optional[int] = None,
+        char_offset: Optional[int] = None,
     ) -> Tuple[List[str], List[str], str, str, str, List[str]]:
         """Extract structural and lexical context features around target word without hardcoding.
         
@@ -61,10 +62,17 @@ class HomographContextResolver:
 
         # Find target word index (or best matching token)
         target_idx = -1
-        for idx, t in enumerate(tokens):
-            if t == word_lower:
-                target_idx = idx
-                break
+        if char_offset is not None:
+            for idx, m in enumerate(re.finditer(r'\b[\w\'-]+\b', text.lower())):
+                if m.group(0) == word_lower and (m.start() <= char_offset <= m.end() or abs(m.start() - char_offset) <= 2):
+                    target_idx = idx
+                    break
+
+        if target_idx < 0:
+            for idx, t in enumerate(tokens):
+                if t == word_lower:
+                    target_idx = idx
+                    break
 
         if target_idx >= 0:
             start_idx = max(0, target_idx - r)
@@ -137,6 +145,7 @@ class HomographContextResolver:
         query_text: str,
         word: str,
         candidate_entry: Dict[str, Any],
+        char_offset: Optional[int] = None,
     ) -> float:
         """Compute structural and lexical context compatibility score in [0.0, 1.0].
         
@@ -158,7 +167,7 @@ class HomographContextResolver:
 
         # Extract features from query sentence
         q_left, q_right, q_imm_l, q_imm_r, q_window, q_keywords = self.extract_context_features(
-            query_text, word_clean
+            query_text, word_clean, char_offset=char_offset
         )
 
         # Extract features from candidate stored sense
@@ -260,10 +269,10 @@ class HomographContextResolver:
 
         return None
 
-    def is_same_sense(self, text1: str, text2: str, word: str) -> bool:
+    def is_same_sense(self, text1: str, text2: str, word: str, char_offset: Optional[int] = None) -> bool:
         """Check if target word has compatible context across two carrier sentences."""
         dummy_cand = {"carrier_text": text1}
-        sim = self.compute_context_similarity(text2, word, dummy_cand)
+        sim = self.compute_context_similarity(text2, word, dummy_cand, char_offset=char_offset)
         return sim >= self.match_threshold
     def resolve_homograph_phonetic(self, word: str, context_text: str) -> Optional[str]:
         """Contextually resolve correct phonetic spelling for homographs based on surrounding context.
