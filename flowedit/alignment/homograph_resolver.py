@@ -216,6 +216,8 @@ class HomographContextResolver:
         text: str,
         word: str,
         candidate_senses: List[Dict[str, Any]],
+        char_offset: Optional[int] = None,
+        **kwargs,
     ) -> Optional[Dict[str, Any]]:
         """Deterministically select the matching sense from candidate_senses.
         
@@ -227,6 +229,7 @@ class HomographContextResolver:
             text: Input carrier text to match against.
             word: Target word.
             candidate_senses: List of sense dicts stored in S3 dictionary.
+            char_offset: Optional character start offset for word in text.
             
         Returns:
             The best matching candidate dict or None.
@@ -244,7 +247,7 @@ class HomographContextResolver:
         best_score = -1.0
 
         for cand in candidate_senses:
-            score = self.compute_context_similarity(text, word, cand)
+            score = self.compute_context_similarity(text, word, cand, char_offset=char_offset)
             if score > best_score:
                 best_score = score
                 best_cand = cand
@@ -274,7 +277,14 @@ class HomographContextResolver:
         dummy_cand = {"carrier_text": text1}
         sim = self.compute_context_similarity(text2, word, dummy_cand, char_offset=char_offset)
         return sim >= self.match_threshold
-    def resolve_homograph_phonetic(self, word: str, context_text: str) -> Optional[str]:
+
+    def resolve_homograph_phonetic(
+        self,
+        word: str,
+        context_text: str,
+        char_offset: Optional[int] = None,
+        **kwargs,
+    ) -> Optional[str]:
         """Contextually resolve correct phonetic spelling for homographs based on surrounding context.
         
         Uses the dynamic S3/local spelling store and generalized sense matching without hardcoding.
@@ -283,7 +293,8 @@ class HomographContextResolver:
             return None
         try:
             from flowedit.memory.s3_storage import s3_spelling_store
-            return s3_spelling_store.resolve_correction(context_text, word)
+            return s3_spelling_store.resolve_correction(context_text, word, char_offset=char_offset)
         except Exception:
             return None
+
 

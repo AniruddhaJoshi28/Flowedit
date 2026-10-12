@@ -94,24 +94,33 @@ class HopfieldRefiner(nn.Module):
             resolver = HomographContextResolver()
 
             for span in retrieval.matched_spans:
-                p_text = getattr(span, "phonetic_text", None)
-                if not p_text or p_text.strip().lower() == span.word.strip().lower():
-                    # 1. Check entry stored phonetic_text or metadata
-                    if span.entry_index < len(self.memory.entries):
-                        entry = self.memory.entries[span.entry_index]
+                resolved_p = None
+                try:
+                    resolved_p = resolver.resolve_homograph_phonetic(
+                        span.word, text, char_offset=getattr(span, "char_start", None)
+                    )
+                except TypeError:
+                    resolved_p = resolver.resolve_homograph_phonetic(span.word, text)
+
+                if resolved_p and resolved_p.strip().lower() != span.word.strip().lower():
+                    span.phonetic_text = resolved_p.strip()
+                elif span.entry_index < len(self.memory.entries):
+                    entry = self.memory.entries[span.entry_index]
+                    entry_carrier = (getattr(entry, "carrier_text", "") or "").strip()
+                    # If memory entry has a specific carrier context, only apply its pronunciation
+                    # if the current span in text matches the same sense/context
+                    if entry_carrier and entry_carrier.lower() != span.word.lower():
+                        if resolver.is_same_sense(entry_carrier, text, span.word, char_offset=getattr(span, "char_start", None)):
+                            c_p = getattr(entry, "phonetic_text", None) or entry.metadata.get("phonetic_text") or entry.metadata.get("phonetic_hint")
+                            if c_p and c_p.strip().lower() != span.word.strip().lower():
+                                span.phonetic_text = c_p.strip()
+                        else:
+                            # Not in the same context sense: leave unedited
+                            span.phonetic_text = None
+                    else:
                         c_p = getattr(entry, "phonetic_text", None) or entry.metadata.get("phonetic_text") or entry.metadata.get("phonetic_hint")
                         if c_p and c_p.strip().lower() != span.word.strip().lower():
                             span.phonetic_text = c_p.strip()
-                            continue
-                        # 2. Check contextual homograph resolver against entry carrier_text
-                        h_p = resolver.resolve_homograph_phonetic(span.word, entry.carrier_text or text)
-                        if h_p and h_p.strip().lower() != span.word.strip().lower():
-                            span.phonetic_text = h_p.strip()
-                            continue
-                    # 3. Check contextual homograph resolver against full input text
-                    h_p = resolver.resolve_homograph_phonetic(span.word, text)
-                    if h_p and h_p.strip().lower() != span.word.strip().lower():
-                        span.phonetic_text = h_p.strip()
 
             # If reference audio phonetic pronunciation is stored, substitute only the matched spans
             spans_with_phonetics = [
@@ -166,6 +175,10 @@ class HopfieldRefiner(nn.Module):
                     target_len = max(1, s_end - s_start)
                     entry = self.memory.entries[span.entry_index] if span.entry_index < len(self.memory.entries) else None
                     if entry is not None:
+                        entry_carrier = (getattr(entry, "carrier_text", "") or "").strip()
+                        if entry_carrier and entry_carrier.lower() != span.word.lower():
+                            if not resolver.is_same_sense(entry_carrier, text, span.word, char_offset=getattr(span, "char_start", None)):
+                                continue
                         w_delta = entry.word_delta if entry.word_delta is not None else entry.value.unsqueeze(0).unsqueeze(0)
                         w_delta = w_delta.to(device=base_embeddings.device, dtype=base_embeddings.dtype)
                         src_delta = w_delta[0] if w_delta.dim() == 3 else w_delta

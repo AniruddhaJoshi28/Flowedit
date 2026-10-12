@@ -144,25 +144,148 @@ class XTTSBackbone(TTSBackbone):
 
         # Standard hardcoded fallback for server environment
         candidates.append("/home/rsurya/projects/text_to_speech/app/model")
+        candidates.append("/home/rsurya/projects/flow_edit/Flowedit/model/XTTS2")
+        candidates.append("/home/rsurya/projects/flow_edit/Flowedit/model/xtts2")
 
-        # Find the first existing candidate directory containing model.pth, vocab.json, or config.json
-        for candidate in candidates:
+        # Automatically expand candidates with subfolders (e.g. model/XTTS2, model/xtts2)
+        expanded_candidates = []
+        for c in candidates:
+            if not c:
+                continue
+            expanded_candidates.append(c)
+            # Common subfolder patterns for XTTS checkpoints
+            for sub in ["XTTS2", "xtts2", "xtts", "XTTS", "Xtts"]:
+                expanded_candidates.append(os.path.join(c, sub))
+            # Dynamically inspect immediate subdirectories if c exists
+            if os.path.isdir(c):
+                try:
+                    for entry in os.listdir(c):
+                        sub_path = os.path.join(c, entry)
+                        if os.path.isdir(sub_path):
+                            expanded_candidates.append(sub_path)
+                except Exception:
+                    pass
+
+        # Deduplicate while preserving order
+        seen_candidates = set()
+        deduped_candidates = []
+        for c in expanded_candidates:
+            c_norm = os.path.normpath(os.path.abspath(c)) if os.path.isabs(c) else c
+            if c_norm not in seen_candidates:
+                seen_candidates.add(c_norm)
+                deduped_candidates.append(c)
+
+        # Find the best candidate directory containing the model checkpoint
+        ckpt_name = getattr(self.config, "xtts_checkpoint", "model.pth") or "model.pth"
+
+        # 1. Prioritize directory containing the actual checkpoint (e.g. model.pth)
+        for candidate in deduped_candidates:
             if candidate and os.path.isdir(candidate):
-                model_check = os.path.join(candidate, "model.pth")
-                vocab_check = os.path.join(candidate, "vocab.json")
-                if os.path.isfile(model_check) or os.path.isfile(vocab_check) or os.path.isfile(config_check):
+                model_check = os.path.join(candidate, ckpt_name)
+                default_check = os.path.join(candidate, "model.pth")
+                if os.path.isfile(model_check) or os.path.isfile(default_check):
                     logger.info(f"Resolved fine-tuned XTTS model directory: {candidate}")
                     return os.path.abspath(candidate)
 
-        for candidate in candidates:
+        # 2. Secondary fallback: directory containing vocab.json or config.json
+        for candidate in deduped_candidates:
+            if candidate and os.path.isdir(candidate):
+                vocab_check = os.path.join(candidate, "vocab.json")
+                config_check = os.path.join(candidate, "config.json")
+                if os.path.isfile(vocab_check) or os.path.isfile(config_check):
+                    logger.info(f"Resolved fine-tuned XTTS model directory: {candidate}")
+                    return os.path.abspath(candidate)
+
+        # 3. Last fallback: any existing candidate directory
+        for candidate in deduped_candidates:
             if candidate and os.path.isdir(candidate):
                 return os.path.abspath(candidate)
 
-        checked_paths = "\n  ".join(f"- {c}" for c in candidates if c)
+        checked_paths = "\n  ".join(f"- {c}" for c in deduped_candidates if c)
         raise FileNotFoundError(
             f"Fine-tuned XTTS model directory not found. Checked paths:\n  {checked_paths}\n"
             "Please ensure /home/rsurya/projects/flow_edit/Flowedit/model or FLOWEDIT_MODEL_DIR is present."
         )
+
+    def _find_dvae_path(self, model_dir: Optional[str] = None) -> Optional[str]:
+        """Exhaustively locate dvae.pth across model dirs, parent dirs, project paths, and Coqui caches."""
+        m_dir = model_dir or getattr(self, "_model_dir", None)
+        try:
+            if not m_dir:
+                m_dir = self._resolve_model_dir()
+        except Exception:
+            m_dir = "/home/rsurya/projects/flow_edit/Flowedit/model"
+
+        cands = [
+            os.path.join(m_dir, "dvae.pth") if m_dir else None,
+            os.path.join(os.path.dirname(m_dir), "models", "dvae.pth") if m_dir else None,
+            os.path.join(os.path.dirname(m_dir), "model", "dvae.pth") if m_dir else None,
+            "/home/rsurya/projects/flow_edit/Flowedit/models/dvae.pth",
+            "/home/rsurya/projects/flow_edit/Flowedit/model/dvae.pth",
+            "/home/rsurya/projects/flow_edit/models/dvae.pth",
+            "/home/rsurya/projects/flow_edit/model/dvae.pth",
+            "/home/rsurya/projects/text_to_speech/app/model/dvae.pth",
+            os.path.expanduser("~/projects/flow_edit/Flowedit/models/dvae.pth"),
+            os.path.expanduser("~/projects/flow_edit/Flowedit/model/dvae.pth"),
+            os.path.expanduser("~/projects/flow_edit/models/dvae.pth"),
+            os.path.expanduser("~/projects/text_to_speech/app/model/dvae.pth"),
+            os.path.expanduser("~/.local/share/tts/tts_models--multilingual--multi-dataset--xtts_v2/dvae.pth"),
+            os.path.expanduser("~/.cache/tts/tts_models--multilingual--multi-dataset--xtts_v2/dvae.pth"),
+        ]
+        for c in cands:
+            if c and os.path.isfile(c) and os.path.getsize(c) > 1000:
+                return os.path.abspath(c)
+
+        import glob
+        search_patterns = [
+            os.path.expanduser("~/projects/**/dvae.pth"),
+            os.path.expanduser("~/.local/share/tts/**/dvae.pth"),
+            os.path.expanduser("~/.cache/**/dvae.pth"),
+        ]
+        for pat in search_patterns:
+            try:
+                for m in glob.glob(pat, recursive=True):
+                    if os.path.isfile(m) and os.path.getsize(m) > 1000:
+                        return os.path.abspath(m)
+            except Exception:
+                continue
+        return None
+
+    def _ensure_dvae_loaded(self, model_dir: Optional[str] = None) -> bool:
+        """Attempt to lazily load Discrete VAE if not already present."""
+        if hasattr(self.model, "dvae") and self.model.dvae is not None:
+            return True
+
+        dvae_path = self._find_dvae_path(model_dir)
+        if not dvae_path:
+            logger.info("XTTS Discrete VAE file not found in local paths. Latent optimization will use dynamic discovery/surrogate.")
+            return False
+
+        try:
+            from TTS.tts.layers.xtts.dvae import DiscreteVAE
+            dvae = DiscreteVAE(
+                channels=80,
+                normalization=None,
+                positional_dims=1,
+                num_tokens=1024,
+                codebook_dim=512,
+                hidden_dim=512,
+                num_resnet_blocks=3,
+                kernel_size=3,
+                num_layers=2,
+                use_transposed_convs=False,
+            )
+            dvae_ckpt = torch.load(dvae_path, map_location="cpu", weights_only=False)
+            state = dvae_ckpt.get("model", dvae_ckpt.get("state_dict", dvae_ckpt))
+            dvae.load_state_dict(state, strict=False)
+            dvae = dvae.to(self.device)
+            dvae.eval()
+            self.model.dvae = dvae
+            logger.info(f"✓ XTTS Discrete VAE loaded successfully from {dvae_path}")
+            return True
+        except Exception as e:
+            logger.warning(f"Could not load Discrete VAE from {dvae_path}: {e}")
+            return False
 
     def load_model(self) -> None:
         """Load fine-tuned XTTS model, BPE tokenizer, and Discrete VAE."""
@@ -252,47 +375,8 @@ class XTTSBackbone(TTSBackbone):
         self.model.tokenizer = VoiceBpeTokenizer(vocab_file=vocab_path)
         self.tokenizer_instance = self.model.tokenizer
 
-        # Ensure Discrete VAE is loaded (needed for teacher-forced DVAE optimization loss)
-        if not hasattr(self.model, "dvae") or self.model.dvae is None:
-            try:
-                from TTS.tts.layers.xtts.dvae import DiscreteVAE
-                dvae = DiscreteVAE(
-                    channels=80,
-                    normalization=None,
-                    positional_dims=1,
-                    num_tokens=1024,
-                    codebook_dim=512,
-                    hidden_dim=512,
-                    num_resnet_blocks=3,
-                    kernel_size=3,
-                    num_layers=2,
-                    use_transposed_convs=False,
-                )
-                if not os.path.isfile(dvae_path):
-                    for d_cand in [
-                        "/home/rsurya/projects/flow_edit/Flowedit/model/dvae.pth",
-                        os.path.expanduser("~/projects/flow_edit/Flowedit/model/dvae.pth"),
-                        os.path.join(model_dir, "dvae.pth"),
-                        os.path.join(os.path.dirname(model_dir), "model", "dvae.pth"),
-                        os.path.join(os.path.dirname(model_dir), "flowedit", "resources", "dvae.pth"),
-                        "/home/rsurya/projects/text_to_speech/app/model/dvae.pth",
-                    ]:
-                        if d_cand and os.path.isfile(d_cand):
-                            dvae_path = d_cand
-                            break
-
-                if os.path.isfile(dvae_path):
-                    dvae_ckpt = torch.load(dvae_path, map_location="cpu", weights_only=False)
-                    state = dvae_ckpt.get("model", dvae_ckpt.get("state_dict", dvae_ckpt))
-                    dvae.load_state_dict(state, strict=False)
-                    dvae = dvae.to(self.device)
-                    dvae.eval()
-                    self.model.dvae = dvae
-                    logger.info(f"XTTS Discrete VAE loaded successfully from {dvae_path}")
-                else:
-                    logger.info(f"XTTS Discrete VAE file not found at {dvae_path}. Latent optimization will load DVAE dynamically if available.")
-            except Exception as e:
-                logger.warning(f"Could not load Discrete VAE: {e}")
+        self._model_dir = model_dir
+        self._ensure_dvae_loaded(model_dir)
 
         # Check if base_model exists for raw baseline comparison (un-fine-tuned)
         base_model_path = os.path.join(model_dir, "base_model.pth")
@@ -622,7 +706,56 @@ class XTTSBackbone(TTSBackbone):
 
         # 3. Extract discrete audio codes using DVAE
         if not hasattr(self.model, "dvae") or self.model.dvae is None:
-            raise RuntimeError("XTTS DVAE is required to compute optimization loss over audio codes.")
+            self._ensure_dvae_loaded()
+
+        if not hasattr(self.model, "dvae") or self.model.dvae is None:
+            # Failsafe acoustic embedding surrogate optimization loss when DVAE file is absent
+            logger.info("[XTTS Optimizer] DVAE checkpoint not on disk. Using acoustic embedding alignment surrogate loss.")
+            p_hint = kwargs.get("phonetic_hint")
+            if not p_hint:
+                try:
+                    from flowedit.alignment.homograph_resolver import HomographContextResolver
+                    resolver = HomographContextResolver()
+                    p_hint = resolver.resolve_homograph_phonetic(target_word or "", text)
+                except Exception:
+                    p_hint = None
+            if not p_hint or (target_word and p_hint.lower() == target_word.lower()):
+                p_hint = target_word or text
+
+            with torch.no_grad():
+                tgt_emb = self.encode_text(p_hint, language=language)
+
+            if is_word_level_ref and token_indices and len(token_indices) > 0 and not is_isolated:
+                # perturbed_embeddings is already sliced to target word tokens
+                cur_span = perturbed_embeddings
+            elif token_indices:
+                t_min = max(0, min(token_indices))
+                t_max = min(perturbed_embeddings.shape[1], max(token_indices) + 1)
+                cur_span = perturbed_embeddings[:, t_min:t_max, :] if t_max > t_min else perturbed_embeddings
+            else:
+                cur_span = perturbed_embeddings
+
+            if cur_span.shape[1] == 0:
+                cur_span = perturbed_embeddings
+
+            tgt_len = cur_span.shape[1]
+            if tgt_emb.shape[1] != tgt_len:
+                if tgt_len == 1:
+                    tgt_span = tgt_emb.mean(dim=1, keepdim=True)
+                elif tgt_emb.shape[1] == 1:
+                    tgt_span = tgt_emb.repeat(1, tgt_len, 1)
+                else:
+                    flat_tgt = tgt_emb.transpose(1, 2).float()
+                    tgt_span = F.interpolate(flat_tgt, size=tgt_len, mode='linear', align_corners=False).transpose(1, 2)
+            else:
+                tgt_span = tgt_emb
+            tgt_span = tgt_span.to(device=cur_span.device, dtype=cur_span.dtype)
+
+            surr_loss = F.mse_loss(cur_span, tgt_span) * 5.0 + 0.001 * torch.norm(text_embedding_delta)
+            return {
+                "loss": surr_loss,
+                "embedding_norm": torch.norm(perturbed_embeddings),
+            }
 
         with torch.no_grad():
             audio_codes = self.model.dvae.get_codebook_indices(mel)

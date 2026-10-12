@@ -317,15 +317,23 @@ class S3SpellingStore:
             if not self._dictionary:
                 self._fetch_from_flowedit_api()
 
-    def resolve_correction(self, text: str, word: str) -> Optional[str]:
+    def resolve_correction(
+        self,
+        text: str,
+        word: str,
+        char_offset: Optional[int] = None,
+        **kwargs,
+    ) -> Optional[str]:
         """Deterministically resolve the correct phonetic spelling for word in text context.
         
         Evaluates context compatibility against registered senses. If context does
-        not match the registered sense(s), falls back to default phonetic spelling.
+        not match the registered sense(s), falls back to default phonetic spelling only
+        if the word has no contextual constraints (i.e. not a context-dependent homograph).
         
         Args:
             text: Full carrier sentence
             word: Target word
+            char_offset: Optional character start offset for word in text
             
         Returns:
             The replacement spelling string (e.g. 'red') or None if not registered.
@@ -341,7 +349,7 @@ class S3SpellingStore:
         if not senses:
             return word_dict.get("default_spell")
 
-        matched_sense = self.resolver.match_sense(text, word_key, senses)
+        matched_sense = self.resolver.match_sense(text, word_key, senses, char_offset=char_offset)
         if matched_sense and "spell_as" in matched_sense:
             return matched_sense["spell_as"]
 

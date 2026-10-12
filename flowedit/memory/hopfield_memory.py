@@ -724,8 +724,11 @@ class HopfieldMemory(nn.Module):
                         except Exception:
                             sense_aligned = False
 
-                    if is_homograph:
-                        is_active_match = (sense_aligned or best_lex_sim >= 0.35 or (g_occ >= 0.25 and s_occ >= 2.0))
+                    if is_homograph and carrier_list:
+                        # For homographs with known carrier context, require contextual sense alignment
+                        is_active_match = sense_aligned or (best_lex_sim >= 0.35)
+                    elif is_homograph:
+                        is_active_match = (g_occ >= 0.25 and s_occ >= 2.0)
                     else:
                         is_active_match = (g_occ >= 0.10 or s_occ >= 1.5 or (w_lower in text.lower()))
 
@@ -737,7 +740,10 @@ class HopfieldMemory(nn.Module):
                             try:
                                 from flowedit.alignment.homograph_resolver import HomographContextResolver
                                 resolver = HomographContextResolver()
-                                h_p = resolver.resolve_homograph_phonetic(entry.word, entry.carrier_text or text)
+                                try:
+                                    h_p = resolver.resolve_homograph_phonetic(entry.word, entry.carrier_text or text, char_offset=c_start)
+                                except TypeError:
+                                    h_p = resolver.resolve_homograph_phonetic(entry.word, entry.carrier_text or text)
                                 if h_p and h_p.strip().lower() != entry.word.strip().lower():
                                     span_phonetic = h_p.strip()
                             except Exception:
