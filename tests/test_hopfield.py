@@ -331,3 +331,36 @@ class TestHopfieldRefiner:
         )
         assert not res.is_modified
         assert (res.waveform == 0).all()
+
+    def test_homograph_contextual_disambiguation_lead(self):
+        k = torch.randn(self.dim)
+        v = torch.randn(self.dim)
+        self.memory.write(
+            key=k,
+            value=v,
+            word="lead",
+            carrier_text="This toy is made up of lead",
+            phonetic_text="lead",
+        )
+
+        class DummyBackbone:
+            embedding_dim = 128
+            device = "cpu"
+            def encode_text(self, text, lang="en"):
+                return torch.randn(1, len(text), 128)
+            def synthesize_direct(self, text, speaker_conditioning, **kwargs):
+                return torch.ones(1, 24000), 24000
+
+        bb = DummyBackbone()
+        test_sentence = "This toy is made up of lead and Anurag is the lead of data science"
+        res = self.refiner.forward(
+            backbone=bb,
+            text=test_sentence,
+            speaker_conditioning={"audio_path": "fake.wav"},
+        )
+        synth_text = res.diagnostics.get("synth_text", "")
+        assert "This toy is made up of led" in synth_text
+        assert synth_text.endswith("lead of data science")
+        assert synth_text.count("lead") == 1
+        assert synth_text.count("led") == 1
+

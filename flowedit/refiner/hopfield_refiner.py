@@ -119,6 +119,18 @@ class HopfieldRefiner(nn.Module):
                         if sense_ok:
                             if c_p and c_p.strip().lower() != span.word.strip().lower():
                                 span.phonetic_text = c_p.strip()
+                            else:
+                                auto_p = resolver.resolve_homograph_phonetic(
+                                    span.word, text, char_offset=getattr(span, "char_start", None)
+                                )
+                                if not auto_p or auto_p.strip().lower() == span.word.strip().lower():
+                                    for ct in carrier_list:
+                                        if ct:
+                                            auto_p = resolver.resolve_homograph_phonetic(span.word, ct)
+                                            if auto_p and auto_p.strip().lower() != span.word.strip().lower():
+                                                break
+                                if auto_p and auto_p.strip().lower() != span.word.strip().lower():
+                                    span.phonetic_text = auto_p.strip()
                         else:
                             # Not in the same context sense: leave unedited
                             span.phonetic_text = None
@@ -126,6 +138,12 @@ class HopfieldRefiner(nn.Module):
                         # Non-homograph: always apply learned pronunciation
                         if c_p and c_p.strip().lower() != span.word.strip().lower():
                             span.phonetic_text = c_p.strip()
+                        elif is_homograph:
+                            auto_p = resolver.resolve_homograph_phonetic(
+                                span.word, text, char_offset=getattr(span, "char_start", None)
+                            )
+                            if auto_p and auto_p.strip().lower() != span.word.strip().lower():
+                                span.phonetic_text = auto_p.strip()
                 else:
                     resolved_p = None
                     try:
@@ -147,7 +165,7 @@ class HopfieldRefiner(nn.Module):
             if spans_with_phonetics:
                 # Sort from end to beginning so character replacements don't shift earlier character offsets
                 spans_sorted_desc = sorted(
-                    retrieval.matched_spans,
+                    spans_with_phonetics,
                     key=lambda s: getattr(s, "char_start", 0) if getattr(s, "char_start", None) is not None else -1,
                     reverse=True
                 )

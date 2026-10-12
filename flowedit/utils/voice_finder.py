@@ -33,7 +33,7 @@ PRESET_VOICE_TRANSCRIPTS = {
 # Optimal trimmed sentence for Flow-Matching DiT (F5-TTS) in-context prompt:
 PRESET_VOICE_F5_TRANSCRIPTS = {
     "blessing": "In oncology, delivery of breakthrough therapy is a high-stakes mission.",
-    "michael": "The sensibility of the palm remains normal because the superficial sensory branch of the median nerve branches.",
+    "michael": "The sensibility of the palm remains normal.",
 }
 
 

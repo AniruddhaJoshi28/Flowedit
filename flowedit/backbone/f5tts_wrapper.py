@@ -444,8 +444,8 @@ class F5TTSBackbone(TTSBackbone):
         prompt_text = ref_text.strip() if ref_text and ref_text.strip() else ""
         if not prompt_text:
             prompt_text = f5_preset_text or ""
-        elif is_michael and ("proximal" in prompt_text.lower() or "tcl" in prompt_text.lower()):
-            prompt_text = f5_preset_text or "The sensibility of the palm remains normal because the superficial sensory branch of the median nerve branches."
+        elif is_michael and ("proximal" in prompt_text.lower() or "tcl" in prompt_text.lower() or "branches" in prompt_text.lower() or "remains" in prompt_text.lower()):
+            prompt_text = f5_preset_text or "The sensibility of the palm remains normal."
         elif is_blessing and ("dedicated" in prompt_text.lower() or "ecosystem" in prompt_text.lower()):
             prompt_text = f5_preset_text or "In oncology, delivery of breakthrough therapy is a high-stakes mission."
 
@@ -463,9 +463,10 @@ class F5TTSBackbone(TTSBackbone):
             silence_pad = torch.zeros(ref_waveform.shape[0], int(0.250 * 24000), device=ref_waveform.device, dtype=ref_waveform.dtype)
             ref_waveform = torch.cat([ref_waveform, silence_pad], dim=-1)
             logger.info(f"Trimmed Blessing reference audio to clean {cut_sample / 24000.0:.2f}s clause with 250ms silence pad.")
-        elif is_michael and ref_waveform.shape[-1] > int(6.0 * 24000):
-            # Clause 1 'branches' ends cleanly at 6.35s. Find natural silence valley (6.40s-6.90s) before 'proximal' begins
-            cut_sample = self._find_clean_clause_boundary(ref_waveform, 24000, search_start_sec=6.2, search_end_sec=6.9, silence_thresh=0.008)
+        elif is_michael and ref_waveform.shape[-1] > int(3.5 * 24000):
+            # Clause 1 'The sensibility of the palm remains normal.' ends cleanly at ~2.90s.
+            # Detect silence valley between 2.95s and 3.35s
+            cut_sample = self._find_clean_clause_boundary(ref_waveform, 24000, search_start_sec=2.95, search_end_sec=3.35, silence_thresh=0.008)
             ref_waveform = ref_waveform[:, :cut_sample]
             fade_len = min(int(0.030 * 24000), ref_waveform.shape[-1])
             fade = torch.linspace(1.0, 0.0, fade_len, device=ref_waveform.device)
@@ -473,7 +474,7 @@ class F5TTSBackbone(TTSBackbone):
             # Append 250ms of pure digital silence so Michael prompt never leaks or regenerates 'branches'/'rangers'
             silence_pad = torch.zeros(ref_waveform.shape[0], int(0.250 * 24000), device=ref_waveform.device, dtype=ref_waveform.dtype)
             ref_waveform = torch.cat([ref_waveform, silence_pad], dim=-1)
-            logger.info(f"Trimmed Michael reference audio to clean {cut_sample / 24000.0:.2f}s clause with 250ms silence pad (fully eliminating 'branches'/'rangers' bleed).")
+            logger.info(f"Trimmed Michael reference audio to clean {cut_sample / 24000.0:.2f}s clause ('The sensibility of the palm remains normal.') with 250ms silence pad.")
         elif ref_waveform.shape[-1] > int(7.0 * 24000):
             # Trim generic custom audio at the nearest natural silence valley around 4.8s - 6.8s
             cut_sample = self._find_clean_clause_boundary(ref_waveform, 24000, search_start_sec=4.8, search_end_sec=6.8, silence_thresh=0.010)
@@ -867,6 +868,12 @@ class F5TTSBackbone(TTSBackbone):
         ref_text = user_ref_text.strip() if user_ref_text else speaker_conditioning.get("text", ".").strip()
         if not ref_text:
             ref_text = "."
+
+        # Guard against stale external prompt strings for Michael preset
+        ref_lower = ref_text.lower()
+        spk_lower = str(temp_ref).lower() + " " + str(speaker_conditioning.get("audio_path", "")).lower()
+        if ("michael" in spk_lower or "male" in spk_lower) and ("branches" in ref_lower or "proximal" in ref_lower or "tcl" in ref_lower):
+            ref_text = "The sensibility of the palm remains normal."
 
         ref_duration = speaker_conditioning.get("duration_seconds")
         planner = DurationPlanner()

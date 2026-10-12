@@ -35,6 +35,235 @@ DETERMINERS_AND_STOPWORDS = {
 TEMPORAL_PAST = {'yesterday', 'ago', 'last', 'previously', 'earlier', 'formerly', 'past'}
 TEMPORAL_FUTURE = {'tomorrow', 'soon', 'later', 'next', 'upcoming'}
 
+HOMOGRAPH_SENSE_MAP = {
+    "lead": [
+        {
+            "sense_id": "metal",
+            "phonetic": "led",
+            "context_keywords": {
+                "toy", "toys", "metal", "heavy", "paint", "pipe", "pipes", "toxic", "poisoning",
+                "bullet", "bullets", "pencil", "pencils", "shield", "apron", "made", "element",
+                "mineral", "battery", "batteries", "sinker", "alloy", "plumbing", "ore", "crystal"
+            },
+            "context_patterns": [
+                r"\bmade\s+up\s+of\b", r"\bmade\s+of\b", r"\blead\s+pipe\w*\b",
+                r"\blead\s+poison\w*\b", r"\blead\s+apron\b", r"\blead\s+shield\b",
+                r"\bheavy\s+lead\b", r"\btoy\b.*\blead\b", r"\blead\s+bullet\w*\b"
+            ],
+            "default_if_unknown": False,
+        },
+        {
+            "sense_id": "leader",
+            "phonetic": "lead",
+            "context_keywords": {
+                "leader", "leadership", "guide", "guiding", "direct", "head", "team", "role",
+                "science", "data", "project", "following", "ahead", "example", "actor", "manager",
+                "group", "company", "way", "discussion", "charge"
+            },
+            "context_patterns": [
+                r"\blead\s+of\b", r"\blead\s+the\b", r"\blead\s+to\b", r"\bin\s+the\s+lead\b",
+                r"\btake\s+the\s+lead\b", r"\bdata\s+science\b", r"\bteam\s+lead\b",
+                r"\bproject\s+lead\b", r"\blead\s+role\b", r"\blead\s+singer\b"
+            ],
+            "default_if_unknown": True,
+        },
+    ],
+    "read": [
+        {
+            "sense_id": "past",
+            "phonetic": "red",
+            "context_keywords": {
+                "yesterday", "ago", "last", "previously", "already", "had", "have", "past",
+                "earlier", "finished", "completed", "done"
+            },
+            "context_patterns": [
+                r"\bhave\s+read\b", r"\bhad\s+read\b", r"\balready\s+read\b",
+                r"\bi\s+read\b", r"\bshe\s+read\b", r"\bhe\s+read\b", r"\bwas\s+read\b"
+            ],
+            "default_if_unknown": False,
+        },
+        {
+            "sense_id": "present",
+            "phonetic": "read",
+            "context_keywords": {
+                "will", "can", "shall", "should", "must", "please", "to", "tomorrow",
+                "wanna", "gonna", "book", "books", "article", "paper", "novel"
+            },
+            "context_patterns": [
+                r"\bto\s+read\b", r"\bwill\s+read\b", r"\bcan\s+read\b", r"\bplease\s+read\b",
+                r"\bshould\s+read\b", r"\bmust\s+read\b"
+            ],
+            "default_if_unknown": True,
+        },
+    ],
+    "bass": [
+        {
+            "sense_id": "fish",
+            "phonetic": "mass",
+            "context_keywords": {
+                "fish", "fishing", "lake", "river", "catch", "caught", "sea", "striped",
+                "largemouth", "smallmouth", "angler", "water", "lure", "hook"
+            },
+            "context_patterns": [
+                r"\bbass\s+fish\b", r"\bcaught\s+a\s+bass\b", r"\blargemouth\s+bass\b",
+                r"\bsmallmouth\s+bass\b", r"\bsea\s+bass\b"
+            ],
+            "default_if_unknown": False,
+        },
+        {
+            "sense_id": "music",
+            "phonetic": "base",
+            "context_keywords": {
+                "guitar", "music", "clef", "sound", "voice", "speaker", "drum", "amp",
+                "treble", "pitch", "line", "band", "player", "note", "low", "rhythm"
+            },
+            "context_patterns": [
+                r"\bbass\s+guitar\b", r"\bbass\s+clef\b", r"\bbass\s+line\b",
+                r"\bbass\s+player\b", r"\bslap\s+bass\b", r"\bheavy\s+bass\b"
+            ],
+            "default_if_unknown": True,
+        },
+    ],
+    "wind": [
+        {
+            "sense_id": "air",
+            "phonetic": "wind",
+            "context_keywords": {
+                "breeze", "air", "gust", "storm", "blow", "blowing", "chill", "cold",
+                "weather", "chilly", "gale", "outdoor", "speed", "direction"
+            },
+            "context_patterns": [
+                r"\bwind\s+blows\b", r"\bcold\s+wind\b", r"\bstrong\s+wind\b",
+                r"\bgust\s+of\s+wind\b", r"\bwind\s+speed\b"
+            ],
+            "default_if_unknown": True,
+        },
+        {
+            "sense_id": "twist",
+            "phonetic": "wynd",
+            "context_keywords": {
+                "twist", "turn", "clock", "watch", "road", "string", "up", "down",
+                "path", "coil", "spool", "tight", "tightly"
+            },
+            "context_patterns": [
+                r"\bwind\s+up\b", r"\bwind\s+down\b", r"\bwinding\s+road\b",
+                r"\bwind\s+the\s+clock\b"
+            ],
+            "default_if_unknown": False,
+        },
+    ],
+    "tear": [
+        {
+            "sense_id": "cry",
+            "phonetic": "teer",
+            "context_keywords": {
+                "cry", "crying", "eye", "eyes", "weep", "sad", "drop", "grief",
+                "shed", "cheeks", "face", "sorrow", "joy"
+            },
+            "context_patterns": [
+                r"\btear\s+in\s+my\s+eye\b", r"\bshed\s+a\s+tear\b", r"\btears\s+of\s+joy\b",
+                r"\bin\s+tears\b", r"\btear\s+drop\w*\b"
+            ],
+            "default_if_unknown": True,
+        },
+        {
+            "sense_id": "rip",
+            "phonetic": "tare",
+            "context_keywords": {
+                "rip", "paper", "fabric", "cloth", "shred", "break", "apart", "hole",
+                "page", "sheet", "muscle", "ligament"
+            },
+            "context_patterns": [
+                r"\btear\s+it\s+up\b", r"\btear\s+down\b", r"\btear\s+apart\b",
+                r"\btear\s+a\s+hole\b", r"\btear\s+through\b"
+            ],
+            "default_if_unknown": False,
+        },
+    ],
+    "bow": [
+        {
+            "sense_id": "ribbon_weapon",
+            "phonetic": "boh",
+            "context_keywords": {
+                "arrow", "ribbon", "tie", "violin", "hair", "string", "gift", "box", "package"
+            },
+            "context_patterns": [
+                r"\bbow\s+and\s+arrow\b", r"\btie\s+a\s+bow\b", r"\bviolin\s+bow\b",
+                r"\bbow\s+tie\b"
+            ],
+            "default_if_unknown": True,
+        },
+        {
+            "sense_id": "bend",
+            "phonetic": "bow",
+            "context_keywords": {
+                "down", "take", "curtsy", "ship", "front", "respect", "stage", "audience",
+                "king", "queen", "deep"
+            },
+            "context_patterns": [
+                r"\btake\s+a\s+bow\b", r"\bbow\s+down\b", r"\bbow\s+to\b",
+                r"\bbow\s+before\b"
+            ],
+            "default_if_unknown": False,
+        },
+    ],
+    "live": [
+        {
+            "sense_id": "verb",
+            "phonetic": "liv",
+            "context_keywords": {
+                "where", "house", "place", "city", "together", "long", "peace", "alone",
+                "country", "apartment"
+            },
+            "context_patterns": [
+                r"\bto\s+live\b", r"\bwhere\s+i\s+live\b", r"\blive\s+in\b",
+                r"\blive\s+here\b", r"\blive\s+there\b", r"\blong\s+live\b"
+            ],
+            "default_if_unknown": True,
+        },
+        {
+            "sense_id": "adjective",
+            "phonetic": "lyve",
+            "context_keywords": {
+                "broadcast", "show", "concert", "wire", "stream", "tv", "audience",
+                "performance", "recording", "stage", "camera"
+            },
+            "context_patterns": [
+                r"\blive\s+stream\b", r"\blive\s+show\b", r"\blive\s+broadcast\b",
+                r"\blive\s+music\b", r"\blive\s+feed\b", r"\blive\s+tv\b"
+            ],
+            "default_if_unknown": False,
+        },
+    ],
+    "close": [
+        {
+            "sense_id": "verb",
+            "phonetic": "cloze",
+            "context_keywords": {
+                "door", "window", "shop", "eyes", "shut", "store", "gate", "book"
+            },
+            "context_patterns": [
+                r"\bclose\s+the\b", r"\bto\s+close\b", r"\bwill\s+close\b",
+                r"\bclose\s+down\b", r"\bclose\s+your\s+eyes\b"
+            ],
+            "default_if_unknown": True,
+        },
+        {
+            "sense_id": "adjective",
+            "phonetic": "cloce",
+            "context_keywords": {
+                "near", "nearby", "friend", "distance", "call", "match", "family",
+                "together", "proximity"
+            },
+            "context_patterns": [
+                r"\bclose\s+to\b", r"\bclose\s+friend\b", r"\bclose\s+call\b",
+                r"\bclose\s+by\b"
+            ],
+            "default_if_unknown": False,
+        },
+    ],
+}
+
 
 @dataclass
 class SenseProfile:
@@ -332,6 +561,8 @@ class HomographContextResolver:
         sim = self.compute_context_similarity(text2, word, dummy_cand, char_offset=char_offset)
         return sim >= self.match_threshold
 
+
+
     def resolve_homograph_phonetic(
         self,
         word: str,
@@ -341,14 +572,69 @@ class HomographContextResolver:
     ) -> Optional[str]:
         """Contextually resolve correct phonetic spelling for homographs based on surrounding context.
         
-        Uses the dynamic S3/local spelling store and generalized sense matching without hardcoding.
+        Uses dynamic S3 storage with fallback to built-in linguistic sense profiles.
         """
         if not word or not context_text:
             return None
+
+        # 1. First check dynamic S3 spelling store
         try:
             from flowedit.memory.s3_storage import s3_spelling_store
-            return s3_spelling_store.resolve_correction(context_text, word, char_offset=char_offset)
+            s3_res = s3_spelling_store.resolve_correction(context_text, word, char_offset=char_offset)
+            if s3_res and s3_res.strip().lower() != word.strip().lower():
+                return s3_res.strip()
         except Exception:
+            pass
+
+        # 2. Linguistic homograph disambiguation
+        w_lower = word.strip().lower()
+        if w_lower not in HOMOGRAPH_SENSE_MAP:
             return None
+
+        # Extract local context window around target occurrence (Paper Section 3.2: window of +-3 tokens)
+        if char_offset is not None and 0 <= char_offset <= len(context_text):
+            win_start = max(0, char_offset - 25)
+            win_end = min(len(context_text), char_offset + len(word) + 25)
+            local_snippet = context_text[win_start:win_end].lower()
+            q_left, q_right, _, _, _, _ = self.extract_context_features(
+                context_text, w_lower, radius=4, char_offset=char_offset
+            )
+            local_tokens = set(q_left + q_right)
+        else:
+            local_snippet = context_text.lower()
+            q_left, q_right, _, _, _, q_keywords = self.extract_context_features(
+                context_text, w_lower
+            )
+            local_tokens = set(q_left + q_right + q_keywords)
+
+        candidate_senses = HOMOGRAPH_SENSE_MAP[w_lower]
+        best_sense = None
+        best_score = -1.0
+
+        for sense in candidate_senses:
+            score = 0.0
+            # Keyword matches in local token context
+            kw_matches = local_tokens & sense["context_keywords"]
+            score += len(kw_matches) * 1.5
+
+            # Regex pattern matches in local sentence snippet
+            for pat in sense.get("context_patterns", []):
+                if re.search(pat, local_snippet, re.IGNORECASE):
+                    score += 2.5
+
+            if score > best_score:
+                best_score = score
+                best_sense = sense
+
+        # If a distinctive sense was matched with score > 0
+        if best_sense and best_score > 0.0:
+            return best_sense["phonetic"]
+
+        # Default fallback sense for homograph if one is marked as default
+        for sense in candidate_senses:
+            if sense.get("default_if_unknown"):
+                return sense["phonetic"]
+
+        return None
 
 

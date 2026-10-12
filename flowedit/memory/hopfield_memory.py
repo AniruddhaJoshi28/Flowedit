@@ -790,14 +790,20 @@ class HopfieldMemory(nn.Module):
                         processed_token_spans.add((span_start, span_end))
 
                         span_phonetic = entry.phonetic_text
-                        if not span_phonetic:
+                        if not span_phonetic or span_phonetic.strip().lower() == entry.word.strip().lower():
                             try:
                                 from flowedit.alignment.homograph_resolver import HomographContextResolver
                                 resolver = HomographContextResolver()
                                 try:
-                                    h_p = resolver.resolve_homograph_phonetic(entry.word, entry.carrier_text or text, char_offset=c_start)
+                                    h_p = resolver.resolve_homograph_phonetic(entry.word, text, char_offset=c_start)
                                 except TypeError:
-                                    h_p = resolver.resolve_homograph_phonetic(entry.word, entry.carrier_text or text)
+                                    h_p = resolver.resolve_homograph_phonetic(entry.word, text)
+                                if not h_p or h_p.strip().lower() == entry.word.strip().lower():
+                                    for ct in carrier_list:
+                                        if ct:
+                                            h_p = resolver.resolve_homograph_phonetic(entry.word, ct)
+                                            if h_p and h_p.strip().lower() != entry.word.strip().lower():
+                                                break
                                 if h_p and h_p.strip().lower() != entry.word.strip().lower():
                                     span_phonetic = h_p.strip()
                             except Exception:
@@ -977,7 +983,7 @@ class HopfieldMemory(nn.Module):
                 full_delta = res_fd.reshape(new_s).to(dtype=full_delta.dtype, device=full_delta.device)
 
             # Auto-enrich missing phonetic_text for known homographs
-            if not phonetic_text and word:
+            if (not phonetic_text or phonetic_text.strip().lower() == word.strip().lower()) and word:
                 try:
                     from flowedit.alignment.homograph_resolver import HomographContextResolver
                     resolver = HomographContextResolver()
