@@ -586,6 +586,7 @@ async def synthesize_text(
     speaker_name: Optional[str] = Form("female", description="Preset speaker voice name if not uploading audio"),
     ref_text: Optional[str] = Form(None, description="Optional transcription of speaker audio"),
     correction_scale: Optional[float] = Form(None, description="Optional perturbation amplification scale (default 1.25)"),
+    speed: Optional[float] = Form(None, description="Speech speed factor (e.g. 0.85 for relaxed, natural pacing)"),
 ):
     """Synthesize text, automatically applying learned Hopfield corrections on selected engine."""
     global inference_pipeline
@@ -601,6 +602,8 @@ async def synthesize_text(
         synth_kwargs = {}
         if correction_scale is not None and correction_scale > 0:
             synth_kwargs["correction_scale"] = correction_scale
+        if speed is not None and speed > 0:
+            synth_kwargs["speed"] = speed
 
         # Route 1: F5-TTS Paper Plugin
         if b_clean in ("f5tts", "f5-tts", "f5", "paper"):
@@ -808,6 +811,7 @@ async def synthesize_baseline(
     speaker_wav: Optional[UploadFile] = File(None, description="Speaker reference audio for voice conditioning"),
     speaker_name: Optional[str] = Form("female", description="Preset speaker voice name if not uploading audio"),
     ref_text: Optional[str] = Form(None, description="Optional transcription of speaker audio"),
+    speed: Optional[float] = Form(None, description="Speech speed factor (e.g. 0.85 for relaxed, natural pacing)"),
 ):
     """Pure baseline synthesis without any Hopfield memory modifications (uncorrected base pronunciation)."""
     global correction_pipeline
@@ -839,6 +843,7 @@ async def synthesize_baseline(
                 language=language,
                 user_ref_text=ref_text,
                 text_embedding_delta=None,
+                speed=speed,
             )
             write_audio_file(output_path, wav.squeeze().cpu().numpy(), sr)
             return FileResponse(

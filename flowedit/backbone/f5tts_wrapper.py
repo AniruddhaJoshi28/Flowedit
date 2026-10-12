@@ -148,6 +148,27 @@ class F5TTSBackbone(TTSBackbone):
                     logger.info(f"Discovered local F5-TTS vocab: {vocab_file}")
                     break
 
+        # Candidate vocoder locations
+        if not vocoder_local_path or not os.path.isdir(vocoder_local_path):
+            candidate_vocoders = [
+                os.path.join(flowedit_root, "models", "vocos"),
+                os.path.join(flowedit_root, "models", "f5tts", "vocos"),
+                os.path.join(workspace_root, "models", "vocos"),
+            ]
+            try:
+                hf_vocos = os.path.expanduser("~/.cache/huggingface/hub/models--charactr--vocos-mel-24khz/snapshots")
+                if os.path.isdir(hf_vocos):
+                    for snap in os.listdir(hf_vocos):
+                        candidate_vocoders.append(os.path.join(hf_vocos, snap))
+            except Exception:
+                pass
+
+            for cand in candidate_vocoders:
+                if cand and os.path.isfile(os.path.join(cand, "config.yaml")):
+                    vocoder_local_path = os.path.abspath(cand)
+                    logger.info(f"Discovered local Vocos vocoder: {vocoder_local_path}")
+                    break
+
         return ckpt_file, vocab_file, vocoder_local_path, model_name
 
     def load_model(self) -> None:
@@ -873,11 +894,26 @@ class F5TTSBackbone(TTSBackbone):
                 hook_handles.append(target.register_forward_hook(hook))
             logger.info(f"[F5TTS Injection] Registered forward hook across {len(hook_targets)} target module(s).")
 
+        # Determine natural speech speed (default 0.85 for relaxed, clear pacing)
+        speed_val = kwargs.get("speed")
+        if speed_val is None:
+            env_speed = os.environ.get("FLOWEDIT_F5TTS_SPEED")
+            if env_speed:
+                try:
+                    speed_val = float(env_speed)
+                except ValueError:
+                    speed_val = None
+        if speed_val is None:
+            if planned and hasattr(planned, "dynamic_speed_factor") and planned.dynamic_speed_factor:
+                speed_val = min(float(planned.dynamic_speed_factor), 0.88)
+            else:
+                speed_val = 0.85
+
         infer_kwargs = {
             "ref_file": temp_ref,
             "ref_text": ref_text.strip(),
             "gen_text": text.strip(),
-            "speed": 1.0,           # Stable 1.0 speed avoids phase distortion
+            "speed": float(speed_val),
             "nfe_step": 32,          # 32 ODE steps
             "cfg_strength": 2.0,     # Standard F5-TTS CFG
             "target_rms": 0.1,
