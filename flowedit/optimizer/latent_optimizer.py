@@ -150,28 +150,21 @@ class LatentOptimizer:
             for param_group in optimizer.param_groups:
                 param_group['lr'] = current_lr
 
-            # Mask non-target positions: δ_M = M ⊙ δ (δ_j = 0 ∀ j ∉ I)
-            delta_masked = delta * mask
-
-            # 1. Regularization loss L_reg = λ * ||δ_M||^2 (Eq. 3)
-            reg_loss = lambda_reg * torch.sum(delta_masked ** 2)
-            reg_loss_val = reg_loss.item()
-            if not torch.isfinite(reg_loss):
-                logger.error(f"Step {step} reg_loss is non-finite: {reg_loss_val}")
-                break
-            reg_loss.backward()
-
-            # 2. Sequential gradient accumulation across speakers (Eq. 2 & 3)
-            # Instead of holding multiple full DiT/GPT forward activation graphs in VRAM simultaneously,
-            # we sequentially accumulate (spk_loss / n_speakers).backward() per speaker.
-            # This releases each speaker's autograd graph immediately and cuts peak optimizer VRAM in half!
             n_speakers = max(1, len(speaker_cond_list))
             total_mel_val = 0.0
+            total_reg_val = 0.0
             step_failed = False
 
+            # Sequential gradient accumulation across speakers (Eq. 2 & 3)
+            # We construct a fresh delta_masked per speaker so each backward pass operates
+            # on an independent autograd graph branching off leaf tensor `delta`, accumulating gradients into delta.grad cleanly.
             for s_cond in speaker_cond_list:
+                spk_delta_masked = delta * mask
+                spk_reg_loss = (lambda_reg / n_speakers) * torch.sum(spk_delta_masked ** 2)
+                total_reg_val += spk_reg_loss.item() * n_speakers
+
                 loss_dict = backbone.compute_optimization_loss(
-                    text_embedding_delta=delta_masked,
+                    text_embedding_delta=spk_delta_masked,
                     ref_audio_path=ref_audio_path,
                     speaker_conditioning=s_cond,
                     text=text,
@@ -192,13 +185,14 @@ class LatentOptimizer:
                     break
 
                 total_mel_val += spk_loss.item()
-                # Sequentially backpropagate this speaker's portion of the loss
-                (spk_loss / n_speakers).backward()
+                step_loss = (spk_loss / n_speakers) + spk_reg_loss
+                step_loss.backward()
 
             if step_failed:
                 break
 
             mel_loss_val = total_mel_val / n_speakers
+            reg_loss_val = total_reg_val / n_speakers
             total_loss_val = mel_loss_val + reg_loss_val
 
             if step == 0:

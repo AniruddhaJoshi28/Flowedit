@@ -346,8 +346,16 @@ from flowedit.api.ui_html import get_ui_html
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
 @app.get("/ui", response_class=HTMLResponse, summary="FlowEdit Web Interface")
-def read_root():
-    """Serve the FlowEdit Red & White web UI."""
+def read_root(request: Request):
+    """Serve the FlowEdit Red & White web UI for browsers, or API JSON message when requested."""
+    accept = request.headers.get("accept", "")
+    if "application/json" in accept and "text/html" not in accept:
+        return JSONResponse(content={
+            "message": "FlowEdit API is running",
+            "version": "2.0.0",
+            "docs": "/docs",
+            "ui": "/ui"
+        })
     return HTMLResponse(content=get_ui_html())
 
 

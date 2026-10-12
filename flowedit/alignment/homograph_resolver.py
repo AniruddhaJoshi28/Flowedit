@@ -207,8 +207,14 @@ class HomographContextResolver:
         else:
             kw_overlap = 0.0
 
-        # Composite score
-        total_score = (0.40 * neighbor_score) + (0.35 * win_overlap) + (0.25 * kw_overlap)
+        # Composite score: account for both neighbor syntax and topical keywords
+        if neighbor_score > 0 and (win_overlap > 0 or kw_overlap > 0):
+            total_score = (0.35 * neighbor_score) + (0.35 * win_overlap) + (0.30 * kw_overlap)
+        elif win_overlap > 0 or kw_overlap > 0:
+            # When word order or syntax differs but topical/semantic context overlaps
+            total_score = max(win_overlap, kw_overlap) * 0.75 + (0.25 * neighbor_score)
+        else:
+            total_score = 0.40 * neighbor_score
         return total_score
 
     def match_sense(
@@ -274,9 +280,14 @@ class HomographContextResolver:
 
     def is_same_sense(self, text1: str, text2: str, word: str, char_offset: Optional[int] = None) -> bool:
         """Check if target word has compatible context across two carrier sentences."""
+        if not text1 or not text2:
+            return True
+        w_clean = word.strip().lower()
+        if text1.strip().lower() == w_clean or text2.strip().lower() == w_clean:
+            return True
         dummy_cand = {"carrier_text": text1}
         sim = self.compute_context_similarity(text2, word, dummy_cand, char_offset=char_offset)
-        return sim >= self.match_threshold
+        return sim >= max(0.12, self.match_threshold * 0.6)
 
     def resolve_homograph_phonetic(
         self,

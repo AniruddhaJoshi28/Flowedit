@@ -869,14 +869,15 @@ class XTTSBackbone(TTSBackbone):
 
     def synthesize_from_embeddings(
         self,
-        text_embeddings: torch.Tensor,
-        speaker_conditioning: Dict[str, Any],
-        text: str,
+        text_embeddings: Optional[torch.Tensor] = None,
+        speaker_conditioning: Dict[str, Any] = None,
+        text: str = "",
         language: str = "en",
+        text_embedding_delta: Optional[torch.Tensor] = None,
         **kwargs,
     ) -> Tuple[torch.Tensor, int]:
         """
-        Synthesize audio by injecting refined text embeddings into the GPT text embedding layer.
+        Synthesize audio by injecting refined text perturbation delta into the GPT text embedding layer.
         """
         self._ensure_loaded()
         gpt_cond_latent = speaker_conditioning.get("gpt_cond_latent")
@@ -886,7 +887,11 @@ class XTTSBackbone(TTSBackbone):
             logger.warning("Missing XTTS conditioning latents, falling back to direct synthesis")
             return self.synthesize_direct(text, speaker_conditioning, language=language)
 
-        if text_embeddings is not None and text_embeddings.abs().sum() > 1e-6:
+        if text_embedding_delta is not None and text_embedding_delta.abs().sum() > 1e-6:
+            delta = text_embedding_delta.to(self.device)
+            if delta.dim() == 2:
+                delta = delta.unsqueeze(0)
+        elif text_embeddings is not None and text_embeddings.abs().sum() > 1e-6:
             base_embeddings = self.encode_text(text, language=language)
             delta = text_embeddings.to(base_embeddings.device) - base_embeddings
         else:
@@ -904,10 +909,12 @@ class XTTSBackbone(TTSBackbone):
                 def hook(module, inputs, output):
                     out_tensor = output[0] if isinstance(output, tuple) else output
                     new_out = out_tensor.clone()
-                    t_embed = text_embeddings.to(device=out_tensor.device, dtype=out_tensor.dtype)
+                    t_delta = delta.to(device=out_tensor.device, dtype=out_tensor.dtype)
+                    # Acoustic safety bounds for XTTS: prevent out-of-distribution hallucinations / noise
+                    t_delta = torch.clamp(t_delta, -0.30, 0.30)
 
                     input_ids = inputs[0]
-                    L_corr = t_embed.shape[1]
+                    L_corr = t_delta.shape[1]
                     T_seq = out_tensor.shape[1]
 
                     start_pos = -1
@@ -949,14 +956,17 @@ class XTTSBackbone(TTSBackbone):
                                 t_offset = 1
 
                     if start_pos == -1:
-                        start_pos = 0
-                        t_offset = 0
+                        # No token match found — do not modify embeddings to avoid noise
+                        if isinstance(output, tuple):
+                            return output
+                        return out_tensor
 
                     max_avail = min(L_corr - t_offset, T_seq - start_pos)
                     if max_avail > 0:
-                        new_out[:, start_pos : start_pos + max_avail, :] = t_embed[:, t_offset : t_offset + max_avail, :]
+                        # ADD bounded delta to naturally-produced GPT embeddings
+                        new_out[:, start_pos : start_pos + max_avail, :] += t_delta[:, t_offset : t_offset + max_avail, :]
                         logger.info(
-                            f"[XTTS Hook] Successfully injected refined embeddings at GPT token positions {start_pos}..{start_pos + max_avail} (delta norm: {delta.norm().item():.4f})"
+                            f"[XTTS Hook] Injected pronunciation delta at GPT token positions {start_pos}..{start_pos + max_avail} (delta norm: {t_delta.norm().item():.4f})"
                         )
 
                     if isinstance(output, tuple):
@@ -1011,25 +1021,12 @@ class XTTSBackbone(TTSBackbone):
         Direct synthesis without modifications, or with direct text_embedding_delta injected.
         """
         if text_embedding_delta is not None and text_embedding_delta.abs().sum() > 1e-6:
-            base_embeddings = self.encode_text(text, language=language)
-            delta = text_embedding_delta.to(base_embeddings.device)
-            if delta.dim() == 2:
-                delta = delta.unsqueeze(0)
-            B, S_target, D = base_embeddings.shape
-            B_d, S_delta, D_d = delta.shape
-            if S_delta != S_target:
-                if S_delta > S_target:
-                    delta = delta[:, :S_target, :]
-                else:
-                    padded_delta = torch.zeros(B, S_target, D, device=base_embeddings.device, dtype=base_embeddings.dtype)
-                    padded_delta[:, :S_delta, :] = delta
-                    delta = padded_delta
-            refined_embeddings = base_embeddings + delta
             return self.synthesize_from_embeddings(
-                text_embeddings=refined_embeddings,
+                text_embeddings=None,
                 speaker_conditioning=speaker_conditioning,
                 text=text,
                 language=language,
+                text_embedding_delta=text_embedding_delta,
                 **kwargs,
             )
 

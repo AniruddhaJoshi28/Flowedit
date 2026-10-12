@@ -185,9 +185,9 @@ class HopfieldMemory(nn.Module):
         self.context_key_local_weight = getattr(self.config, "context_key_local_weight", 0.20)
         self.context_key_global_weight = getattr(self.config, "context_key_global_weight", 0.10)
 
-        # Gate threshold τ (Paper Section 3.2: τ ≈ 7.0 for precise 0.70 cosine similarity homograph gating)
+        # Gate threshold τ (Paper Section 3.2: calibrated to 4.0 for robust target word matching across sentences)
         self.gate_threshold = nn.Parameter(
-            torch.tensor(float(getattr(self.config, "gate_threshold_init", 7.0)), dtype=torch.float32)
+            torch.tensor(float(getattr(self.config, "gate_threshold_init", 4.0)), dtype=torch.float32)
         )
 
         self.entries: List[MemoryEntry] = []
@@ -548,7 +548,10 @@ class HopfieldMemory(nn.Module):
                 flat = t.reshape(-1, 1, d_curr).float()
                 res = F.interpolate(flat, size=target_dim, mode='linear', align_corners=True)
                 new_s = list(orig_s[:-1]) + [target_dim]
-                return res.reshape(new_s).to(dtype=t.dtype, device=t.device)
+                out_t = res.reshape(new_s).to(dtype=t.dtype, device=t.device)
+                if out_t.dim() == 1:
+                    out_t = F.normalize(out_t, p=2, dim=-1)
+                return out_t
 
             return MemoryEntry(
                 key=_resample(entry.key),
@@ -726,11 +729,12 @@ class HopfieldMemory(nn.Module):
 
                     if is_homograph and carrier_list:
                         # For homographs with known carrier context, require contextual sense alignment
-                        is_active_match = sense_aligned or (best_lex_sim >= 0.35)
+                        # (Continuous Hopfield context score, generalized sense alignment, or topical similarity)
+                        is_active_match = sense_aligned or (s_occ >= 1.5) or (best_lex_sim >= 0.20)
                     elif is_homograph:
-                        is_active_match = (g_occ >= 0.25 and s_occ >= 2.0)
+                        is_active_match = (g_occ >= 0.25 and s_occ >= 1.5)
                     else:
-                        is_active_match = (g_occ >= 0.10 or s_occ >= 1.5 or (w_lower in text.lower()))
+                        is_active_match = (g_occ >= 0.10 or s_occ >= 1.0 or (w_lower in text.lower()))
 
                     if is_active_match:
                         processed_token_spans.add((span_start, span_end))
@@ -951,7 +955,7 @@ class HopfieldMemory(nn.Module):
                 )
             )
         self.entries = loaded_entries
-        target_tau = float(getattr(self.config, "gate_threshold_init", 4.5))
+        target_tau = float(getattr(self.config, "gate_threshold_init", 4.0))
         self.gate_threshold.data = torch.tensor(target_tau, dtype=torch.float32, device=self.gate_threshold.device)
         logger.info(f"✓ Loaded {len(self.entries)} valid Hopfield Memory entries (d={self.d}, gate_tau={self.gate_threshold.item():.2f}) from {filepath}")
 

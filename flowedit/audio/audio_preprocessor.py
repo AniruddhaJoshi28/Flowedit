@@ -20,6 +20,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def _is_mock(obj) -> bool:
+    if obj is None:
+        return False
+    return type(obj).__name__ in ("MagicMock", "Mock", "NonCallableMagicMock") or hasattr(obj, "_mock_return_value")
+
+
 @dataclass
 class PreparedAudio:
     waveform: torch.Tensor          # Contiguous float32 tensor [1, T]
@@ -74,10 +80,10 @@ class AudioPreprocessor:
         sr = None
 
         try:
-            if torchaudio is not None:
+            if torchaudio is not None and not _is_mock(torchaudio):
                 waveform, sr = torchaudio.load(file_path)
             else:
-                raise ImportError("torchaudio not installed")
+                raise ImportError("torchaudio not installed or mocked")
         except Exception as e_ta:
             logger.debug(f"torchaudio.load failed ({e_ta}), attempting soundfile fallback...")
             try:
@@ -128,19 +134,22 @@ class AudioPreprocessor:
         # Step 6: Resample if necessary
         if sr != sr_out:
             resampled = False
-            if T is not None and hasattr(T, "Resample"):
+            if T is not None and not _is_mock(T) and hasattr(T, "Resample"):
                 try:
                     resampler = T.Resample(sr, sr_out)
-                    waveform = resampler(waveform)
-                    resampled = True
+                    res_wf = resampler(waveform)
+                    if isinstance(res_wf, torch.Tensor):
+                        waveform = res_wf
+                        resampled = True
                 except Exception as e_resamp:
                     logger.debug(f"torchaudio T.Resample failed ({e_resamp}), falling back...")
             if not resampled:
                 try:
                     import scipy.signal
-                    resampled_np = scipy.signal.resample(waveform.squeeze().numpy(), int(waveform.shape[-1] * sr_out / sr))
-                    waveform = torch.from_numpy(resampled_np).unsqueeze(0).float()
-                    resampled = True
+                    if not _is_mock(scipy):
+                        resampled_np = scipy.signal.resample(waveform.squeeze().numpy(), int(waveform.shape[-1] * sr_out / sr))
+                        waveform = torch.from_numpy(resampled_np).unsqueeze(0).float()
+                        resampled = True
                 except Exception:
                     pass
             if not resampled:

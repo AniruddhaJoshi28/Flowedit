@@ -939,7 +939,7 @@ class F5TTSBackbone(TTSBackbone):
                     end_pos = min(L_out, start_pos + L_delta)
                     actual_delta_len = end_pos - start_pos
 
-                    t_delta = torch.clamp(t_delta, -0.25, 0.25)
+                    t_delta = torch.clamp(t_delta, -0.35, 0.35)
                     out = raw_out.clone()
                     if actual_delta_len > 0:
                         out[:, start_pos:end_pos, :] = out[:, start_pos:end_pos, :] + t_delta[:, :actual_delta_len, :]
