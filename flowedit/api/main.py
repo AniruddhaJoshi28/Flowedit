@@ -242,6 +242,42 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.warning(f"Could not load memory from {MEMORY_PATH}: {e}")
 
+    # Seed any persistent spelling dictionary entries into Hopfield memory if not already present
+    try:
+        mem_words = {e.word.strip().lower() for e in correction_pipeline.memory.entries}
+        for w_lower, w_data in getattr(s3_spelling_store, "_dictionary", {}).items():
+            if w_lower not in mem_words:
+                senses = w_data.get("senses", [])
+                for s in senses:
+                    spell_as = s.get("spell_as")
+                    c_text = s.get("carrier_text", "")
+                    if spell_as and c_text:
+                        with torch.no_grad():
+                            base_emb = correction_pipeline.backbone.encode_text(c_text, "en")
+                            c_spans = correction_pipeline.memory._find_word_char_spans(c_text, w_data.get("word", w_lower))
+                            tok_idx = []
+                            if c_spans:
+                                cs, ce = c_spans[0]
+                                ts, te = correction_pipeline.memory._char_span_to_token_span(cs, ce, len(c_text), base_emb.shape[1])
+                                tok_idx = list(range(ts, te))
+                            c_key = correction_pipeline.memory.compute_context_key(base_emb, tok_idx, carrier_text=c_text)
+                            correction_pipeline.memory.write(
+                                key=c_key,
+                                value=torch.zeros(correction_pipeline.memory.d, device=c_key.device, dtype=c_key.dtype),
+                                word=w_data.get("word", w_lower),
+                                carrier_text=c_text,
+                                token_indices=tok_idx,
+                                language="en",
+                                phonetic_text=spell_as,
+                                metadata={"source": "s3_seed", "sense_id": s.get("sense_id")},
+                            )
+                if senses:
+                    mem_words.add(w_lower)
+        if correction_pipeline.memory.num_entries > 0:
+            correction_pipeline.memory.save(MEMORY_PATH)
+    except Exception as e_seed:
+        logger.warning(f"Notice seeding spelling store to memory: {e_seed}")
+
     inference_pipeline = FlowEditInference(config)
     inference_pipeline.load(
         backbone=correction_pipeline.backbone,
@@ -478,6 +514,79 @@ async def correct_pronunciation(
             language=language,
         )
 
+        # Synchronize correction directly into Hopfield Associative Memory with contextual key
+        target_corr = correction_pipeline
+        if b_clean in ("f5tts", "f5-tts", "f5", "paper"):
+            f5_corr, _ = get_f5_pipelines()
+            if f5_corr:
+                target_corr = f5_corr
+
+        if target_corr and target_corr.memory is not None:
+            try:
+                with torch.no_grad():
+                    base_emb = target_corr.backbone.encode_text(text, language)
+                    tok_indices = []
+                    try:
+                        align_res = target_corr.aligner.align(text, target_word, occurrence_index=occurrence_index)
+                        tok_indices = align_res.token_indices if align_res and align_res.token_indices else []
+                    except Exception:
+                        pass
+                    if not tok_indices:
+                        char_spans = target_corr.memory._find_word_char_spans(text, target_word)
+                        if char_spans:
+                            cs, ce = char_spans[min(occurrence_index, len(char_spans) - 1)]
+                            ts, te = target_corr.memory._char_span_to_token_span(cs, ce, len(text), base_emb.shape[1])
+                            tok_indices = list(range(ts, te))
+
+                    context_key = target_corr.memory.compute_context_key(
+                        base_emb,
+                        tok_indices,
+                        carrier_text=text,
+                    )
+
+                    # Compute a clean latent perturbation guidance delta between target_word and replacement
+                    d_dim = target_corr.memory.d
+                    val_vec = torch.zeros(d_dim, device=context_key.device, dtype=context_key.dtype)
+                    try:
+                        rep_emb = target_corr.backbone.encode_text(replacement, language)
+                        tgt_emb = target_corr.backbone.encode_text(target_word, language)
+                        diff = (rep_emb.mean(dim=1) - tgt_emb.mean(dim=1)).squeeze(0)
+                        if diff.shape[-1] == d_dim:
+                            val_vec = torch.clamp(diff, -0.25, 0.25)
+                    except Exception:
+                        pass
+
+                    mem_idx, action = target_corr.memory.write(
+                        key=context_key,
+                        value=val_vec,
+                        word=target_word,
+                        carrier_text=text,
+                        token_indices=tok_indices,
+                        language=language,
+                        phonetic_text=replacement,
+                        metadata={"source": "spell_mode", "sense_id": reg_result.get("sense_id")},
+                    )
+
+                    # Persist to disk and sync across pipelines
+                    target_corr.memory.save(MEMORY_PATH)
+                    if correction_pipeline:
+                        correction_pipeline.memory = target_corr.memory
+                        if inference_pipeline:
+                            inference_pipeline.memory = target_corr.memory
+                            inference_pipeline.refiner.memory = target_corr.memory
+                    if f5_correction_pipeline:
+                        f5_correction_pipeline.memory = target_corr.memory
+                        if f5_inference_pipeline:
+                            f5_inference_pipeline.memory = target_corr.memory
+                            f5_inference_pipeline.refiner.memory = target_corr.memory
+
+                    logger.info(
+                        f"✓ [Spell Mode] Hopfield Memory synchronized for '{target_word}' → '{replacement}' "
+                        f"(action={action}, entry={mem_idx}, total_entries={target_corr.memory.num_entries})"
+                    )
+            except Exception as e_mem:
+                logger.warning(f"[Spell Mode] Memory write notice: {e_mem}")
+
         return JSONResponse({
             "success": True,
             "mode": "spell",
@@ -490,7 +599,7 @@ async def correct_pronunciation(
             "s3_status": reg_result.get("s3_status", "pending_s3_link"),
             "s3_uri": reg_result.get("s3_uri"),
             "total_spelling_entries": reg_result.get("total_entries", 1),
-            "memory_size": correction_pipeline.memory.num_entries if correction_pipeline and correction_pipeline.memory else 0,
+            "memory_size": target_corr.memory.num_entries if target_corr and target_corr.memory else 0,
         })
 
     # ─────────────────────────────────────────────────────────────────────────
@@ -632,6 +741,7 @@ async def synthesize_text(
                 output_path=output_path,
                 **synth_kwargs,
             )
+            applied_spells_f5 = [f"{c['word']}->{c['spell_as']}" for c in result.get("spelling_applied", [])]
             return FileResponse(
                 path=output_path,
                 media_type="audio/wav",
@@ -641,6 +751,7 @@ async def synthesize_text(
                     "X-FlowEdit-Mode": "paper-continuous-flow",
                     "X-Memory-Active": str(result.get("is_modified", False)),
                     "X-Hopfield-Active": str(result.get("hopfield_active", False) or result.get("is_modified", False)),
+                    "X-Spelling-Applied": ", ".join(applied_spells_f5) if applied_spells_f5 else "none",
                     "X-Architecture": "CFM-DiT-ODE32",
                 },
             )

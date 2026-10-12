@@ -21,6 +21,20 @@ STOPWORDS = {
     'and', 'or', 'but', 'so', 'yet', 'it', 'its', 'this', 'that', 'these', 'those'
 }
 
+INFINITIVE_MODALS = {
+    'will', 'shall', 'would', 'could', 'should', 'can', 'may', 'might', 'must',
+    'to', 'do', 'does', 'did', 'wanna', 'gonna'
+}
+
+SUBJECT_PRONOUNS = {'i', 'he', 'she', 'they', 'we', 'you', 'it'}
+
+DETERMINERS_AND_STOPWORDS = {
+    'a', 'an', 'the', 'this', 'that', 'these', 'those', 'it', 'its', 'their', 'his', 'her', 'my', 'your', 'our'
+}
+
+TEMPORAL_PAST = {'yesterday', 'ago', 'last', 'previously', 'earlier', 'formerly', 'past'}
+TEMPORAL_FUTURE = {'tomorrow', 'soon', 'later', 'next', 'upcoming'}
+
 
 @dataclass
 class SenseProfile:
@@ -150,10 +164,11 @@ class HomographContextResolver:
         """Compute structural and lexical context compatibility score in [0.0, 1.0].
         
         Combines:
-        1. Immediate neighbor alignment (weight 0.40): Syntactic anchors like particles,
+        1. Immediate neighbor alignment (weight 0.35): Syntactic anchors like particles,
            auxiliaries, prepositions, or subject pronouns directly adjoining the word.
-        2. Local N-gram window overlap (weight 0.35): Jaccard overlap of tokens in radius +-3.
-        3. Sentence lexical keywords overlap (weight 0.25): Co-occurring content words.
+        2. Local N-gram window overlap (weight 0.25): Jaccard overlap of non-stopword tokens in radius +-3.
+        3. Sentence lexical keywords overlap (weight 0.20): Co-occurring content words.
+        4. Temporal and verbal tense alignment (weight 0.20): Agreement across temporal markers.
         """
         word_clean = word.strip().lower()
         cand_carrier = (
@@ -186,35 +201,63 @@ class HomographContextResolver:
             c_window = c_window or c_win_derived
             c_keywords = c_keywords or c_kws_derived
 
+        # 0. Modal auxiliary & verbal frame conflict:
+        # If one context has an infinitive/future modal ('will read', 'to read', 'can read')
+        # while the other does not ('I read yesterday', 'She read the book'),
+        # the grammatical verbal senses / tenses are incompatible.
+        q_has_modal = q_imm_l in INFINITIVE_MODALS
+        c_has_modal = c_imm_l in INFINITIVE_MODALS
+        if q_has_modal != c_has_modal:
+            return 0.0
+
+        # Incompatible temporal frame conflict (e.g. past vs future)
+        q_past = bool(set(q_keywords) & TEMPORAL_PAST)
+        c_past = bool(set(c_keywords) & TEMPORAL_PAST)
+        q_fut = bool(set(q_keywords) & TEMPORAL_FUTURE)
+        c_fut = bool(set(c_keywords) & TEMPORAL_FUTURE)
+        if (q_past and c_fut) or (q_fut and c_past):
+            return 0.0
+
         # 1. Immediate neighbor alignment (0.0 to 1.0)
-        left_match = 1.0 if (q_imm_l and c_imm_l and q_imm_l == c_imm_l) else (0.5 if (not q_imm_l and not c_imm_l) else 0.0)
-        right_match = 1.0 if (q_imm_r and c_imm_r and q_imm_r == c_imm_r) else (0.5 if (not q_imm_r and not c_imm_r) else 0.0)
+        def _tok_match_wt(q_tok: Optional[str], c_tok: Optional[str], is_left: bool = True) -> float:
+            if not q_tok and not c_tok:
+                return 0.25
+            if not q_tok or not c_tok:
+                return 0.0
+            if q_tok == c_tok:
+                if q_tok in DETERMINERS_AND_STOPWORDS:
+                    return 0.20  # common article/determiner gives low weight
+                return 1.0
+            # If both are subject pronouns (e.g. 'i' and 'she'), strong syntactic category alignment
+            if is_left and q_tok in SUBJECT_PRONOUNS and c_tok in SUBJECT_PRONOUNS:
+                return 0.75
+            return 0.0
+
+        left_match = _tok_match_wt(q_imm_l, c_imm_l, is_left=True)
+        right_match = _tok_match_wt(q_imm_r, c_imm_r, is_left=False)
         neighbor_score = (left_match + right_match) / 2.0
 
-        # 2. Local window Jaccard overlap (0.0 to 1.0)
-        q_win_set = set(q_window.split())
-        c_win_set = set(c_window.split()) if c_window else set()
+        # 2. Local window Jaccard overlap (excluding target word and stopwords)
+        q_win_set = {t for t in q_window.split() if t != word_clean and t not in STOPWORDS}
+        c_win_set = {t for t in c_window.split() if t != word_clean and t not in STOPWORDS} if c_window else set()
         if q_win_set and c_win_set:
             win_overlap = len(q_win_set & c_win_set) / max(len(q_win_set | c_win_set), 1)
         else:
             win_overlap = 0.0
 
-        # 3. Sentence keywords Jaccard overlap (0.0 to 1.0)
-        q_kw_set = set(q_keywords)
-        c_kw_set = set(c_keywords)
+        # 3. Sentence keywords Jaccard overlap (excluding target word and stopwords)
+        q_kw_set = {t for t in q_keywords if t != word_clean and t not in STOPWORDS}
+        c_kw_set = {t for t in c_keywords if t != word_clean and t not in STOPWORDS}
         if q_kw_set and c_kw_set:
             kw_overlap = len(q_kw_set & c_kw_set) / max(len(q_kw_set | c_kw_set), 1)
         else:
             kw_overlap = 0.0
 
-        # Composite score: account for both neighbor syntax and topical keywords
-        if neighbor_score > 0 and (win_overlap > 0 or kw_overlap > 0):
-            total_score = (0.35 * neighbor_score) + (0.35 * win_overlap) + (0.30 * kw_overlap)
-        elif win_overlap > 0 or kw_overlap > 0:
-            # When word order or syntax differs but topical/semantic context overlaps
-            total_score = max(win_overlap, kw_overlap) * 0.75 + (0.25 * neighbor_score)
-        else:
-            total_score = 0.40 * neighbor_score
+        # 4. Temporal agreement score
+        temporal_score = 1.0 if ((q_past and c_past) or (q_fut and c_fut)) else 0.0
+
+        # Composite score
+        total_score = (0.35 * neighbor_score) + (0.25 * win_overlap) + (0.20 * kw_overlap) + (0.20 * temporal_score)
         return total_score
 
     def match_sense(
@@ -287,7 +330,7 @@ class HomographContextResolver:
             return True
         dummy_cand = {"carrier_text": text1}
         sim = self.compute_context_similarity(text2, word, dummy_cand, char_offset=char_offset)
-        return sim >= max(0.12, self.match_threshold * 0.6)
+        return sim >= self.match_threshold
 
     def resolve_homograph_phonetic(
         self,

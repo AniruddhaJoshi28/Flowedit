@@ -107,24 +107,16 @@ class HopfieldRefiner(nn.Module):
                     if cand_count > 1:
                         is_homograph = True
 
-                resolved_p = None
-                try:
-                    resolved_p = resolver.resolve_homograph_phonetic(
-                        span.word, text, char_offset=getattr(span, "char_start", None)
-                    )
-                except TypeError:
-                    resolved_p = resolver.resolve_homograph_phonetic(span.word, text)
-
-                if resolved_p and resolved_p.strip().lower() != span.word.strip().lower():
-                    span.phonetic_text = resolved_p.strip()
-                elif span.entry_index < len(self.memory.entries):
+                if span.entry_index < len(self.memory.entries):
                     entry = self.memory.entries[span.entry_index]
                     entry_carrier = (getattr(entry, "carrier_text", "") or "").strip()
+                    carrier_list = getattr(entry, "carrier_texts", None) or ([entry_carrier] if entry_carrier else [])
                     c_p = getattr(entry, "phonetic_text", None) or entry.metadata.get("phonetic_text") or entry.metadata.get("phonetic_hint")
 
-                    if is_homograph and entry_carrier and entry_carrier.lower() != span.word.lower():
-                        # Only apply context filter if this is actually a contextual homograph
-                        if resolver.is_same_sense(entry_carrier, text, span.word, char_offset=getattr(span, "char_start", None)):
+                    if is_homograph and carrier_list:
+                        # Strictly check contextual sense alignment across all known carrier examples
+                        sense_ok = any(resolver.is_same_sense(ct, text, span.word, char_offset=getattr(span, "char_start", None)) for ct in carrier_list if ct)
+                        if sense_ok:
                             if c_p and c_p.strip().lower() != span.word.strip().lower():
                                 span.phonetic_text = c_p.strip()
                         else:
@@ -134,6 +126,17 @@ class HopfieldRefiner(nn.Module):
                         # Non-homograph: always apply learned pronunciation
                         if c_p and c_p.strip().lower() != span.word.strip().lower():
                             span.phonetic_text = c_p.strip()
+                else:
+                    resolved_p = None
+                    try:
+                        resolved_p = resolver.resolve_homograph_phonetic(
+                            span.word, text, char_offset=getattr(span, "char_start", None)
+                        )
+                    except TypeError:
+                        resolved_p = resolver.resolve_homograph_phonetic(span.word, text)
+
+                    if resolved_p and resolved_p.strip().lower() != span.word.strip().lower():
+                        span.phonetic_text = resolved_p.strip()
 
             # If reference audio phonetic pronunciation is stored, substitute only the matched spans
             spans_with_phonetics = [
@@ -192,8 +195,10 @@ class HopfieldRefiner(nn.Module):
                         cand_count = sum(1 for e in self.memory.entries if e.word.strip().lower() == w_lower)
                         is_homo = (w_lower in KNOWN_HOMOGRAPHS) or (cand_count > 1)
                         entry_carrier = (getattr(entry, "carrier_text", "") or "").strip()
-                        if is_homo and entry_carrier and entry_carrier.lower() != span.word.lower():
-                            if not resolver.is_same_sense(entry_carrier, text, span.word, char_offset=getattr(span, "char_start", None)):
+                        carrier_list = getattr(entry, "carrier_texts", None) or ([entry_carrier] if entry_carrier else [])
+                        if is_homo and carrier_list:
+                            sense_ok = any(resolver.is_same_sense(ct, text, span.word, char_offset=getattr(span, "char_start", None)) for ct in carrier_list if ct)
+                            if not sense_ok and getattr(span, "score", 0.0) < 1.5:
                                 continue
                         w_delta = entry.word_delta if entry.word_delta is not None else entry.value.unsqueeze(0).unsqueeze(0)
                         w_delta = w_delta.to(device=base_embeddings.device, dtype=base_embeddings.dtype)

@@ -391,6 +391,7 @@ class F5TTSBackbone(TTSBackbone):
         sr: int = 24000,
         search_start_sec: float = 4.5,
         search_end_sec: float = 7.5,
+        silence_thresh: float = 0.008,
     ) -> int:
         """Dynamically detect inter-clause silence pause to prevent bleeding into subsequent words."""
         wav_1d = waveform.squeeze(0).abs()
@@ -400,20 +401,22 @@ class F5TTSBackbone(TTSBackbone):
         if s_end <= s_start:
             return total_samples
 
-        win = int(0.03 * sr)   # 30ms window
+        win = int(0.04 * sr)   # 40ms window
         hop = int(0.01 * sr)   # 10ms hop
         min_rms = 1e9
         best_sample = s_end
 
-        # Find first sustained silence valley below threshold (energy drops after clause 1 speech)
-        for i in range(s_start, s_end - win, hop):
-            rms = torch.sqrt(torch.mean(wav_1d[i : i + win] ** 2)).item()
-            if rms < 0.007:  # Natural inter-clause pause
-                best_sample = i + int(0.04 * sr)
+        # Find sustained silence valley below threshold (energy drops after clause 1 speech)
+        for i in range(s_start, s_end - win * 2, hop):
+            r1 = torch.sqrt(torch.mean(wav_1d[i : i + win] ** 2)).item()
+            r2 = torch.sqrt(torch.mean(wav_1d[i + win : i + 2 * win] ** 2)).item()
+            combined_rms = max(r1, r2)
+            if combined_rms < silence_thresh:  # Sustained inter-clause silence
+                best_sample = i + int(0.03 * sr)
                 break
-            if rms < min_rms:
-                min_rms = rms
-                best_sample = i + int(0.02 * sr)
+            if combined_rms < min_rms:
+                min_rms = combined_rms
+                best_sample = i + int(0.03 * sr)
 
         return min(total_samples, max(s_start, best_sample))
 
@@ -431,41 +434,56 @@ class F5TTSBackbone(TTSBackbone):
             return self._speaker_cache[cache_key]
 
         # 1. Resolve ground-truth prompt text (critical: F5-TTS DiT requires exact matching prompt text)
-        prompt_text = ref_text.strip() if ref_text and ref_text.strip() else ""
-        if not prompt_text:
-            from flowedit.utils.voice_finder import get_preset_voice_transcript
-            prompt_text = get_preset_voice_transcript(audio_path, for_f5=True) or ""
-
-        # 2. For Blessing and Michael presets, trim to exact clean clause to match verbatim in-context prompt
         name_lower = os.path.basename(str(audio_path or "")).lower()
         is_blessing = "blessing" in name_lower or "female" in name_lower or "default" in name_lower
         is_michael = "michael" in name_lower or "male" in name_lower or "man" in name_lower
+
+        from flowedit.utils.voice_finder import get_preset_voice_transcript
+        f5_preset_text = get_preset_voice_transcript(audio_path, for_f5=True) or ""
+
+        prompt_text = ref_text.strip() if ref_text and ref_text.strip() else ""
+        if not prompt_text:
+            prompt_text = f5_preset_text or ""
+        elif is_michael and ("proximal" in prompt_text.lower() or "tcl" in prompt_text.lower()):
+            prompt_text = f5_preset_text or "The sensibility of the palm remains normal because the superficial sensory branch of the median nerve branches."
+        elif is_blessing and ("dedicated" in prompt_text.lower() or "ecosystem" in prompt_text.lower()):
+            prompt_text = f5_preset_text or "In oncology, delivery of breakthrough therapy is a high-stakes mission."
+
+        # 2. For Blessing and Michael presets, trim to exact clean clause to match verbatim in-context prompt
         ref_waveform = prepared_audio.waveform
 
         if is_blessing and ref_waveform.shape[-1] > int(4.5 * 24000):
             # Clause 1 ends at ~4.25s. Detect pause between clause 1 and clause 2
-            cut_sample = self._find_clean_clause_boundary(ref_waveform, 24000, search_start_sec=3.8, search_end_sec=5.0)
+            cut_sample = self._find_clean_clause_boundary(ref_waveform, 24000, search_start_sec=4.2, search_end_sec=5.0, silence_thresh=0.018)
             ref_waveform = ref_waveform[:, :cut_sample]
             fade_len = min(int(0.030 * 24000), ref_waveform.shape[-1])
             fade = torch.linspace(1.0, 0.0, fade_len, device=ref_waveform.device)
             ref_waveform[:, -fade_len:] = ref_waveform[:, -fade_len:] * fade
-            logger.info(f"Trimmed Blessing reference audio to clean {cut_sample / 24000.0:.2f}s clause with fade-out.")
-        elif is_michael and ref_waveform.shape[-1] > int(5.5 * 24000):
-            # Clause 1 'branches' ends cleanly. Find natural inter-clause silence pause before 'proximal' begins
-            cut_sample = self._find_clean_clause_boundary(ref_waveform, 24000, search_start_sec=5.0, search_end_sec=7.2)
+            # Append 250ms of pure digital silence to guarantee complete acoustic isolation across boundary
+            silence_pad = torch.zeros(ref_waveform.shape[0], int(0.250 * 24000), device=ref_waveform.device, dtype=ref_waveform.dtype)
+            ref_waveform = torch.cat([ref_waveform, silence_pad], dim=-1)
+            logger.info(f"Trimmed Blessing reference audio to clean {cut_sample / 24000.0:.2f}s clause with 250ms silence pad.")
+        elif is_michael and ref_waveform.shape[-1] > int(6.0 * 24000):
+            # Clause 1 'branches' ends cleanly at 6.35s. Find natural silence valley (6.40s-6.90s) before 'proximal' begins
+            cut_sample = self._find_clean_clause_boundary(ref_waveform, 24000, search_start_sec=6.2, search_end_sec=6.9, silence_thresh=0.008)
             ref_waveform = ref_waveform[:, :cut_sample]
             fade_len = min(int(0.030 * 24000), ref_waveform.shape[-1])
             fade = torch.linspace(1.0, 0.0, fade_len, device=ref_waveform.device)
             ref_waveform[:, -fade_len:] = ref_waveform[:, -fade_len:] * fade
-            logger.info(f"Trimmed Michael reference audio to clean {cut_sample / 24000.0:.2f}s clause with fade-out (preventing proximal boundary bleed).")
-        elif ref_waveform.shape[-1] > int(7.5 * 24000):
-            # Trim generic custom audio at the nearest natural silence valley around 4.8s - 6.5s
-            cut_sample = self._find_clean_clause_boundary(ref_waveform, 24000, search_start_sec=4.8, search_end_sec=6.5)
+            # Append 250ms of pure digital silence so Michael prompt never leaks or regenerates 'branches'/'rangers'
+            silence_pad = torch.zeros(ref_waveform.shape[0], int(0.250 * 24000), device=ref_waveform.device, dtype=ref_waveform.dtype)
+            ref_waveform = torch.cat([ref_waveform, silence_pad], dim=-1)
+            logger.info(f"Trimmed Michael reference audio to clean {cut_sample / 24000.0:.2f}s clause with 250ms silence pad (fully eliminating 'branches'/'rangers' bleed).")
+        elif ref_waveform.shape[-1] > int(7.0 * 24000):
+            # Trim generic custom audio at the nearest natural silence valley around 4.8s - 6.8s
+            cut_sample = self._find_clean_clause_boundary(ref_waveform, 24000, search_start_sec=4.8, search_end_sec=6.8, silence_thresh=0.010)
             ref_waveform = ref_waveform[:, :cut_sample]
             fade_len = min(int(0.030 * 24000), ref_waveform.shape[-1])
             fade = torch.linspace(1.0, 0.0, fade_len, device=ref_waveform.device)
             ref_waveform[:, -fade_len:] = ref_waveform[:, -fade_len:] * fade
-            logger.info(f"Trimmed custom reference audio to clean {cut_sample / 24000.0:.2f}s clause with fade-out.")
+            silence_pad = torch.zeros(ref_waveform.shape[0], int(0.250 * 24000), device=ref_waveform.device, dtype=ref_waveform.dtype)
+            ref_waveform = torch.cat([ref_waveform, silence_pad], dim=-1)
+            logger.info(f"Trimmed custom reference audio to clean {cut_sample / 24000.0:.2f}s clause with 250ms silence pad.")
 
         # Ensure clean audio normalization without digital clipping
         ref_np = ref_waveform.squeeze(0).cpu().numpy()
@@ -1001,16 +1019,27 @@ class F5TTSBackbone(TTSBackbone):
                 if wav.dim() == 1:
                     wav = wav.unsqueeze(0)
 
-                # Gentle 5ms fade-in on leading onset to prevent transient click or boundary artifact
-                fade_in_len = min(int(0.005 * sr), wav.shape[-1])
-                if fade_in_len > 0:
-                    fade_in = torch.linspace(0.0, 1.0, fade_in_len, device=wav.device)
-                    wav[:, :fade_in_len] = wav[:, :fade_in_len] * fade_in
-
                 # Amplitude safety normalization between -0.95 and +0.95 to eliminate digital clipping
                 max_amp = float(wav.abs().max().item())
                 if max_amp > 0.98:
                     wav = wav * (0.95 / max_amp)
+
+                # Clean leading onset: remove excessive dead frames while preserving 35ms natural pre-speech lead-in
+                wav_1d = wav.squeeze(0).abs()
+                energy_thresh = 0.003
+                active_indices = torch.where(wav_1d > energy_thresh)[0]
+                if len(active_indices) > 0:
+                    first_active = active_indices[0].item()
+                    lead_silence = int(0.035 * sr)
+                    trim_start = max(0, first_active - lead_silence)
+                    if trim_start > int(0.020 * sr):
+                        wav = wav[:, trim_start:]
+
+                # Gentle 10ms raised-cosine fade-in on leading onset to prevent any transient click or boundary pop
+                fade_in_len = min(int(0.010 * sr), wav.shape[-1])
+                if fade_in_len > 0:
+                    fade_in = 0.5 * (1.0 - torch.cos(torch.linspace(0.0, torch.pi, fade_in_len, device=wav.device)))
+                    wav[:, :fade_in_len] = wav[:, :fade_in_len] * fade_in
                 return wav, sr
             return torch.zeros(1, 24000), 24000
 

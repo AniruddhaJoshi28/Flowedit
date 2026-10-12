@@ -452,6 +452,35 @@ class HopfieldMemory(nn.Module):
         logger.info(f"✓ Hopfield Memory Stored: '{word}' at index {idx} (phonetic='{phonetic_text}', Total Entries: {len(self.entries)})")
         return idx, "inserted"
 
+    def add_entry(self, entry: MemoryEntry):
+        """Add or adapt an existing MemoryEntry into this Hopfield memory, ensuring key normalization and dimension compatibility."""
+        k = entry.key.clone().detach().cpu().float()
+        v = entry.value.clone().detach().cpu().float() if entry.value is not None else torch.zeros(self.d)
+        if k.shape[-1] != self.d:
+            k = F.interpolate(k.unsqueeze(0).unsqueeze(0), size=self.d, mode='linear', align_corners=False).squeeze()
+        k = F.normalize(k, p=2, dim=-1)
+        if v.shape[-1] != self.d:
+            v = F.interpolate(v.unsqueeze(0).unsqueeze(0), size=self.d, mode='linear', align_corners=False).squeeze()
+
+        self.current_step += 1
+        new_entry = MemoryEntry(
+            key=k,
+            value=v,
+            word=entry.word,
+            carrier_text=entry.carrier_text,
+            token_indices=list(entry.token_indices or []),
+            language=entry.language,
+            access_count=entry.access_count,
+            last_access_step=self.current_step,
+            metadata=dict(entry.metadata or {}),
+            full_delta=entry.full_delta,
+            word_delta=entry.word_delta,
+            carrier_texts=list(getattr(entry, "carrier_texts", []) or ([entry.carrier_text] if entry.carrier_text else [])),
+            phonetic_text=entry.phonetic_text,
+        )
+        self.entries.append(new_entry)
+        logger.info(f"✓ Added entry for '{entry.word}' into Hopfield Memory (d={self.d}, total={len(self.entries)})")
+
 
     def _find_word_char_spans(self, text: str, word: str) -> List[Tuple[int, int]]:
         """Find all character-level start and end spans of a word using word boundaries."""
@@ -688,14 +717,36 @@ class HopfieldMemory(nn.Module):
                     best_s_occ = -1e9
                     best_g_occ = 0.0
 
-                    for m_idx, entry in candidates:
+                    # Use contextual resolver first to select best candidate sense
+                    best_resolver_sim = -1.0
+                    resolver_best_idx = None
+                    try:
+                        from flowedit.alignment.homograph_resolver import HomographContextResolver
+                        h_resolver = HomographContextResolver()
+                        for m_idx, cand_entry in candidates:
+                            c_list = getattr(cand_entry, "carrier_texts", None) or ([cand_entry.carrier_text] if cand_entry.carrier_text else [])
+                            if c_list:
+                                sim_val = max([h_resolver.compute_context_similarity(text, cand_entry.word, {"carrier_text": ct}, char_offset=c_start) for ct in c_list if ct] or [0.0])
+                                if sim_val > best_resolver_sim:
+                                    best_resolver_sim = sim_val
+                                    resolver_best_idx = m_idx
+                    except Exception:
+                        pass
+
+                    for m_idx, cand_entry in candidates:
                         s_cand = scores[search_start:search_end, m_idx].max().item()
                         g_cand = gate_matrix[search_start:search_end, m_idx].max().item()
-                        if s_cand > best_s_occ:
+                        if resolver_best_idx is not None and m_idx == resolver_best_idx:
                             best_s_occ = s_cand
                             best_g_occ = g_cand
                             best_m_idx = m_idx
-                            best_entry = entry
+                            best_entry = cand_entry
+                            break
+                        elif resolver_best_idx is None and s_cand > best_s_occ:
+                            best_s_occ = s_cand
+                            best_g_occ = g_cand
+                            best_m_idx = m_idx
+                            best_entry = cand_entry
 
                     s_occ = best_s_occ
                     g_occ = best_g_occ
@@ -728,9 +779,8 @@ class HopfieldMemory(nn.Module):
                             sense_aligned = False
 
                     if is_homograph and carrier_list:
-                        # For homographs with known carrier context, require contextual sense alignment
-                        # (Continuous Hopfield context score, generalized sense alignment, or topical similarity)
-                        is_active_match = sense_aligned or (s_occ >= 1.5) or (best_lex_sim >= 0.20)
+                        # For homographs with known carrier context, strictly require contextual sense alignment
+                        is_active_match = sense_aligned
                     elif is_homograph:
                         is_active_match = (g_occ >= 0.25 and s_occ >= 1.5)
                     else:
@@ -893,6 +943,7 @@ class HopfieldMemory(nn.Module):
                 # Adapt key and value dimensions to current backbone dimension
                 flat_k = k.reshape(1, 1, -1).float()
                 k = F.interpolate(flat_k, size=self.d, mode='linear', align_corners=True).squeeze(0).squeeze(0).to(dtype=k.dtype, device=k.device)
+                k = F.normalize(k, p=2, dim=-1)
                 if isinstance(item.get("value"), torch.Tensor):
                     v = item["value"]
                     flat_v = v.reshape(1, 1, -1).float()

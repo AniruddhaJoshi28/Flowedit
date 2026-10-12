@@ -31,7 +31,7 @@ def test_openapi_schema_compatibility():
 
 
 def test_root_endpoint():
-    response = client.get("/")
+    response = client.get("/", headers={"accept": "application/json"})
     assert response.status_code == 200
     data = response.json()
     assert "FlowEdit API" in data.get("message", "")
