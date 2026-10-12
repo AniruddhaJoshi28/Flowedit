@@ -137,6 +137,10 @@ class LatentOptimizer:
             f"Speakers: {len(speaker_cond_list)}, ||c_I||={base_target_norm:.4f}, Max ||δ||={max_delta_norm:.4f}, Steps={n_steps}, λ={lambda_reg}"
         )
 
+        # Clear CUDA cache before optimization loop to release any lingering allocator chunks
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
         for step in range(n_steps):
             optimizer.zero_grad()
 
@@ -149,8 +153,22 @@ class LatentOptimizer:
             # Mask non-target positions: δ_M = M ⊙ δ (δ_j = 0 ∀ j ∉ I)
             delta_masked = delta * mask
 
-            # Forward pass through frozen DiT and ODE solver (Eq. 2 & 3)
-            speaker_mel_losses = []
+            # 1. Regularization loss L_reg = λ * ||δ_M||^2 (Eq. 3)
+            reg_loss = lambda_reg * torch.sum(delta_masked ** 2)
+            reg_loss_val = reg_loss.item()
+            if not torch.isfinite(reg_loss):
+                logger.error(f"Step {step} reg_loss is non-finite: {reg_loss_val}")
+                break
+            reg_loss.backward()
+
+            # 2. Sequential gradient accumulation across speakers (Eq. 2 & 3)
+            # Instead of holding multiple full DiT/GPT forward activation graphs in VRAM simultaneously,
+            # we sequentially accumulate (spk_loss / n_speakers).backward() per speaker.
+            # This releases each speaker's autograd graph immediately and cuts peak optimizer VRAM in half!
+            n_speakers = max(1, len(speaker_cond_list))
+            total_mel_val = 0.0
+            step_failed = False
+
             for s_cond in speaker_cond_list:
                 loss_dict = backbone.compute_optimization_loss(
                     text_embedding_delta=delta_masked,
@@ -167,22 +185,25 @@ class LatentOptimizer:
                     ode_steps=ode_steps,
                     token_indices=target_indices,
                 )
-                speaker_mel_losses.append(loss_dict["loss"])
+                spk_loss = loss_dict["loss"]
+                if not torch.isfinite(spk_loss):
+                    logger.error(f"Step {step} speaker mel_loss is non-finite: {spk_loss.item()}")
+                    step_failed = True
+                    break
 
-            mel_loss = torch.stack(speaker_mel_losses).mean() if len(speaker_mel_losses) > 1 else speaker_mel_losses[0]
-            reg_loss = lambda_reg * torch.sum(delta_masked ** 2)
+                total_mel_val += spk_loss.item()
+                # Sequentially backpropagate this speaker's portion of the loss
+                (spk_loss / n_speakers).backward()
 
-            total_loss = mel_loss + reg_loss
-
-            if step == 0:
-                initial_loss = total_loss.item()
-            final_loss = total_loss.item()
-
-            if not torch.isfinite(total_loss):
-                logger.error(f"Step {step} total_loss is non-finite: mel_loss={mel_loss.item()}, reg_loss={reg_loss.item()}")
+            if step_failed:
                 break
 
-            total_loss.backward()
+            mel_loss_val = total_mel_val / n_speakers
+            total_loss_val = mel_loss_val + reg_loss_val
+
+            if step == 0:
+                initial_loss = total_loss_val
+            final_loss = total_loss_val
 
             # Clean gradients and apply L_2 gradient clipping ||∇_δ||_2 ≤ max_grad_norm (Paper Section 3.2)
             if delta.grad is not None:
@@ -207,8 +228,8 @@ class LatentOptimizer:
                 cur_norm = torch.norm(delta[:, target_indices, :]).item()
                 rel_ratio = cur_norm / base_target_norm
                 logger.info(
-                    f"[Step {step:02d}/{n_steps}] Total Loss: {total_loss.item():.4f} | "
-                    f"Mel Loss: {mel_loss.item():.4f} | ||δ||: {cur_norm:.4f} | "
+                    f"[Step {step:02d}/{n_steps}] Total Loss: {total_loss_val:.4f} | "
+                    f"Mel Loss: {mel_loss_val:.4f} | ||δ||: {cur_norm:.4f} | "
                     f"∇δ: {grad_norm:.4f} | Rel Ratio: {rel_ratio:.4f} | LR: {current_lr:.6f}"
                 )
 

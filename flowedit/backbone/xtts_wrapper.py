@@ -399,11 +399,13 @@ class XTTSBackbone(TTSBackbone):
                     use_deepspeed=False,
                     strict=False,
                 )
-                base_m.to(self.device)
+                # Keep base_model on CPU in system RAM to avoid consuming ~2.0 GB GPU VRAM
+                # It is only moved to GPU on demand if /api/baseline is explicitly called
+                base_m.to("cpu")
                 base_m.eval()
                 base_m.tokenizer = self.model.tokenizer
                 self.base_model = base_m
-                logger.info(f"✓ Base XTTS Model loaded for raw baseline comparison from {base_model_path}")
+                logger.info(f"✓ Base XTTS Model loaded on CPU for raw baseline comparison from {base_model_path}")
             except Exception as e:
                 logger.warning(f"Could not load Base XTTS Model from {base_model_path}: {e}")
 
@@ -1089,18 +1091,28 @@ class XTTSBackbone(TTSBackbone):
 
         logger.info(f"[XTTS Baseline] Synthesizing raw baseline audio using {'base_model.pth' if self.base_model is not None else 'fine-tuned model'}")
 
-        out = target_model.inference(
-            text=text,
-            language=language,
-            gpt_cond_latent=gpt_cond_latent,
-            speaker_embedding=speaker_emb,
-            temperature=kwargs.get("temperature", 0.75),
-            length_penalty=kwargs.get("length_penalty", 1.0),
-            repetition_penalty=kwargs.get("repetition_penalty", 2.0),
-            top_k=kwargs.get("top_k", 50),
-            top_p=kwargs.get("top_p", 0.85),
-            enable_text_splitting=False,
-        )
+        is_cpu_base = (target_model is self.base_model and self.base_model is not None and str(self.device).startswith("cuda"))
+        if is_cpu_base:
+            target_model.to(self.device)
+
+        try:
+            out = target_model.inference(
+                text=text,
+                language=language,
+                gpt_cond_latent=gpt_cond_latent,
+                speaker_embedding=speaker_emb,
+                temperature=kwargs.get("temperature", 0.75),
+                length_penalty=kwargs.get("length_penalty", 1.0),
+                repetition_penalty=kwargs.get("repetition_penalty", 2.0),
+                top_k=kwargs.get("top_k", 50),
+                top_p=kwargs.get("top_p", 0.85),
+                enable_text_splitting=False,
+            )
+        finally:
+            if is_cpu_base:
+                target_model.to("cpu")
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
 
         waveform = out.get("wav", None)
         if waveform is None:

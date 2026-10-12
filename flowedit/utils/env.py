@@ -11,6 +11,9 @@ logger = logging.getLogger(__name__)
 
 def load_flowedit_env() -> bool:
     """Load variables from .env file into os.environ if not already present."""
+    # Prevent PyTorch CUDA memory fragmentation on servers with constrained VRAM
+    os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
+
     # Try python-dotenv first
     try:
         from dotenv import load_dotenv

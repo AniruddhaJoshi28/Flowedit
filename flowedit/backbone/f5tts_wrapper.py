@@ -64,7 +64,11 @@ class F5TTSBackbone(TTSBackbone):
         return 512
 
     def _resolve_f5_paths(self) -> Tuple[str, str, str, str]:
-        """Automatically discover F5-TTS checkpoint, vocab, vocoder files, and model architecture name."""
+        """Automatically discover F5-TTS checkpoint, vocab, vocoder files, and model architecture name.
+        
+        Strictly prioritizes locally downloaded models in `models/f5tts` and `models/` over any Hugging Face hub cache,
+        preventing unexpected downloads and resolving server disk space issues.
+        """
         ckpt_file = getattr(self.config, 'f5tts_ckpt_file', "") or os.environ.get("FLOWEDIT_F5TTS_CKPT", "")
         vocab_file = getattr(self.config, 'f5tts_vocab_file', "") or os.environ.get("FLOWEDIT_F5TTS_VOCAB", "")
         vocoder_local_path = getattr(self.config, 'vocoder_local_path', "") or os.environ.get("FLOWEDIT_VOCODER_DIR", "")
@@ -74,20 +78,125 @@ class F5TTSBackbone(TTSBackbone):
         flowedit_root = os.path.abspath(os.path.join(pkg_dir, "..", ".."))
         workspace_root = os.path.abspath(os.path.join(flowedit_root, ".."))
 
-        # Candidate checkpoint locations (supports both F5TTS_Base and F5TTS_v1_Base)
+        search_dirs = [
+            os.path.join(flowedit_root, "models", "f5tts"),
+            os.path.join(flowedit_root, "models", "F5TTS"),
+            os.path.join(flowedit_root, "models", "F5TTS_Base"),
+            os.path.join(flowedit_root, "models", "F5TTS_v1_Base"),
+            os.path.join(workspace_root, "models", "f5tts"),
+            os.path.join(workspace_root, "models", "F5TTS"),
+            "/home/rsurya/projects/flow_edit/Flowedit/models/f5tts",
+            "/home/rsurya/projects/flow_edit/Flowedit/models/F5TTS_Base",
+            "/home/rsurya/projects/flow_edit/Flowedit/models/F5TTS_v1_Base",
+            "/home/rsurya/projects/flow_edit/models/f5tts",
+            os.path.expanduser("~/projects/flow_edit/Flowedit/models/f5tts"),
+            os.path.expanduser("~/projects/flow_edit/models/f5tts"),
+            os.path.join(flowedit_root, "models"),
+            os.path.join(workspace_root, "models"),
+        ]
+
+        # 1. Discover local F5-TTS checkpoint (recursive search in local models)
         if not ckpt_file or not os.path.isfile(ckpt_file):
-            candidate_ckpts = [
-                # v1 checkpoints
-                os.path.join(flowedit_root, "models", "f5tts", "model_1250000.safetensors"),
-                os.path.join(flowedit_root, "models", "model_1250000.safetensors"),
-                os.path.join(workspace_root, "models", "f5tts", "model_1250000.safetensors"),
-                # Base checkpoints
-                os.path.join(flowedit_root, "models", "f5tts", "model_1200000.safetensors"),
-                os.path.join(flowedit_root, "models", "f5tts", "model_1200000.pt"),
-                os.path.join(flowedit_root, "models", "model_1200000.safetensors"),
-                os.path.join(workspace_root, "models", "f5tts", "model_1200000.safetensors"),
+            discovered_ckpts = []
+            seen_ckpt_paths = set()
+            for s_dir in search_dirs:
+                if s_dir and os.path.isdir(s_dir):
+                    for root, dirs, files in os.walk(s_dir):
+                        # Avoid descending into XTTS or Vocos folders
+                        if any(x in root.lower() for x in ("xtts", "vocos")):
+                            continue
+                        for f in files:
+                            f_lower = f.lower()
+                            if f_lower.endswith((".safetensors", ".pt", ".bin", ".ckpt")):
+                                f_path = os.path.abspath(os.path.join(root, f))
+                                if f_path in seen_ckpt_paths:
+                                    continue
+                                seen_ckpt_paths.add(f_path)
+                                try:
+                                    f_size = os.path.getsize(f_path)
+                                    if f_size > 50_000_000:  # > 50 MB model weight
+                                        discovered_ckpts.append((f_path, f_size, f_lower))
+                                except Exception:
+                                    pass
+
+            if discovered_ckpts:
+                # Rank candidates: prioritize 1250000 or 1200000, safetensors over pt
+                def _rank_ckpt(item):
+                    path, size, name = item
+                    score = 0
+                    if "1250000" in name:
+                        score += 40
+                    elif "1200000" in name:
+                        score += 35
+                    if "safetensors" in name:
+                        score += 10
+                    if "f5tts" in path.lower() or "f5" in path.lower():
+                        score += 5
+                    return score
+
+                discovered_ckpts.sort(key=_rank_ckpt, reverse=True)
+                ckpt_file = os.path.abspath(discovered_ckpts[0][0])
+                logger.info(f"✓ Discovered local F5-TTS checkpoint in project: {ckpt_file} ({discovered_ckpts[0][1] / (1024 * 1024):.1f} MB)")
+
+        # 2. Discover local vocabulary
+        if not vocab_file or not os.path.isfile(vocab_file):
+            discovered_vocabs = []
+            # Check directory containing ckpt_file first
+            if ckpt_file:
+                ckpt_dir = os.path.dirname(ckpt_file)
+                cand_v = os.path.join(ckpt_dir, "vocab.txt")
+                if os.path.isfile(cand_v) and os.path.getsize(cand_v) > 50:
+                    discovered_vocabs.append(cand_v)
+
+            for s_dir in search_dirs:
+                if s_dir and os.path.isdir(s_dir):
+                    for root, dirs, files in os.walk(s_dir):
+                        for f in files:
+                            if f.lower() == "vocab.txt":
+                                v_path = os.path.join(root, f)
+                                if os.path.isfile(v_path) and os.path.getsize(v_path) > 50:
+                                    discovered_vocabs.append(v_path)
+
+            cand_emilia = os.path.join(flowedit_root, "data", "Emilia_ZH_EN_pinyin", "vocab.txt")
+            if os.path.isfile(cand_emilia):
+                discovered_vocabs.append(cand_emilia)
+
+            if discovered_vocabs:
+                vocab_file = os.path.abspath(discovered_vocabs[0])
+                logger.info(f"✓ Discovered local F5-TTS vocab: {vocab_file}")
+
+        # 3. Discover local Vocos vocoder
+        if not vocoder_local_path or not os.path.isdir(vocoder_local_path):
+            vocoder_candidates = [
+                os.path.join(flowedit_root, "models", "vocos"),
+                os.path.join(flowedit_root, "models", "f5tts", "vocos"),
+                os.path.join(workspace_root, "models", "vocos"),
+                "/home/rsurya/projects/flow_edit/Flowedit/models/vocos",
+                "/home/rsurya/projects/flow_edit/models/vocos",
+                os.path.expanduser("~/projects/flow_edit/Flowedit/models/vocos"),
+                os.path.expanduser("~/projects/flow_edit/models/vocos"),
             ]
-            # Hugging Face hub cache candidates
+            for cand in vocoder_candidates:
+                if cand and os.path.isdir(cand):
+                    if os.path.isfile(os.path.join(cand, "config.yaml")):
+                        vocoder_local_path = os.path.abspath(cand)
+                        break
+                    # Check immediate subdirectories
+                    try:
+                        for sub in os.listdir(cand):
+                            sub_p = os.path.join(cand, sub)
+                            if os.path.isdir(sub_p) and os.path.isfile(os.path.join(sub_p, "config.yaml")):
+                                vocoder_local_path = os.path.abspath(sub_p)
+                                break
+                    except Exception:
+                        pass
+                if vocoder_local_path:
+                    logger.info(f"✓ Discovered local Vocos vocoder: {vocoder_local_path}")
+                    break
+
+        # 4. Fallback to HF hub cache ONLY if no local checkpoint was found anywhere
+        if not ckpt_file or not os.path.isfile(ckpt_file):
+            logger.warning("No local checkpoint found in models/f5tts. Checking Hugging Face cache fallback...")
             try:
                 hf_hub = os.path.expanduser("~/.cache/huggingface/hub/models--SWivid--F5-TTS/snapshots")
                 if os.path.isdir(hf_hub):
@@ -95,20 +204,16 @@ class F5TTSBackbone(TTSBackbone):
                         snap_dir = os.path.join(hf_hub, snap)
                         cand_v1 = os.path.join(snap_dir, "F5TTS_v1_Base", "model_1250000.safetensors")
                         if os.path.isfile(cand_v1):
-                            candidate_ckpts.append(cand_v1)
+                            ckpt_file = os.path.abspath(cand_v1)
+                            break
                         cand_base = os.path.join(snap_dir, "F5TTS_Base", "model_1200000.safetensors")
                         if os.path.isfile(cand_base):
-                            candidate_ckpts.append(cand_base)
+                            ckpt_file = os.path.abspath(cand_base)
+                            break
             except Exception:
                 pass
 
-            for cand in candidate_ckpts:
-                if cand and os.path.isfile(cand) and os.path.getsize(cand) > 100000:
-                    ckpt_file = os.path.abspath(cand)
-                    logger.info(f"Discovered local F5-TTS checkpoint: {ckpt_file}")
-                    break
-
-        # Automatically align model architecture name with checkpoint
+        # 5. Automatically align model architecture name with checkpoint
         if not model_name:
             if ckpt_file:
                 ckpt_lower = ckpt_file.lower()
@@ -121,53 +226,11 @@ class F5TTSBackbone(TTSBackbone):
             else:
                 model_name = "F5TTS_Base"
 
-        # Candidate vocabulary locations
-        if not vocab_file or not os.path.isfile(vocab_file):
-            candidate_vocabs = [
-                os.path.join(flowedit_root, "models", "f5tts", "vocab.txt"),
-                os.path.join(flowedit_root, "data", "Emilia_ZH_EN_pinyin", "vocab.txt"),
-                os.path.join(workspace_root, "models", "f5tts", "vocab.txt"),
-            ]
-            try:
-                hf_hub = os.path.expanduser("~/.cache/huggingface/hub/models--SWivid--F5-TTS/snapshots")
-                if os.path.isdir(hf_hub):
-                    for snap in os.listdir(hf_hub):
-                        snap_dir = os.path.join(hf_hub, snap)
-                        cand_v1 = os.path.join(snap_dir, "F5TTS_v1_Base", "vocab.txt")
-                        if os.path.isfile(cand_v1):
-                            candidate_vocabs.append(cand_v1)
-                        cand_base = os.path.join(snap_dir, "F5TTS_Base", "vocab.txt")
-                        if os.path.isfile(cand_base):
-                            candidate_vocabs.append(cand_base)
-            except Exception:
-                pass
-
-            for cand in candidate_vocabs:
-                if cand and os.path.isfile(cand) and os.path.getsize(cand) > 50:
-                    vocab_file = os.path.abspath(cand)
-                    logger.info(f"Discovered local F5-TTS vocab: {vocab_file}")
-                    break
-
-        # Candidate vocoder locations
-        if not vocoder_local_path or not os.path.isdir(vocoder_local_path):
-            candidate_vocoders = [
-                os.path.join(flowedit_root, "models", "vocos"),
-                os.path.join(flowedit_root, "models", "f5tts", "vocos"),
-                os.path.join(workspace_root, "models", "vocos"),
-            ]
-            try:
-                hf_vocos = os.path.expanduser("~/.cache/huggingface/hub/models--charactr--vocos-mel-24khz/snapshots")
-                if os.path.isdir(hf_vocos):
-                    for snap in os.listdir(hf_vocos):
-                        candidate_vocoders.append(os.path.join(hf_vocos, snap))
-            except Exception:
-                pass
-
-            for cand in candidate_vocoders:
-                if cand and os.path.isfile(os.path.join(cand, "config.yaml")):
-                    vocoder_local_path = os.path.abspath(cand)
-                    logger.info(f"Discovered local Vocos vocoder: {vocoder_local_path}")
-                    break
+        # 6. When local models are found, enforce offline mode to prevent Hugging Face from downloading or using space
+        if ckpt_file and os.path.isfile(ckpt_file):
+            os.environ["HF_HUB_OFFLINE"] = "1"
+            os.environ["TRANSFORMERS_OFFLINE"] = "1"
+            logger.info("✓ F5-TTS Offline Mode active: using 100% local models (HF_HUB_OFFLINE=1, space-safe)")
 
         return ckpt_file, vocab_file, vocoder_local_path, model_name
 
