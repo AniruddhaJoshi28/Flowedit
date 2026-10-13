@@ -383,28 +383,32 @@ class S3SpellingStore:
             return text, []
 
         applied = []
-        result_text = text
-
+        # Resolve every occurrence against the original text so each one is disambiguated by its
+        # own context ("contains lead, ... the lead researcher" may need two different spellings).
+        replacements: List[Tuple[int, int, str, str]] = []
         for word_key, word_dict in self._dictionary.items():
             pattern = re.compile(r'\b' + re.escape(word_key) + r'\b', re.IGNORECASE)
-            matches = list(pattern.finditer(result_text))
-            if not matches:
+            for m in pattern.finditer(text):
+                resolved_spell = self.resolve_correction(text, word_key, char_offset=m.start())
+                if resolved_spell and resolved_spell.strip().lower() != word_key.lower():
+                    replacements.append((m.start(), m.end(), resolved_spell.strip(), word_dict.get("word", word_key)))
+
+        result_text = text
+        occupied: List[Tuple[int, int]] = []
+        for start, end, spell, word in sorted(replacements, key=lambda r: r[0], reverse=True):
+            if any(start < o_end and end > o_start for o_start, o_end in occupied):
                 continue
+            occupied.append((start, end))
+            result_text = result_text[:start] + spell + result_text[end:]
+            applied.append({
+                "word": word,
+                "spell_as": spell,
+                "original_text": text,
+                "char_start": start,
+            })
+            logger.info(f"[S3 Store] Applied phonetic respelling at char {start}: '{word}' -> '{spell}'")
 
-            resolved_spell = self.resolve_correction(result_text, word_key)
-            if resolved_spell and resolved_spell.strip().lower() != word_key.lower():
-                # Perform whole-word substitution
-                result_text = pattern.sub(resolved_spell.strip(), result_text)
-                applied.append({
-                    "word": word_dict.get("word", word_key),
-                    "spell_as": resolved_spell.strip(),
-                    "original_text": text,
-                })
-                logger.info(
-                    f"[S3 Store] Applied deterministic phonetic respelling: "
-                    f"'{word_dict.get('word', word_key)}' -> '{resolved_spell.strip()}'"
-                )
-
+        applied.reverse()
         return result_text, applied
 
     def get_vocabulary_prompt(self) -> str:

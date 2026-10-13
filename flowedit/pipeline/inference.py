@@ -58,9 +58,15 @@ class FlowEditInference:
         if memory is not None:
             self.memory = memory
         else:
-            self.memory = HopfieldMemory(self.config.memory, embedding_dim=embed_dim)
+            self.memory = HopfieldMemory(
+                self.config.memory,
+                embedding_dim=embed_dim,
+                embedding_space=self.backbone.embedding_space,
+                text_encoder=self.backbone.encode_text,
+            )
 
         self.refiner = HopfieldRefiner(memory=self.memory, config=self.config.memory)
+        self.memory.sense_encoder  # warm the shared contextual sense encoder
         self._is_ready = True
         logger.info(f"✓ Inference pipeline ready. Memory has {self.memory.num_entries} corrections.")
 

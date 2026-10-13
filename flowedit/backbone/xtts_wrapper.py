@@ -88,6 +88,10 @@ class XTTSBackbone(TTSBackbone):
                 pass
         return 1024
 
+    @property
+    def delta_bounds(self) -> Tuple[float, float]:
+        return float(self.config.xtts_delta_clamp), float(self.config.xtts_delta_norm_cap)
+
     def _resolve_model_dir(self) -> str:
         """Resolve the directory containing fine-tuned XTTS model files."""
         candidates = []
@@ -911,7 +915,8 @@ class XTTSBackbone(TTSBackbone):
                     new_out = out_tensor.clone()
                     t_delta = delta.to(device=out_tensor.device, dtype=out_tensor.dtype)
                     # Acoustic safety bounds for XTTS: prevent out-of-distribution hallucinations / noise
-                    t_delta = torch.clamp(t_delta, -0.30, 0.30)
+                    clamp_val = self.delta_bounds[0]
+                    t_delta = torch.clamp(t_delta, -clamp_val, clamp_val)
 
                     input_ids = inputs[0]
                     L_corr = t_delta.shape[1]

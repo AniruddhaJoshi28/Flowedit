@@ -88,19 +88,35 @@ def is_f5tts_installed() -> bool:
         return False
 
 
+def sync_memories(source_memory) -> None:
+    """Persist `source_memory` and reload every other backbone's memory from the shared file.
+
+    Each backbone keeps its own HopfieldMemory (its own key/δ* space). Sense clusters, EMA
+    prototypes and pronunciations are shared through the file; perturbations learned on one
+    backbone are kept for that backbone and never injected into the other.
+    """
+    if source_memory is None:
+        return
+    source_memory.save(MEMORY_PATH)
+    for corr, inf in ((correction_pipeline, inference_pipeline), (f5_correction_pipeline, f5_inference_pipeline)):
+        if corr is None or corr.memory is None:
+            continue
+        if corr.memory is not source_memory:
+            corr.memory.load(MEMORY_PATH)
+        if inf is not None:
+            inf.memory = corr.memory
+            inf.refiner.memory = corr.memory
+
+
 def get_f5_pipelines() -> Tuple[Optional[CorrectionLoop], Optional[FlowEditInference]]:
-    """Lazy-load F5-TTS pipeline on demand when requested, ensuring shared Hopfield Memory."""
+    """Lazy-load F5-TTS pipeline on demand when requested, sharing Hopfield sense clusters with XTTS."""
     global f5_correction_pipeline, f5_inference_pipeline, correction_pipeline
     if f5_inference_pipeline is not None and f5_correction_pipeline is not None:
-        # Keep memory synchronized if active pipeline has entries
-        if (correction_pipeline is not None and correction_pipeline.memory is not None 
-            and (f5_correction_pipeline.memory is None or f5_correction_pipeline.memory.num_entries != correction_pipeline.memory.num_entries)):
-            if os.path.exists(MEMORY_PATH):
-                f5_correction_pipeline.memory.load(MEMORY_PATH)
-            else:
-                f5_correction_pipeline.memory.clear()
-                for entry in correction_pipeline.memory.entries:
-                    f5_correction_pipeline.memory.add_entry(entry)
+        # Pick up corrections written by the XTTS pipeline since the last sync
+        if (correction_pipeline is not None and correction_pipeline.memory is not None
+                and f5_correction_pipeline.memory.num_entries != correction_pipeline.memory.num_entries
+                and os.path.exists(MEMORY_PATH)):
+            f5_correction_pipeline.memory.load(MEMORY_PATH)
             f5_inference_pipeline.memory = f5_correction_pipeline.memory
             f5_inference_pipeline.refiner.memory = f5_correction_pipeline.memory
         return f5_correction_pipeline, f5_inference_pipeline
@@ -121,7 +137,7 @@ def get_f5_pipelines() -> Tuple[Optional[CorrectionLoop], Optional[FlowEditInfer
         corr = CorrectionLoop(f5_cfg)
         corr.load_models()
 
-        # Connect directly to Hopfield Memory adapted to F5-TTS embedding dimension (d=512)
+        # Load shared sense clusters; entries learned on XTTS are re-keyed in F5-TTS space (d=512)
         if os.path.exists(MEMORY_PATH):
             try:
                 corr.memory.load(MEMORY_PATH)
@@ -256,8 +272,10 @@ async def lifespan(app: FastAPI):
                             base_emb = correction_pipeline.backbone.encode_text(c_text, "en")
                             c_spans = correction_pipeline.memory._find_word_char_spans(c_text, w_data.get("word", w_lower))
                             tok_idx = []
+                            seed_span = None
                             if c_spans:
                                 cs, ce = c_spans[0]
+                                seed_span = (cs, ce)
                                 ts, te = correction_pipeline.memory._char_span_to_token_span(cs, ce, len(c_text), base_emb.shape[1])
                                 tok_idx = list(range(ts, te))
                             c_key = correction_pipeline.memory.compute_context_key(base_emb, tok_idx, carrier_text=c_text)
@@ -270,6 +288,7 @@ async def lifespan(app: FastAPI):
                                 language="en",
                                 phonetic_text=spell_as,
                                 metadata={"source": "s3_seed", "sense_id": s.get("sense_id")},
+                                char_span=seed_span,
                             )
                 if senses:
                     mem_words.add(w_lower)
@@ -526,17 +545,11 @@ async def correct_pronunciation(
                 with torch.no_grad():
                     base_emb = target_corr.backbone.encode_text(text, language)
                     tok_indices = []
-                    try:
-                        align_res = target_corr.aligner.align(text, target_word, occurrence_index=occurrence_index)
-                        tok_indices = align_res.token_indices if align_res and align_res.token_indices else []
-                    except Exception:
-                        pass
-                    if not tok_indices:
-                        char_spans = target_corr.memory._find_word_char_spans(text, target_word)
-                        if char_spans:
-                            cs, ce = char_spans[min(occurrence_index, len(char_spans) - 1)]
-                            ts, te = target_corr.memory._char_span_to_token_span(cs, ce, len(text), base_emb.shape[1])
-                            tok_indices = list(range(ts, te))
+                    char_spans = target_corr.memory._find_word_char_spans(text, target_word)
+                    occ_span = char_spans[min(occurrence_index, len(char_spans) - 1)] if char_spans else None
+                    if occ_span is not None:
+                        ts, te = target_corr.memory._char_span_to_token_span(occ_span[0], occ_span[1], len(text), base_emb.shape[1])
+                        tok_indices = list(range(ts, te))
 
                     context_key = target_corr.memory.compute_context_key(
                         base_emb,
@@ -565,20 +578,11 @@ async def correct_pronunciation(
                         language=language,
                         phonetic_text=replacement,
                         metadata={"source": "spell_mode", "sense_id": reg_result.get("sense_id")},
+                        char_span=occ_span,
                     )
 
                     # Persist to disk and sync across pipelines
-                    target_corr.memory.save(MEMORY_PATH)
-                    if correction_pipeline:
-                        correction_pipeline.memory = target_corr.memory
-                        if inference_pipeline:
-                            inference_pipeline.memory = target_corr.memory
-                            inference_pipeline.refiner.memory = target_corr.memory
-                    if f5_correction_pipeline:
-                        f5_correction_pipeline.memory = target_corr.memory
-                        if f5_inference_pipeline:
-                            f5_inference_pipeline.memory = target_corr.memory
-                            f5_inference_pipeline.refiner.memory = target_corr.memory
+                    sync_memories(target_corr.memory)
 
                     logger.info(
                         f"✓ [Spell Mode] Hopfield Memory synchronized for '{target_word}' → '{replacement}' "
@@ -662,17 +666,7 @@ async def correct_pronunciation(
 
         # Auto-persist shared memory to disk and keep both pipelines synchronized
         try:
-            target_corr.memory.save(MEMORY_PATH)
-            if correction_pipeline:
-                correction_pipeline.memory = target_corr.memory
-                if inference_pipeline:
-                    inference_pipeline.memory = target_corr.memory
-                    inference_pipeline.refiner.memory = target_corr.memory
-            if f5_correction_pipeline:
-                f5_correction_pipeline.memory = target_corr.memory
-                if f5_inference_pipeline:
-                    f5_inference_pipeline.memory = target_corr.memory
-                    f5_inference_pipeline.refiner.memory = target_corr.memory
+            sync_memories(target_corr.memory)
             logger.info(f"✓ Synchronized and saved {target_corr.memory.num_entries} Hopfield memory entries to {MEMORY_PATH}.")
         except Exception as e:
             logger.warning(f"Could not auto-save memory to {MEMORY_PATH}: {e}")
@@ -1182,7 +1176,7 @@ async def compare_synthesis(
                 "backbone": "Continuous Flow Matching DiT (Euler ODE N=32)",
                 "discrete_bottleneck": "Non-Functional on Discrete Codebooks (Zero Gradients)",
                 "syllable_timing": "Single Mean-Pooled Vector (Collapses Syllable Sequence)",
-                "context_homographs": "Rigid Window ±3 Tokens (No Sense Branching)",
+                "context_homographs": "Shared EMA Sense Prototypes (per-occurrence, clause-bounded context)",
                 "multi_speaker_transfer": "Single Reference Audio Overfit (Voice Timbre Drift)",
                 "general_forgetting": "Continuous Vector Field Drift Risk",
                 "streaming_capability": "Non-Streaming (Full 32 ODE steps before playback)",
@@ -1266,7 +1260,7 @@ async def delete_memory_entry(word: str):
 
     # Auto-persist after deletion
     try:
-        correction_pipeline.memory.save(MEMORY_PATH)
+        sync_memories(correction_pipeline.memory)
     except Exception as e:
         logger.warning(f"Could not auto-save memory after deletion: {e}")
 
@@ -1287,6 +1281,8 @@ async def clear_memory():
         correction_pipeline.memory.clear()
         if os.path.exists(MEMORY_PATH):
             os.remove(MEMORY_PATH)
+    if f5_correction_pipeline is not None and f5_correction_pipeline.memory is not None:
+        f5_correction_pipeline.memory.clear()
     return {"success": True, "message": "Memory cleared successfully.", "size": 0}
 
 

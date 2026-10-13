@@ -82,7 +82,14 @@ class CorrectionLoop:
 
         # 4. Modern Hopfield Memory
         embed_dim = self.backbone.embedding_dim
-        self.memory = HopfieldMemory(self.config.memory, embedding_dim=embed_dim)
+        self.memory = HopfieldMemory(
+            self.config.memory,
+            embedding_dim=embed_dim,
+            embedding_space=self.backbone.embedding_space,
+            text_encoder=self.backbone.encode_text,
+        )
+        # Load the shared contextual sense encoder now rather than on the first request
+        self.memory.sense_encoder
 
         self._models_loaded = True
         logger.info(f"✓ FlowEdit Pipeline ready in {time.time() - t0:.2f}s (Embedding dim d={embed_dim})")
@@ -250,13 +257,20 @@ class CorrectionLoop:
             # Stage 3: Associative Memory Storage & Cluster Averaging
             # ─────────────────────────────────────────────────────────────
             logger.info("▶ Stage 3: Modern Hopfield Associative Memory Write / Cluster Average")
-            auto_h_hint = None
+            occ_spans = self.memory._find_word_char_spans(text, primary_target_word)
+            char_span = occ_spans[min(occurrence_index, len(occ_spans) - 1)] if occ_spans else None
+
+            # Pronunciation label of this sense: explicit hint, the reference-audio transcription,
+            # or a spelling registered for this context. Never inferred from built-in word lists.
+            registered_spelling = None
             try:
                 from flowedit.alignment.homograph_resolver import HomographContextResolver
-                auto_h_hint = HomographContextResolver().resolve_homograph_phonetic(primary_target_word, text)
+                registered_spelling = HomographContextResolver(config=self.config.memory).resolve_homograph_phonetic(
+                    primary_target_word, text, char_offset=char_span[0] if char_span else None
+                )
             except Exception:
                 pass
-            effective_phonetic = phonetic_hint or getattr(alignment, "auto_phonetic_hint", None) or auto_h_hint or clean_target
+            effective_phonetic = phonetic_hint or getattr(alignment, "auto_phonetic_hint", None) or registered_spelling or clean_target
             if effective_phonetic and effective_phonetic.strip().lower() != primary_target_word.lower():
                 logger.info(f"  ✓ Reference audio pronunciation representation: '{effective_phonetic}'")
 
@@ -284,6 +298,7 @@ class CorrectionLoop:
                 full_delta=optimization.delta,
                 word_delta=getattr(optimization, "word_delta", None),
                 phonetic_text=effective_phonetic,
+                char_span=char_span,
             )
 
             elapsed = time.time() - t_start

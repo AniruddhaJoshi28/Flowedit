@@ -14,10 +14,17 @@ Mathematical Formulation:
         c_hat = c + σ(max_j(β Q K_j^T) - τ) ⊙ Mem(Q)
 
 Enhanced with:
-    1. Cluster averaging of (K, V, δ*_word) across speakers and multiple corrections.
-    2. Contextual homograph disambiguation via localized Gaussian context keys.
-    3. Multi-word simultaneous correction retrieval across full sentences.
-    4. Exact BPE token-span localization for precision delta injection.
+    1. EMA sense clusters: every entry is one pronunciation sense of a word. Repeated corrections
+       of the same sense are merged by an exponential moving average of the backbone key K, the
+       pooled value V, the word perturbation δ*_word and a contextual sense prototype P.
+    2. Per-occurrence homograph disambiguation: each occurrence of a word in the input is encoded
+       in its own clause-bounded context window and assigned to the nearest sense prototype, so
+       the same spelling can resolve to different senses within one sentence.
+    3. Backbone embedding spaces: keys and perturbations are stored per backbone space (XTTS
+       d=1024 BPE, F5-TTS d=512 characters). Entries learned on another backbone are re-keyed
+       with the local text encoder and never inject foreign perturbations; their sense prototype
+       and pronunciation transfer unchanged because the sense space is backbone-independent.
+    4. Multi-word simultaneous retrieval and exact BPE token-span localization.
 """
 
 import os
@@ -25,7 +32,7 @@ import re
 import math
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import torch
 import torch.nn as nn
@@ -49,10 +56,12 @@ DIGIT_WORDS = {
     '5': ' five ', '6': ' six ', '7': ' seven ', '8': ' eight ', '9': ' nine ',
 }
 
+_AUTO = "auto"
+
 
 def broad_acoustic_hash(s: str) -> str:
     """Compute coarse acoustic/phonetic hash invariant to common ASR plosive/fricative confusions.
-    
+
     Acoustically groups phonetically similar consonants and vowels:
     - Stops / Plosives / Labiodentals: b, p, d, t, v, f, w -> 1
     - Velar stops: g, k, c, q -> 2
@@ -115,9 +124,27 @@ def levenshtein_ratio(s1: str, s2: str) -> float:
     return 1.0 - (dist / max(len1, len2))
 
 
+def _resample_last_dim(t: Optional[torch.Tensor], target_dim: int, normalize_1d: bool = False) -> Optional[torch.Tensor]:
+    """Linearly resample the channel dimension (used only for legacy entries without a local re-key)."""
+    if t is None or t.shape[-1] == target_dim:
+        return t
+    shape = list(t.shape)
+    flat = t.reshape(-1, 1, shape[-1]).float()
+    res = F.interpolate(flat, size=target_dim, mode='linear', align_corners=True)
+    out = res.reshape(shape[:-1] + [target_dim]).to(dtype=t.dtype, device=t.device)
+    if normalize_1d and out.dim() == 1:
+        out = F.normalize(out, p=2, dim=-1)
+    return out
+
+
 @dataclass
 class MemoryEntry:
-    """A single pronunciation correction entry (or averaged cluster) in Modern Hopfield Memory."""
+    """A single pronunciation sense cluster in Modern Hopfield Memory.
+
+    `key`, `value`, `word_delta` and `full_delta` are the view in the owning memory's backbone
+    space. `space_data` keeps the per-space tensors of every backbone that has learned this sense,
+    and `delta_space` names the space the local perturbations came from (None = no usable δ*).
+    """
     key: torch.Tensor           # K_i ∈ R^d (Gaussian context pooled base embedding)
     value: torch.Tensor         # V_i ∈ R^d (pooled latent perturbation δ*)
     word: str                   # Text representation of target word
@@ -131,6 +158,9 @@ class MemoryEntry:
     word_delta: Optional[torch.Tensor] = None   # Canonical word-level δ* ∈ R^[1, L_word, d]
     carrier_texts: List[str] = field(default_factory=list)  # Context sentences merged into this cluster
     phonetic_text: Optional[str] = None                     # Acoustic pronunciation representation from reference audio
+    sense_prototype: Optional[torch.Tensor] = None          # EMA of contextual occurrence embeddings (backbone-independent)
+    space_data: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    delta_space: Optional[str] = None
 
 
 @dataclass
@@ -146,6 +176,8 @@ class MatchedWordSpan:
     phonetic_text: Optional[str] = None
     char_start: Optional[int] = None
     char_end: Optional[int] = None
+    has_delta: bool = False
+    sense_similarity: Optional[float] = None
 
 
 @dataclass
@@ -163,35 +195,55 @@ class RetrievalResult:
     matched_carrier_text: Optional[str] = None          # Carrier text from top entry
 
 
+def _norm_pron(word: str, phonetic: Optional[str]) -> Optional[str]:
+    """Normalised pronunciation label, or None when it carries no information beyond the spelling."""
+    if not phonetic:
+        return None
+    p = re.sub(r"\s+", " ", phonetic.strip().lower())
+    if not p or p == (word or "").strip().lower():
+        return None
+    return p
+
+
 class HopfieldMemory(nn.Module):
     """Modern Continuous Hopfield Associative Memory for Lifelong Pronunciation Adaptation."""
 
-    def __init__(self, config: Optional[MemoryConfig] = None, embedding_dim: int = 512):
+    def __init__(
+        self,
+        config: Optional[MemoryConfig] = None,
+        embedding_dim: int = 512,
+        embedding_space: Optional[str] = None,
+        text_encoder: Optional[Callable[[str, str], torch.Tensor]] = None,
+        sense_encoder: Any = _AUTO,
+    ):
         super().__init__()
         self.config = config or MemoryConfig()
         self.d = embedding_dim
+        self.space = embedding_space or f"d{embedding_dim}"
         self.beta = self.config.hopfield_beta or (1.0 / math.sqrt(self.d))
-        self.max_entries = getattr(self.config, "max_entries", 500)
-        self.dedup_threshold = getattr(self.config, "dedup_cosine_threshold", 0.72)
-        self.homograph_threshold = getattr(self.config, "homograph_sim_threshold", 0.72)
-        self.dedup_ema = getattr(self.config, "dedup_ema_decay", 0.90)
-        self.context_window = getattr(self.config, "context_window", 3)
-        self.context_char_radius = getattr(self.config, "context_char_radius", 12)
-        self.context_sigma = getattr(self.config, "context_sigma", 5.0)
+        self.max_entries = self.config.max_entries
+        self.homograph_threshold = self.config.homograph_sim_threshold
+        self.dedup_ema = self.config.dedup_ema_decay
+        self.context_window = self.config.context_window
+        self.context_char_radius = self.config.context_char_radius
+        self.context_sigma = self.config.context_sigma
 
         # Contextual averaging weights for memory key computation
         # K_i = α · word_emb + β · local_context + γ · global_context
-        self.context_key_word_weight = getattr(self.config, "context_key_word_weight", 0.70)
-        self.context_key_local_weight = getattr(self.config, "context_key_local_weight", 0.20)
-        self.context_key_global_weight = getattr(self.config, "context_key_global_weight", 0.10)
+        self.context_key_word_weight = self.config.context_key_word_weight
+        self.context_key_local_weight = self.config.context_key_local_weight
+        self.context_key_global_weight = self.config.context_key_global_weight
 
         # Gate threshold τ (Paper Section 3.2: calibrated to 4.0 for robust target word matching across sentences)
         self.gate_threshold = nn.Parameter(
-            torch.tensor(float(getattr(self.config, "gate_threshold_init", 4.0)), dtype=torch.float32)
+            torch.tensor(float(self.config.gate_threshold_init), dtype=torch.float32)
         )
 
         self.entries: List[MemoryEntry] = []
         self.current_step = 0
+        self._text_encoder = text_encoder
+        self._sense_encoder_spec = sense_encoder
+        self._rekey_cache: Dict[Tuple[str, str, Tuple[int, int]], torch.Tensor] = {}
 
     @property
     def num_entries(self) -> int:
@@ -199,6 +251,95 @@ class HopfieldMemory(nn.Module):
 
     def is_empty(self) -> bool:
         return len(self.entries) == 0
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # Encoders
+    # ─────────────────────────────────────────────────────────────────────────
+
+    @property
+    def sense_encoder(self):
+        """Backbone-independent contextual encoder, or None when disabled/unavailable."""
+        spec = self._sense_encoder_spec
+        if spec is _AUTO:
+            from flowedit.memory.sense_encoder import get_sense_encoder
+            spec = get_sense_encoder(self.config)
+            self._sense_encoder_spec = spec
+        if not spec:
+            return None
+        if hasattr(spec, "available") and not spec.available:
+            return None
+        return spec
+
+    def attach_text_encoder(self, text_encoder: Callable[[str, str], torch.Tensor]) -> None:
+        """Attach the owning backbone's text encoder and re-key entries learned on other backbones."""
+        self._text_encoder = text_encoder
+        for entry in self.entries:
+            if entry.space_data.get(self.space) is None:
+                self._localize(entry)
+
+    def _occurrence_vectors(self, text: str, spans: List[Tuple[int, int]]) -> Optional[torch.Tensor]:
+        enc = self.sense_encoder
+        if enc is None or not text or not spans:
+            return None
+        try:
+            return enc.encode(text, spans)
+        except Exception as e:
+            logger.warning(f"Sense encoding failed for '{text[:60]}': {e}")
+            return None
+
+    @staticmethod
+    def _is_unconditional(word: str, carrier_text: Optional[str]) -> bool:
+        """An entry learned without sentence context applies to every occurrence of its word."""
+        c = (carrier_text or "").strip().strip(".!?,;:").strip().lower()
+        return not c or c == (word or "").strip().lower()
+
+    def _pick_span(
+        self,
+        text: str,
+        word: str,
+        char_span: Optional[Tuple[int, int]] = None,
+        token_indices: Optional[List[int]] = None,
+        total_tokens: Optional[int] = None,
+    ) -> Optional[Tuple[int, int]]:
+        """Character span of the corrected occurrence of `word` in `text`."""
+        spans = self._find_word_char_spans(text, word)
+        if not spans:
+            return None
+        if char_span is not None:
+            return min(spans, key=lambda s: abs(s[0] - int(char_span[0])))
+        if token_indices and len(spans) > 1:
+            n_tok = total_tokens or len(text)
+            est = min(token_indices) * len(text) / max(1, n_tok)
+            return min(spans, key=lambda s: abs(s[0] - est))
+        return spans[0]
+
+    def _entry_prototype(self, entry: MemoryEntry) -> Optional[torch.Tensor]:
+        """Sense prototype of an entry; legacy entries derive it from their carrier sentences (EMA)."""
+        if entry.sense_prototype is not None:
+            return entry.sense_prototype
+        if self._is_unconditional(entry.word, entry.carrier_text):
+            return None
+        carriers = [c for c in (entry.carrier_texts or [entry.carrier_text]) if c]
+        proto = None
+        for i, c in enumerate(carriers):
+            span = self._pick_span(
+                c, entry.word,
+                char_span=entry.metadata.get("char_span") if i == 0 else None,
+                token_indices=entry.token_indices if i == 0 else None,
+            )
+            if span is None:
+                continue
+            vec = self._occurrence_vectors(c, [span])
+            if vec is None:
+                return None
+            v = vec[0]
+            proto = v if proto is None else F.normalize(self.dedup_ema * proto + (1.0 - self.dedup_ema) * v, p=2, dim=-1)
+        entry.sense_prototype = proto
+        return proto
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # Backbone context keys
+    # ─────────────────────────────────────────────────────────────────────────
 
     def compute_context_key(
         self,
@@ -275,6 +416,67 @@ class HopfieldMemory(nn.Module):
         sense_key = alpha * word_emb + beta * local_context + gamma * global_context
         return F.normalize(sense_key, p=2, dim=-1)
 
+    def _rekey(self, entry: MemoryEntry) -> Optional[torch.Tensor]:
+        """Recompute an entry's key in this backbone's space from its carrier sentence."""
+        if self._text_encoder is None:
+            return None
+        carrier = entry.carrier_text or entry.word
+        span = self._pick_span(carrier, entry.word, char_span=entry.metadata.get("char_span"))
+        cache_key = (carrier, entry.word.strip().lower(), span or (0, 0))
+        cached = self._rekey_cache.get(cache_key)
+        if cached is not None:
+            return cached
+        try:
+            with torch.no_grad():
+                emb = self._text_encoder(carrier, entry.language or "en")
+            n_tok = emb.shape[1] if emb.dim() == 3 else emb.shape[0]
+            tok = []
+            if span is not None:
+                ts, te = self._char_span_to_token_span(span[0], span[1], len(carrier), n_tok)
+                tok = list(range(ts, te))
+            key = self.compute_context_key(emb, tok).detach().cpu().float()
+        except Exception as e:
+            logger.warning(f"Could not re-key '{entry.word}' in space {self.space}: {e}")
+            return None
+        if key.shape[-1] != self.d:
+            return None
+        self._rekey_cache[cache_key] = key
+        return key
+
+    def _localize(self, entry: MemoryEntry) -> None:
+        """Populate the entry's local view (key/value/δ*) for this memory's backbone space."""
+        local = entry.space_data.get(self.space)
+        if local is not None:
+            entry.key = F.normalize(local["key"].float(), p=2, dim=-1)
+            entry.value = local["value"].float() if local.get("value") is not None else torch.zeros(self.d)
+            entry.word_delta = local.get("word_delta")
+            entry.full_delta = local.get("full_delta")
+            entry.token_indices = list(local.get("token_indices") or entry.token_indices or [])
+            entry.delta_space = self.space if entry.word_delta is not None else None
+            return
+
+        # Learned on another backbone: its perturbations are meaningless here and are never injected.
+        entry.word_delta = None
+        entry.full_delta = None
+        entry.value = torch.zeros(self.d)
+        entry.delta_space = None
+        key = self._rekey(entry)
+        if key is None:
+            foreign = next(iter(entry.space_data.values()), None)
+            src = foreign["key"] if foreign is not None else entry.key
+            key = _resample_last_dim(src.float(), self.d, normalize_1d=True)
+        entry.key = F.normalize(key, p=2, dim=-1)
+
+    def _store_local(self, entry: MemoryEntry) -> None:
+        """Record the entry's local view as this backbone space's data."""
+        entry.space_data[self.space] = {
+            "key": entry.key.detach().cpu().float(),
+            "value": entry.value.detach().cpu().float() if entry.value is not None else None,
+            "word_delta": entry.word_delta if entry.delta_space == self.space else None,
+            "full_delta": entry.full_delta if entry.delta_space == self.space else None,
+            "token_indices": list(entry.token_indices or []),
+        }
+
     def _extract_word_delta(
         self,
         full_delta: Optional[torch.Tensor],
@@ -311,6 +513,50 @@ class HopfieldMemory(nn.Module):
         # Fallback: slice beginning of full delta up to word length
         return fd[:, :min(S, max(1, word_len)), :].clone()
 
+    # ─────────────────────────────────────────────────────────────────────────
+    # Write (EMA sense clustering)
+    # ─────────────────────────────────────────────────────────────────────────
+
+    def _find_merge_target(
+        self,
+        word: str,
+        key_norm: torch.Tensor,
+        proto: Optional[torch.Tensor],
+        pron: Optional[str],
+        unconditional: bool,
+    ) -> Tuple[int, float]:
+        """Best same-sense cluster for a new correction, or (-1, best_similarity).
+
+        Pronunciation decides first: two different learned pronunciations are different senses by
+        definition and are never merged; equal pronunciations are the same sense. When either
+        pronunciation is unknown, the contextual sense prototype (or, without an encoder, the
+        backbone context key) must reach the merge threshold.
+        """
+        best_idx, best_sim, best_any = -1, -1.0, -1.0
+        w_norm = word.strip().lower()
+        for idx, entry in enumerate(self.entries):
+            if entry.word.strip().lower() != w_norm:
+                continue
+            e_pron = _norm_pron(entry.word, entry.phonetic_text)
+            e_proto = None if unconditional else self._entry_prototype(entry)
+            if proto is not None and e_proto is not None and e_proto.shape == proto.shape:
+                sim = float(torch.dot(proto, e_proto.to(proto)))
+                threshold = self.config.sense_merge_threshold
+            else:
+                sim = float(torch.dot(key_norm, F.normalize(entry.key.cpu().float(), p=2, dim=-1)))
+                threshold = self.homograph_threshold
+            best_any = max(best_any, sim)
+
+            if pron is not None and e_pron is not None:
+                compatible = pron == e_pron
+            elif unconditional and self._is_unconditional(entry.word, entry.carrier_text):
+                compatible = True
+            else:
+                compatible = sim >= threshold
+            if compatible and sim > best_sim:
+                best_idx, best_sim = idx, sim
+        return best_idx, (best_sim if best_idx >= 0 else best_any)
+
     def write(
         self,
         key: torch.Tensor,
@@ -323,15 +569,17 @@ class HopfieldMemory(nn.Module):
         full_delta: Optional[torch.Tensor] = None,
         word_delta: Optional[torch.Tensor] = None,
         phonetic_text: Optional[str] = None,
+        char_span: Optional[Tuple[int, int]] = None,
+        sense_vector: Optional[torch.Tensor] = None,
     ) -> Tuple[int, str]:
-        """Store or average a correction in Modern Hopfield Memory (Paper Section 3.2).
+        """Store or EMA-merge a correction into its sense cluster (Paper Section 3.2).
 
-        Sense-Level Canonical Averaging Logic:
-        - If an existing entry matches the word and has contextual cosine similarity >= homograph_threshold (0.65):
-            Updates keys K, pooled values V, and per-character word perturbations δ*_word using an Exponential Moving Average (EMA).
-            This eliminates sentence-specific neighbor noise and accumulates a stable, generalized correction vector for that sense.
-        - If the context similarity < homograph_threshold:
-            Stores as a distinct contextual homograph cluster (e.g. "lead" metal vs "lead" leader).
+        Sense-level EMA (decay ρ, warm-up decay while the cluster is young):
+            K ← norm(ρ K + (1-ρ) K_new)      V ← ρ V + (1-ρ) V_new
+            δ*_word ← ρ δ*_word + (1-ρ) δ*_new
+            P ← norm(ρ P + (1-ρ) P_new)      (contextual sense prototype)
+        A correction that matches no existing sense of the word becomes a new sense cluster
+        (e.g. "lead" metal vs "lead" leader).
         """
         self.current_step += 1
         key_1d = key.squeeze().detach().cpu().float()
@@ -353,77 +601,90 @@ class HopfieldMemory(nn.Module):
             cur_word_delta = self._extract_word_delta(full_delta, word, carrier_text, token_indices)
 
         stored_full_delta = full_delta.detach().cpu().float() if full_delta is not None else None
+        meta = dict(metadata or {})
+        unconditional = self._is_unconditional(word, carrier_text)
 
-        # Check for deduplication / cluster averaging vs contextual homographs
+        occ_span = None
+        if carrier_text and not unconditional:
+            occ_span = self._pick_span(carrier_text, word, char_span=char_span, token_indices=token_indices)
+            if occ_span is not None:
+                meta["char_span"] = [int(occ_span[0]), int(occ_span[1])]
+
+        proto = None
+        if sense_vector is not None:
+            proto = F.normalize(sense_vector.detach().cpu().float().reshape(-1), p=2, dim=-1)
+        elif occ_span is not None:
+            vec = self._occurrence_vectors(carrier_text, [occ_span])
+            proto = vec[0] if vec is not None else None
+
+        pron = _norm_pron(word, phonetic_text)
+
         if self.entries:
-            word_entries = [
-                (i, e) for i, e in enumerate(self.entries)
-                if e.word.strip().lower() == word.strip().lower()
-            ]
+            best_idx, best_sim = self._find_merge_target(word, key_norm, proto, pron, unconditional)
+            if best_idx >= 0:
+                matched = self.entries[best_idx]
+                if matched.access_count <= self.config.ema_warmup_count:
+                    decay = float(self.config.ema_warmup_decay)
+                else:
+                    decay = float(self.dedup_ema)
+                alpha = 1.0 - decay
+                has_local = self.space in matched.space_data
+                same_space = matched.delta_space == self.space
 
-            if word_entries:
-                best_sim = -1.0
-                best_idx = -1
-                for idx, entry in word_entries:
-                    sim = torch.dot(key_norm, F.normalize(entry.key.cpu(), p=2, dim=-1)).item()
-                    if sim > best_sim:
-                        best_sim = sim
-                        best_idx = idx
+                # 1. Key EMA average (normalized, local backbone space)
+                matched.key = F.normalize(matched.key.cpu().float() * decay + key_norm * alpha, p=2, dim=-1)
 
-                if best_sim >= self.homograph_threshold and best_idx >= 0:
-                    # ─── CANONICAL SENSE-LEVEL EMA AVERAGE (K, V, word_delta) ───
-                    matched = self.entries[best_idx]
-                    
-                    # For early corrections / re-corrections, prioritize the new reference audio
-                    if matched.access_count <= 2:
-                        decay = 0.20
-                        alpha = 0.80
+                # 2. Value EMA average (only blend values learned in the same space)
+                if has_local:
+                    matched.value = matched.value.cpu().float() * decay + val_1d * alpha
+                else:
+                    matched.value = val_1d
+
+                # 3. Canonical word_delta EMA average
+                if cur_word_delta is not None:
+                    if same_space and matched.word_delta is not None and matched.word_delta.shape == cur_word_delta.shape:
+                        matched.word_delta = matched.word_delta * decay + cur_word_delta * alpha
                     else:
-                        decay = float(getattr(self.config, "dedup_ema_decay", 0.70))
-                        alpha = 1.0 - decay
+                        matched.word_delta = cur_word_delta
+                    matched.delta_space = self.space
+                if stored_full_delta is not None:
+                    matched.full_delta = stored_full_delta
 
-                    # 1. Key EMA average (normalized)
-                    matched_key = matched.key.cpu()
-                    avg_key = matched_key * decay + key_norm * alpha
-                    matched.key = F.normalize(avg_key, p=2, dim=-1)
+                # 4. Contextual sense prototype EMA (backbone-independent)
+                if proto is not None:
+                    old = None if unconditional else self._entry_prototype(matched)
+                    if old is not None and old.shape == proto.shape:
+                        matched.sense_prototype = F.normalize(old * decay + proto * alpha, p=2, dim=-1)
+                    else:
+                        matched.sense_prototype = proto
 
-                    # 2. Value EMA average
-                    matched_val = matched.value.cpu()
-                    avg_val = matched_val * decay + val_1d * alpha
-                    matched.value = avg_val
+                matched.access_count += 1
+                matched.last_access_step = self.current_step
+                meta.pop("char_span", None)
+                matched.metadata.update(meta)
 
-                    # 3. Canonical word_delta EMA average (favor new correction)
-                    if cur_word_delta is not None:
-                        if matched.word_delta is not None and matched.word_delta.shape == cur_word_delta.shape:
-                            matched.word_delta = matched.word_delta * decay + cur_word_delta * alpha
-                        else:
-                            matched.word_delta = cur_word_delta
-
-                    matched.access_count += 1
-                    matched.last_access_step = self.current_step
-                    matched.metadata.update(metadata or {})
-                    if stored_full_delta is not None:
-                        matched.full_delta = stored_full_delta
-
+                if pron is not None or _norm_pron(matched.word, matched.phonetic_text) is None:
                     if phonetic_text:
                         matched.phonetic_text = phonetic_text
 
-                    if carrier_text:
-                        if not hasattr(matched, "carrier_texts") or matched.carrier_texts is None:
-                            matched.carrier_texts = [matched.carrier_text] if matched.carrier_text else []
-                        if carrier_text not in matched.carrier_texts:
-                            matched.carrier_texts.append(carrier_text)
+                if carrier_text:
+                    if matched.carrier_texts is None:
+                        matched.carrier_texts = [matched.carrier_text] if matched.carrier_text else []
+                    if carrier_text not in matched.carrier_texts:
+                        matched.carrier_texts.append(carrier_text)
 
-                    logger.info(
-                        f"✓ Hopfield Memory Updated: '{word}' (sense cluster N={matched.access_count}, "
-                        f"context sim={best_sim:.4f} ≥ {self.homograph_threshold}, entry={best_idx})"
-                    )
-                    return best_idx, "averaged"
-                else:
-                    logger.info(
-                        f"✓ Hopfield Memory: Distinct Contextual Homograph for '{word}' "
-                        f"(context sim={best_sim:.4f} < {self.homograph_threshold}). Storing as separate sense cluster."
-                    )
+                self._store_local(matched)
+                logger.info(
+                    f"✓ Hopfield Memory EMA-merged '{word}' into sense cluster {best_idx} "
+                    f"(N={matched.access_count}, sim={best_sim:.4f}, decay={decay:.2f}, "
+                    f"phonetic='{matched.phonetic_text}')"
+                )
+                return best_idx, "averaged"
+            if best_sim > -1.0:
+                logger.info(
+                    f"✓ Hopfield Memory: new sense cluster for '{word}' "
+                    f"(best same-word sim={best_sim:.4f}, phonetic='{phonetic_text}')"
+                )
 
         # LRU Pruning if capacity exceeded (Paper Section 3.2: M_max = 500)
         if len(self.entries) >= self.max_entries:
@@ -441,31 +702,39 @@ class HopfieldMemory(nn.Module):
             language=language,
             access_count=1,
             last_access_step=self.current_step,
-            metadata=metadata or {},
+            metadata=meta,
             full_delta=stored_full_delta,
             word_delta=cur_word_delta,
             carrier_texts=carrier_list,
             phonetic_text=phonetic_text,
+            sense_prototype=proto,
+            delta_space=self.space if cur_word_delta is not None else None,
         )
+        self._store_local(entry)
         self.entries.append(entry)
         idx = len(self.entries) - 1
         logger.info(f"✓ Hopfield Memory Stored: '{word}' at index {idx} (phonetic='{phonetic_text}', Total Entries: {len(self.entries)})")
         return idx, "inserted"
 
     def add_entry(self, entry: MemoryEntry):
-        """Add or adapt an existing MemoryEntry into this Hopfield memory, ensuring key normalization and dimension compatibility."""
-        k = entry.key.clone().detach().cpu().float()
-        v = entry.value.clone().detach().cpu().float() if entry.value is not None else torch.zeros(self.d)
-        if k.shape[-1] != self.d:
-            k = F.interpolate(k.unsqueeze(0).unsqueeze(0), size=self.d, mode='linear', align_corners=False).squeeze()
-        k = F.normalize(k, p=2, dim=-1)
-        if v.shape[-1] != self.d:
-            v = F.interpolate(v.unsqueeze(0).unsqueeze(0), size=self.d, mode='linear', align_corners=False).squeeze()
+        """Add an entry from another memory instance, localising it to this backbone space."""
+        space_data = {
+            s: dict(d) for s, d in (getattr(entry, "space_data", None) or {}).items()
+        }
+        if not space_data:
+            src_space = self.space if entry.key.shape[-1] == self.d else f"legacy:d{entry.key.shape[-1]}"
+            space_data[src_space] = {
+                "key": entry.key.clone().detach().cpu().float(),
+                "value": entry.value.clone().detach().cpu().float() if entry.value is not None else None,
+                "word_delta": entry.word_delta,
+                "full_delta": entry.full_delta,
+                "token_indices": list(entry.token_indices or []),
+            }
 
         self.current_step += 1
         new_entry = MemoryEntry(
-            key=k,
-            value=v,
+            key=entry.key.clone().detach().cpu().float(),
+            value=torch.zeros(self.d),
             word=entry.word,
             carrier_text=entry.carrier_text,
             token_indices=list(entry.token_indices or []),
@@ -473,14 +742,18 @@ class HopfieldMemory(nn.Module):
             access_count=entry.access_count,
             last_access_step=self.current_step,
             metadata=dict(entry.metadata or {}),
-            full_delta=entry.full_delta,
-            word_delta=entry.word_delta,
             carrier_texts=list(getattr(entry, "carrier_texts", []) or ([entry.carrier_text] if entry.carrier_text else [])),
             phonetic_text=entry.phonetic_text,
+            sense_prototype=getattr(entry, "sense_prototype", None),
+            space_data=space_data,
         )
+        self._localize(new_entry)
         self.entries.append(new_entry)
-        logger.info(f"✓ Added entry for '{entry.word}' into Hopfield Memory (d={self.d}, total={len(self.entries)})")
+        logger.info(f"✓ Added entry for '{entry.word}' into Hopfield Memory (space={self.space}, total={len(self.entries)})")
 
+    # ─────────────────────────────────────────────────────────────────────────
+    # Retrieval (per-occurrence sense selection)
+    # ─────────────────────────────────────────────────────────────────────────
 
     def _find_word_char_spans(self, text: str, word: str) -> List[Tuple[int, int]]:
         """Find all character-level start and end spans of a word using word boundaries."""
@@ -498,25 +771,6 @@ class HopfieldMemory(nn.Module):
         # Fallback to substring matching if word boundary returns empty
         pattern = re.escape(word_clean)
         return [m.span() for m in re.finditer(pattern, text_clean, flags=re.IGNORECASE)]
-
-    @staticmethod
-    def _context_word_similarity(text: str, char_start: int, char_end: int, carrier_text: str) -> float:
-        """Topical context similarity between window around matched span and stored carrier sentence."""
-        if not carrier_text:
-            return 1.0
-        target_w = text[char_start:char_end].strip().lower()
-        win_start = max(0, char_start - 36)
-        win_end = min(len(text), char_end + 36)
-        local_words = set(re.findall(r'\b[a-zA-Z]{2,}\b', text[win_start:win_end].lower()))
-        carrier_words = set(re.findall(r'\b[a-zA-Z]{2,}\b', carrier_text.lower()))
-        content_local = (local_words - GRAMMAR_STOPWORDS) - {target_w}
-        content_carrier = (carrier_words - GRAMMAR_STOPWORDS) - {target_w}
-        if not content_carrier or not content_local:
-            intersection = (local_words & carrier_words) - {target_w}
-            union = (local_words | carrier_words) - {target_w}
-            return len(intersection) / max(1, len(union)) if union else 0.0
-        intersection = content_local & content_carrier
-        return len(intersection) / max(1, len(content_carrier))
 
     def _char_span_to_token_span(
         self,
@@ -541,6 +795,66 @@ class HopfieldMemory(nn.Module):
         tok_end = max(tok_start + 1, min(total_tokens, tok_end))
         return (tok_start, tok_end)
 
+    def _select_sense(
+        self,
+        candidates: List[Tuple[int, MemoryEntry]],
+        occ_vec: Optional[torch.Tensor],
+        occ_key_fn: Callable[[], torch.Tensor],
+    ) -> Optional[Tuple[int, MemoryEntry, float]]:
+        """Assign one occurrence to a sense cluster of its word.
+
+        - Several senses with different pronunciations: the most similar prototype wins if it
+          reaches `sense_min_similarity` (relative decision between learned senses).
+        - A single learned sense: applies only if similarity reaches `sense_match_threshold`.
+        - Entries learned without sentence context apply when no contextual sense claims the
+          occurrence.
+        Without the contextual encoder the backbone context keys are compared instead.
+        """
+        unconditional = [(i, e) for i, e in candidates if self._is_unconditional(e.word, e.carrier_text)]
+        contextual = [(i, e) for i, e in candidates if not self._is_unconditional(e.word, e.carrier_text)]
+
+        if contextual:
+            protos = [self._entry_prototype(e) for _, e in contextual] if occ_vec is not None else []
+            use_protos = occ_vec is not None and all(p is not None and p.shape == occ_vec.shape for p in protos)
+            if use_protos:
+                sims = [float(torch.dot(occ_vec, p.to(occ_vec))) for p in protos]
+                single_thr = self.config.sense_match_threshold
+                multi_thr = self.config.sense_min_similarity
+            else:
+                occ_key = occ_key_fn()
+                sims = [
+                    float(torch.dot(occ_key, F.normalize(e.key.to(occ_key), p=2, dim=-1)))
+                    for _, e in contextual
+                ]
+                single_thr = multi_thr = self.homograph_threshold
+            if sims:
+                classes = {
+                    _norm_pron(e.word, e.phonetic_text) or f"#{i}" for i, e in contextual
+                }
+                threshold = multi_thr if len(classes) > 1 else single_thr
+                j = max(range(len(sims)), key=lambda k: sims[k])
+                if sims[j] >= threshold:
+                    m_idx, entry = contextual[j]
+                    return m_idx, entry, sims[j]
+
+        if unconditional:
+            m_idx, entry = max(unconditional, key=lambda c: c[1].access_count)
+            return m_idx, entry, 1.0
+        return None
+
+    def _span_pronunciation(self, entry: MemoryEntry, text: str, char_start: int) -> Optional[str]:
+        """Learned pronunciation of a matched occurrence (memory first, then registered spellings)."""
+        if _norm_pron(entry.word, entry.phonetic_text):
+            return entry.phonetic_text.strip()
+        try:
+            from flowedit.memory.s3_storage import s3_spelling_store
+            spelled = s3_spelling_store.resolve_correction(text, entry.word, char_offset=char_start)
+        except Exception:
+            spelled = None
+        if _norm_pron(entry.word, spelled):
+            return spelled.strip()
+        return entry.phonetic_text
+
     def retrieve(
         self,
         query_embeddings: torch.Tensor,
@@ -552,7 +866,8 @@ class HopfieldMemory(nn.Module):
         """Stage 3: Multi-Word Contextual Retrieval using Modern Hopfield Network (Paper Eq. 6 & 7).
 
         Computes context-aware similarities, applies similarity gating σ(max_j(β Q K_j^T) - τ),
-        and accurately injects corrections across all contextually matched target word spans in token space.
+        and assigns every occurrence of a stored word to its own sense cluster before injecting
+        that cluster's correction at the occurrence's token span.
         """
         device = query_embeddings.device
         dtype = query_embeddings.dtype
@@ -563,42 +878,16 @@ class HopfieldMemory(nn.Module):
 
         seq_len, dim = Q.shape
 
-        def _adapt_entry_to_dim(entry: MemoryEntry, target_dim: int) -> MemoryEntry:
-            if entry.key.shape[-1] == target_dim:
-                return entry
-
-            def _resample(t):
-                if t is None:
-                    return None
-                if t.shape[-1] == target_dim:
-                    return t
-                orig_s = t.shape
-                d_curr = orig_s[-1]
-                flat = t.reshape(-1, 1, d_curr).float()
-                res = F.interpolate(flat, size=target_dim, mode='linear', align_corners=True)
-                new_s = list(orig_s[:-1]) + [target_dim]
-                out_t = res.reshape(new_s).to(dtype=t.dtype, device=t.device)
-                if out_t.dim() == 1:
-                    out_t = F.normalize(out_t, p=2, dim=-1)
-                return out_t
-
-            return MemoryEntry(
-                key=_resample(entry.key),
-                value=_resample(entry.value),
-                word=entry.word,
-                carrier_text=entry.carrier_text,
-                token_indices=entry.token_indices,
-                language=entry.language,
-                access_count=entry.access_count,
-                last_access_step=entry.last_access_step,
-                metadata=entry.metadata,
-                full_delta=_resample(entry.full_delta),
-                word_delta=_resample(entry.word_delta),
-                carrier_texts=entry.carrier_texts,
-                phonetic_text=entry.phonetic_text,
-            )
-
-        valid_entries = [_adapt_entry_to_dim(e, dim) for e in self.entries]
+        valid_entries = self.entries
+        if any(e.key.shape[-1] != dim for e in valid_entries):
+            # Query dimension differs from this memory's space (only in ad-hoc tests / misuse)
+            valid_entries = [
+                MemoryEntry(**{**e.__dict__, "key": _resample_last_dim(e.key, dim, normalize_1d=True),
+                               "value": _resample_last_dim(e.value, dim),
+                               "word_delta": None, "full_delta": None, "delta_space": None})
+                if e.key.shape[-1] != dim else e
+                for e in valid_entries
+            ]
         if not valid_entries:
             zeros_delta = torch.zeros_like(query_embeddings)
             zeros_gate = torch.zeros(1, seq_len, 1, device=device, dtype=dtype)
@@ -632,231 +921,121 @@ class HopfieldMemory(nn.Module):
         K_norm = F.normalize(K, p=2, dim=-1)      # [M, d]
 
         # 4. Hopfield Attention & Similarity Scores: S_ij = β Q_i K_j^T (Paper Eq. 6)
-        beta_scale = 10.0 if (self.beta < 1.0) else float(self.beta)
+        beta_scale = float(self.config.retrieval_score_scale) if self.beta < 1.0 else float(self.beta)
         scores = beta_scale * torch.matmul(Q_norm, K_norm.transpose(0, 1))  # [S, M]
-        attention_weights = F.softmax(scores, dim=-1)                        # [S, M]
-        retrieved_V = torch.matmul(attention_weights, V)                      # [S, d]
 
         # 5. Similarity Gating (Paper Section 3.2 & Eq. 7)
         tau = self.gate_threshold.to(device=device, dtype=dtype)
-        gate_matrix = torch.sigmoid(scores - tau)                            # [S, M]
         max_scores, max_indices = torch.max(scores, dim=-1)                   # [S]
         gate_seq = torch.sigmoid(max_scores - tau)                            # [S]
-        gate_seq_clean = torch.where(gate_seq >= 0.50, gate_seq, torch.zeros_like(gate_seq))
+        floor = float(self.config.gate_activation_floor)
+        gate_seq_clean = torch.where(gate_seq >= floor, gate_seq, torch.zeros_like(gate_seq))
 
-        # 6. Multi-Word Contextual Span Matching in Token Space
+        # 6. Per-occurrence sense selection & span injection in token space
         matched_spans: List[MatchedWordSpan] = []
         assembled_delta = torch.zeros(1, seq_len, dim, device=device, dtype=dtype)
         gate_map = torch.zeros(1, seq_len, 1, device=device, dtype=dtype)
 
         if text:
             total_chars = len(text)
-            processed_token_spans = set()
 
-            # Tokenize full text if tokenizer is available for exact BPE token boundary resolution
-            encoded_tokens = None
-            if tokenizer is not None and hasattr(tokenizer, "encode"):
+            # Group entries by normalized target word (each group = the senses of one spelling)
+            word_to_entries: Dict[str, List[Tuple[int, MemoryEntry]]] = {}
+            for m_idx, entry in enumerate(valid_entries):
+                word_to_entries.setdefault(entry.word.strip().lower(), []).append((m_idx, entry))
+
+            occurrences: List[Tuple[str, int, int]] = []
+            for w_norm, candidates in word_to_entries.items():
+                for c_start, c_end in self._find_word_char_spans(text, candidates[0][1].word):
+                    occurrences.append((w_norm, c_start, c_end))
+            occurrences.sort(key=lambda o: o[1])
+
+            # Exact BPE prefix boundaries, decoded once per text (not once per occurrence)
+            prefix_ends: Optional[List[int]] = None
+            if occurrences and tokenizer is not None and hasattr(tokenizer, "encode") and hasattr(tokenizer, "decode") \
+                    and total_chars != seq_len:
                 try:
                     enc = tokenizer.encode(text, lang=language)
                     if isinstance(enc, list) and enc and isinstance(enc[0], list):
                         enc = enc[0]
-                    encoded_tokens = enc
-                except Exception:
-                    encoded_tokens = None
-
-            # Group entries by normalized target word for disambiguating homographs
-            word_to_entries: Dict[str, List[Tuple[int, MemoryEntry]]] = {}
-            for m_idx, entry in enumerate(valid_entries):
-                w_norm = entry.word.strip().lower()
-                if w_norm not in word_to_entries:
-                    word_to_entries[w_norm] = []
-                word_to_entries[w_norm].append((m_idx, entry))
-
-            for w_norm, candidates in word_to_entries.items():
-                char_spans = self._find_word_char_spans(text, candidates[0][1].word)
-                for c_start, c_end in char_spans:
-                    # Resolve token span
-                    if encoded_tokens is not None and tokenizer is not None and hasattr(tokenizer, "decode"):
-                        # Exact BPE prefix decoding
-                        tok_indices = []
-                        decoded_prefixes = []
-                        for i in range(1, len(encoded_tokens) + 1):
-                            try:
-                                pref = tokenizer.decode(encoded_tokens[:i])
-                                decoded_prefixes.append(len(pref))
-                            except Exception:
-                                decoded_prefixes.append(decoded_prefixes[-1] if decoded_prefixes else 0)
-
-                        prev_len = 0
-                        for idx, curr_len in enumerate(decoded_prefixes):
-                            if curr_len > c_start and prev_len < c_end:
-                                tok_indices.append(idx)
-                            prev_len = curr_len
-
-                        if tok_indices:
-                            t_start = max(0, min(tok_indices))
-                            t_end = min(seq_len, max(tok_indices) + 1)
-                        else:
-                            t_start, t_end = self._char_span_to_token_span(c_start, c_end, total_chars, seq_len)
-                    else:
-                        t_start, t_end = self._char_span_to_token_span(c_start, c_end, total_chars, seq_len)
-
-                    span_start = max(0, t_start)
-                    span_end = min(seq_len, max(t_end, span_start + 1))
-
-                    if (span_start, span_end) in processed_token_spans:
-                        continue
-
-                    # Search local window around estimated token span
-                    search_start = max(0, t_start - 2)
-                    search_end = min(seq_len, t_end + 2)
-
-                    # For multiple homograph entries with the same word, pick the one with highest contextual similarity
-                    best_m_idx = candidates[0][0]
-                    best_entry = candidates[0][1]
-                    best_s_occ = -1e9
-                    best_g_occ = 0.0
-
-                    # Use contextual resolver first to select best candidate sense
-                    best_resolver_sim = -1.0
-                    resolver_best_idx = None
-                    try:
-                        from flowedit.alignment.homograph_resolver import HomographContextResolver
-                        h_resolver = HomographContextResolver()
-                        for m_idx, cand_entry in candidates:
-                            c_list = getattr(cand_entry, "carrier_texts", None) or ([cand_entry.carrier_text] if cand_entry.carrier_text else [])
-                            if c_list:
-                                sim_val = max([h_resolver.compute_context_similarity(text, cand_entry.word, {"carrier_text": ct}, char_offset=c_start) for ct in c_list if ct] or [0.0])
-                                if sim_val > best_resolver_sim:
-                                    best_resolver_sim = sim_val
-                                    resolver_best_idx = m_idx
-                    except Exception:
-                        pass
-
-                    for m_idx, cand_entry in candidates:
-                        s_cand = scores[search_start:search_end, m_idx].max().item()
-                        g_cand = gate_matrix[search_start:search_end, m_idx].max().item()
-                        if resolver_best_idx is not None and m_idx == resolver_best_idx:
-                            best_s_occ = s_cand
-                            best_g_occ = g_cand
-                            best_m_idx = m_idx
-                            best_entry = cand_entry
-                            break
-                        elif resolver_best_idx is None and s_cand > best_s_occ:
-                            best_s_occ = s_cand
-                            best_g_occ = g_cand
-                            best_m_idx = m_idx
-                            best_entry = cand_entry
-
-                    s_occ = best_s_occ
-                    g_occ = best_g_occ
-                    m_idx = best_m_idx
-                    entry = best_entry
-
-                    # Gate threshold check: for homographs / repeated words, require contextual alignment
-                    KNOWN_HOMOGRAPHS = {
-                        "lead", "read", "bow", "tear", "wind", "bass", "close", "record",
-                        "live", "object", "present", "project", "rebel", "subject", "minute",
-                        "row", "sow", "desert", "wound", "refuse"
-                    }
-                    w_lower = entry.word.strip().lower()
-                    is_homograph = (w_lower in KNOWN_HOMOGRAPHS) or (len(candidates) > 1) or (len(char_spans) > 1)
-
-                    carrier_list = getattr(entry, "carrier_texts", None) or ([entry.carrier_text] if entry.carrier_text else [])
-                    lex_sim = self._context_word_similarity(text, c_start, c_end, entry.carrier_text)
-                    best_lex_sim = max([self._context_word_similarity(text, c_start, c_end, ct) for ct in carrier_list] or [lex_sim])
-
-                    sense_aligned = False
-                    if is_homograph:
+                    prefix_ends = []
+                    for i in range(1, len(enc) + 1):
                         try:
-                            from flowedit.alignment.homograph_resolver import HomographContextResolver
-                            resolver = HomographContextResolver()
-                            for ct in carrier_list:
-                                if ct and resolver.is_same_sense(ct, text, entry.word, char_offset=c_start):
-                                    sense_aligned = True
-                                    break
-                            if not sense_aligned:
-                                local_p = resolver.resolve_homograph_phonetic(entry.word, text, char_offset=c_start)
-                                if local_p and entry.phonetic_text and local_p.strip().lower() == entry.phonetic_text.strip().lower():
-                                    sense_aligned = True
-                                elif local_p and local_p.strip().lower() != entry.word.strip().lower():
-                                    for ct in carrier_list:
-                                        if ct and resolver.resolve_homograph_phonetic(entry.word, ct) == local_p:
-                                            sense_aligned = True
-                                            break
+                            prefix_ends.append(len(tokenizer.decode(enc[:i])))
                         except Exception:
-                            sense_aligned = False
+                            prefix_ends.append(prefix_ends[-1] if prefix_ends else 0)
+                except Exception:
+                    prefix_ends = None
 
-                    if is_homograph and carrier_list:
-                        # For homographs with known carrier context, strictly require contextual sense alignment
-                        is_active_match = sense_aligned
-                    elif is_homograph:
-                        is_active_match = (g_occ >= 0.25 and s_occ >= 1.5)
-                    else:
-                        is_active_match = (g_occ >= 0.10 or s_occ >= 1.0 or (w_lower in text.lower()))
+            occ_vecs = self._occurrence_vectors(text, [(o[1], o[2]) for o in occurrences]) if occurrences else None
+            processed_token_spans = set()
 
-                    if is_active_match:
-                        processed_token_spans.add((span_start, span_end))
+            for o_idx, (w_norm, c_start, c_end) in enumerate(occurrences):
+                t_start = t_end = None
+                if prefix_ends:
+                    prev_len = 0
+                    tok_indices = []
+                    for idx, curr_len in enumerate(prefix_ends):
+                        if curr_len > c_start and prev_len < c_end:
+                            tok_indices.append(idx)
+                        prev_len = curr_len
+                    if tok_indices:
+                        t_start = max(0, min(tok_indices))
+                        t_end = min(seq_len, max(tok_indices) + 1)
+                if t_start is None:
+                    t_start, t_end = self._char_span_to_token_span(c_start, c_end, total_chars, seq_len)
 
-                        span_phonetic = entry.phonetic_text
-                        if not span_phonetic or span_phonetic.strip().lower() == entry.word.strip().lower():
-                            try:
-                                from flowedit.alignment.homograph_resolver import HomographContextResolver
-                                resolver = HomographContextResolver()
-                                try:
-                                    h_p = resolver.resolve_homograph_phonetic(entry.word, text, char_offset=c_start)
-                                except TypeError:
-                                    h_p = resolver.resolve_homograph_phonetic(entry.word, text)
-                                if not h_p or h_p.strip().lower() == entry.word.strip().lower():
-                                    for ct in carrier_list:
-                                        if ct:
-                                            h_p = resolver.resolve_homograph_phonetic(entry.word, ct)
-                                            if h_p and h_p.strip().lower() != entry.word.strip().lower():
-                                                break
-                                if h_p and h_p.strip().lower() != entry.word.strip().lower():
-                                    span_phonetic = h_p.strip()
-                            except Exception:
-                                pass
+                span_start = max(0, t_start)
+                span_end = min(seq_len, max(t_end, span_start + 1))
+                if (span_start, span_end) in processed_token_spans:
+                    continue
 
-                        matched_spans.append(
-                            MatchedWordSpan(
-                                word=entry.word,
-                                start_pos=span_start,
-                                end_pos=span_end,
-                                entry_index=m_idx,
-                                score=s_occ,
-                                gate_value=1.0,
-                                carrier_text=entry.carrier_text,
-                                phonetic_text=span_phonetic,
-                                char_start=c_start,
-                                char_end=c_end,
-                            )
-                        )
+                occ_vec = occ_vecs[o_idx] if occ_vecs is not None else None
+                chosen = self._select_sense(
+                    word_to_entries[w_norm],
+                    occ_vec,
+                    lambda s=span_start, e=span_end: self.compute_context_key(Q, list(range(s, e))),
+                )
+                if chosen is None:
+                    logger.info(f"[Hopfield Retrieve] '{text[c_start:c_end]}' @{c_start}: no learned sense matches this context")
+                    continue
+                m_idx, entry, sense_sim = chosen
+                processed_token_spans.add((span_start, span_end))
 
-                        # Place word perturbation into assembled delta
-                        w_delta = entry.word_delta if entry.word_delta is not None else entry.value.unsqueeze(0).unsqueeze(0)
-                        w_delta = w_delta.to(device=device, dtype=dtype)
-                        src_delta = w_delta[0] if w_delta.dim() == 3 else w_delta
-                        span_len = span_end - span_start
+                search_start = max(0, span_start - 2)
+                search_end = min(seq_len, span_end + 2)
+                s_occ = scores[search_start:search_end, m_idx].max().item()
 
-                        if src_delta.shape[0] != span_len:
-                            if span_len == 1:
-                                aligned_delta = src_delta.mean(dim=0, keepdim=True)
-                            elif src_delta.shape[0] == 1:
-                                aligned_delta = src_delta.repeat(span_len, 1)
-                            else:
-                                # Linear interpolation so phonemes stretch/contract smoothly across subwords
-                                s_3d = src_delta.unsqueeze(0).transpose(1, 2)  # [1, d, L_src]
-                                aligned_delta = F.interpolate(s_3d, size=span_len, mode='linear', align_corners=True).transpose(1, 2).squeeze(0)  # [span_len, d]
-                        else:
-                            aligned_delta = src_delta
+                has_delta = entry.delta_space == self.space and entry.word_delta is not None
+                matched_spans.append(
+                    MatchedWordSpan(
+                        word=entry.word,
+                        start_pos=span_start,
+                        end_pos=span_end,
+                        entry_index=m_idx,
+                        score=s_occ,
+                        gate_value=1.0,
+                        carrier_text=entry.carrier_text,
+                        phonetic_text=self._span_pronunciation(entry, text, c_start),
+                        char_start=c_start,
+                        char_end=c_end,
+                        has_delta=has_delta,
+                        sense_similarity=sense_sim,
+                    )
+                )
 
-                        for p in range(span_len):
-                            assembled_delta[0, span_start + p, :] += aligned_delta[p, :]
-                            gate_map[0, span_start + p, 0] = 1.0
+                if not has_delta:
+                    continue
 
-        # 7. Fallback: If text was provided but no word spans matched, do not inject arbitrary perturbations.
-        # If text was NOT provided (pure continuous embedding query, Paper Eq. 6-7), use continuous attention retrieval:
+                # Place word perturbation into assembled delta
+                src_delta = entry.word_delta.to(device=device, dtype=dtype)
+                src_delta = src_delta[0] if src_delta.dim() == 3 else src_delta
+                span_len = span_end - span_start
+                aligned_delta = self._align_delta(src_delta, span_len)
+                assembled_delta[0, span_start:span_end, :] += aligned_delta
+                gate_map[0, span_start:span_end, 0] = 1.0
+
+        # 7. Text-free continuous retrieval (pure embedding query, Paper Eq. 6-7)
         if not matched_spans:
             if not text and gate_seq_clean.max().item() > 0:
                 attn_weights = torch.softmax(scores, dim=-1)  # [S, M]
@@ -870,9 +1049,7 @@ class HopfieldMemory(nn.Module):
         is_active = (len(matched_spans) > 0) or (gate_map.max().item() > 0.10)
 
         # Diagnostic summary
-        top_matches = []
-        for span in matched_spans:
-            top_matches.append((span.word, span.score))
+        top_matches = [(span.word, span.score) for span in matched_spans]
 
         best_full_delta = None
         best_word = None
@@ -888,7 +1065,7 @@ class HopfieldMemory(nn.Module):
             best_carrier = best_entry.carrier_text
             logger.info(
                 f"[Hopfield Retrieve] Active word corrections: "
-                f"{[(s.word, s.start_pos, f'phonetic={s.phonetic_text}', f'gate={s.gate_value:.2f}') for s in matched_spans]}"
+                f"{[(s.word, s.char_start, f'sense={s.entry_index}', f'sim={s.sense_similarity:.3f}', f'phonetic={s.phonetic_text}', f'delta={s.has_delta}') for s in matched_spans]}"
             )
         elif valid_entries and gate_seq_clean.max().item() > 0:
             best_idx = max_indices[torch.argmax(max_scores).item()].item()
@@ -912,32 +1089,56 @@ class HopfieldMemory(nn.Module):
             matched_carrier_text=best_carrier,
         )
 
+    @staticmethod
+    def _align_delta(src_delta: torch.Tensor, span_len: int) -> torch.Tensor:
+        """Stretch/contract a [L, d] word perturbation onto `span_len` positions."""
+        if src_delta.shape[0] == span_len:
+            return src_delta
+        if span_len == 1:
+            return src_delta.mean(dim=0, keepdim=True)
+        if src_delta.shape[0] == 1:
+            return src_delta.repeat(span_len, 1)
+        s_3d = src_delta.unsqueeze(0).transpose(1, 2)  # [1, d, L_src]
+        return F.interpolate(s_3d.float(), size=span_len, mode='linear', align_corners=True).transpose(1, 2).squeeze(0).to(src_delta.dtype)
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # Persistence
+    # ─────────────────────────────────────────────────────────────────────────
+
     def save(self, filepath: str) -> None:
-        """Serialize memory entries to disk."""
+        """Serialize memory entries (all backbone spaces + sense prototypes) to disk."""
+        encoder_name = (self.config.sense_encoder_model or "").strip()
+        entries = []
+        for e in self.entries:
+            if e.space_data.get(self.space) is not None or e.delta_space == self.space:
+                self._store_local(e)
+            entries.append({
+                # Legacy top-level fields mirror this backbone's view for older readers
+                "key": e.key.cpu(),
+                "value": e.value.cpu(),
+                "word": e.word,
+                "carrier_text": e.carrier_text,
+                "carrier_texts": e.carrier_texts or ([e.carrier_text] if e.carrier_text else []),
+                "token_indices": e.token_indices,
+                "language": e.language,
+                "access_count": e.access_count,
+                "last_access_step": e.last_access_step,
+                "metadata": e.metadata,
+                "full_delta": e.full_delta.cpu() if (e.full_delta is not None and e.delta_space == self.space) else None,
+                "word_delta": e.word_delta.cpu() if (e.word_delta is not None and e.delta_space == self.space) else None,
+                "phonetic_text": e.phonetic_text,
+                "embedding_space": self.space,
+                "space_data": e.space_data,
+                "sense_prototype": e.sense_prototype.cpu() if e.sense_prototype is not None else None,
+            })
         data = {
-            "entries": [
-                {
-                    "key": e.key.cpu(),
-                    "value": e.value.cpu(),
-                    "word": e.word,
-                    "carrier_text": e.carrier_text,
-                    "carrier_texts": getattr(e, "carrier_texts", [e.carrier_text] if e.carrier_text else []),
-                    "token_indices": e.token_indices,
-                    "language": e.language,
-                    "access_count": e.access_count,
-                    "last_access_step": e.last_access_step,
-                    "metadata": e.metadata,
-                    "full_delta": e.full_delta.cpu() if e.full_delta is not None else None,
-                    "word_delta": getattr(e, "word_delta", None).cpu() if getattr(e, "word_delta", None) is not None else None,
-                    "phonetic_text": getattr(e, "phonetic_text", None),
-                }
-                for e in self.entries
-            ],
+            "entries": entries,
             "current_step": self.current_step,
             "gate_threshold": self.gate_threshold.data.cpu(),
+            "sense_encoder_model": encoder_name,
         }
         torch.save(data, filepath)
-        logger.info(f"✓ Saved {len(self.entries)} Hopfield Memory entries to {filepath}")
+        logger.info(f"✓ Saved {len(self.entries)} Hopfield Memory entries to {filepath} (space={self.space})")
 
     def load(self, filepath: str) -> None:
         """Load serialized memory entries from disk with backward compatibility."""
@@ -949,81 +1150,59 @@ class HopfieldMemory(nn.Module):
             logger.warning(f"Could not load memory file {filepath}: {e}")
             return
 
+        same_encoder = (data.get("sense_encoder_model") or "") == (self.config.sense_encoder_model or "").strip()
         loaded_entries = []
         for item in data.get("entries", []):
             k = item.get("key")
             if k is None or not isinstance(k, torch.Tensor):
                 continue
-            if k.shape[-1] != self.d:
-                # Adapt key and value dimensions to current backbone dimension
-                flat_k = k.reshape(1, 1, -1).float()
-                k = F.interpolate(flat_k, size=self.d, mode='linear', align_corners=True).squeeze(0).squeeze(0).to(dtype=k.dtype, device=k.device)
-                k = F.normalize(k, p=2, dim=-1)
-                if isinstance(item.get("value"), torch.Tensor):
-                    v = item["value"]
-                    flat_v = v.reshape(1, 1, -1).float()
-                    item["value"] = F.interpolate(flat_v, size=self.d, mode='linear', align_corners=True).squeeze(0).squeeze(0).to(dtype=v.dtype, device=v.device)
 
             word = item.get("word", "")
             carrier_text = item.get("carrier_text", "")
             token_indices = item.get("token_indices", [])
             full_delta = item.get("full_delta", None)
             word_delta = item.get("word_delta", None)
-            carrier_texts = item.get("carrier_texts", [carrier_text] if carrier_text else [])
-            phonetic_text = item.get("phonetic_text", None)
 
-            # Extract word_delta from legacy full_delta if not present
-            if word_delta is None and full_delta is not None and word:
-                word_delta = self._extract_word_delta(full_delta, word, carrier_text, token_indices)
+            space_data = item.get("space_data") or {}
+            if not space_data:
+                # Legacy file: one backbone space, identified by its tag or by the key dimension
+                src_space = item.get("embedding_space") or (self.space if k.shape[-1] == self.d else f"legacy:d{k.shape[-1]}")
+                if word_delta is None and full_delta is not None and word:
+                    word_delta = self._extract_word_delta(full_delta, word, carrier_text, token_indices)
+                space_data = {src_space: {
+                    "key": k.float(),
+                    "value": item.get("value", k).float(),
+                    "word_delta": word_delta,
+                    "full_delta": full_delta,
+                    "token_indices": token_indices,
+                }}
 
-            # Adapt word_delta and full_delta dimensions to self.d if needed
-            if isinstance(word_delta, torch.Tensor) and word_delta.shape[-1] != self.d:
-                d_curr = word_delta.shape[-1]
-                flat_wd = word_delta.reshape(-1, 1, d_curr).float()
-                res_wd = F.interpolate(flat_wd, size=self.d, mode='linear', align_corners=True)
-                new_s = list(word_delta.shape[:-1]) + [self.d]
-                word_delta = res_wd.reshape(new_s).to(dtype=word_delta.dtype, device=word_delta.device)
-
-            if isinstance(full_delta, torch.Tensor) and full_delta.shape[-1] != self.d:
-                d_curr = full_delta.shape[-1]
-                flat_fd = full_delta.reshape(-1, 1, d_curr).float()
-                res_fd = F.interpolate(flat_fd, size=self.d, mode='linear', align_corners=True)
-                new_s = list(full_delta.shape[:-1]) + [self.d]
-                full_delta = res_fd.reshape(new_s).to(dtype=full_delta.dtype, device=full_delta.device)
-
-            # Auto-enrich missing phonetic_text for known homographs
-            if (not phonetic_text or phonetic_text.strip().lower() == word.strip().lower()) and word:
-                try:
-                    from flowedit.alignment.homograph_resolver import HomographContextResolver
-                    resolver = HomographContextResolver()
-                    h_p = resolver.resolve_homograph_phonetic(word, carrier_text)
-                    if h_p and h_p.strip().lower() != word.strip().lower():
-                        phonetic_text = h_p.strip()
-                        logger.info(f"✓ [Hopfield Memory] Enriched entry '{word}' with contextual phonetic pronunciation: '{phonetic_text}'")
-                except Exception:
-                    pass
-
-            loaded_entries.append(
-                MemoryEntry(
-                    key=k,
-                    value=item.get("value", k),
-                    word=word,
-                    carrier_text=carrier_text,
-                    token_indices=token_indices,
-                    language=item.get("language", "en"),
-                    access_count=item.get("access_count", 1),
-                    last_access_step=item.get("last_access_step", 0),
-                    metadata=item.get("metadata", {}),
-                    full_delta=full_delta,
-                    word_delta=word_delta,
-                    carrier_texts=carrier_texts,
-                    phonetic_text=phonetic_text,
-                )
+            entry = MemoryEntry(
+                key=k.float(),
+                value=torch.zeros(self.d),
+                word=word,
+                carrier_text=carrier_text,
+                token_indices=token_indices,
+                language=item.get("language", "en"),
+                access_count=item.get("access_count", 1),
+                last_access_step=item.get("last_access_step", 0),
+                metadata=item.get("metadata", {}) or {},
+                carrier_texts=item.get("carrier_texts", [carrier_text] if carrier_text else []),
+                phonetic_text=item.get("phonetic_text", None),
+                sense_prototype=item.get("sense_prototype") if same_encoder else None,
+                space_data=space_data,
             )
+            self._localize(entry)
+            loaded_entries.append(entry)
         self.entries = loaded_entries
-        target_tau = float(getattr(self.config, "gate_threshold_init", 4.0))
+        self.current_step = max(self.current_step, int(data.get("current_step", 0) or 0))
+        target_tau = float(self.config.gate_threshold_init)
         self.gate_threshold.data = torch.tensor(target_tau, dtype=torch.float32, device=self.gate_threshold.device)
-        logger.info(f"✓ Loaded {len(self.entries)} valid Hopfield Memory entries (d={self.d}, gate_tau={self.gate_threshold.item():.2f}) from {filepath}")
+        n_local = sum(1 for e in self.entries if e.delta_space == self.space)
+        logger.info(
+            f"✓ Loaded {len(self.entries)} Hopfield Memory entries from {filepath} "
+            f"(space={self.space}, {n_local} with local δ*, gate_tau={self.gate_threshold.item():.2f})"
+        )
 
 
     def delete_entry(self, word: str) -> bool:

@@ -36,6 +36,21 @@ class TTSBackbone(nn.Module, ABC):
         """Return the tokenizer instance for token-text mapping."""
         pass
 
+    @property
+    def embedding_space(self) -> str:
+        """Identifier of the text-embedding space; memory keys/δ* are only valid within one space."""
+        return f"{type(self).__name__}:{self.embedding_dim}"
+
+    @property
+    def is_character_level(self) -> bool:
+        """True when text tokens map 1:1 to characters (perturbations are aligned per character)."""
+        return False
+
+    @property
+    def delta_bounds(self) -> Tuple[float, float]:
+        """(element-wise clamp, L2 norm cap) applied to injected text-embedding perturbations."""
+        return float("inf"), float("inf")
+
     @abstractmethod
     def load_model(self) -> None:
         """Load model weights and initialize internal neural modules."""

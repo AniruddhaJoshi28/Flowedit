@@ -6,6 +6,7 @@ Continuous Flow-Matching (CFM) Diffusion Transformer (DiT) text-to-speech backbo
 """
 
 import os
+import re
 import tempfile
 import logging
 from typing import Dict, Optional, Tuple, Any, List
@@ -62,6 +63,14 @@ class F5TTSBackbone(TTSBackbone):
                 if hasattr(te, "dim"):
                     return te.dim
         return 512
+
+    @property
+    def is_character_level(self) -> bool:
+        return True
+
+    @property
+    def delta_bounds(self) -> Tuple[float, float]:
+        return float(self.config.f5tts_delta_clamp), float(self.config.f5tts_delta_norm_cap)
 
     def _resolve_f5_paths(self) -> Tuple[str, str, str, str]:
         """Automatically discover F5-TTS checkpoint, vocab, vocoder files, and model architecture name.
@@ -339,6 +348,18 @@ class F5TTSBackbone(TTSBackbone):
 
         return CharTokenizer(vocab_map)
 
+    @staticmethod
+    def _preset_prompt_text(audio_ref: Optional[str], prompt_text: str) -> str:
+        """Swap a preset voice's full transcript for the trimmed clause its F5 prompt audio contains."""
+        from flowedit.utils.voice_finder import get_preset_voice_transcript
+        clause = get_preset_voice_transcript(str(audio_ref or ""), for_f5=True)
+        if not clause or not prompt_text:
+            return prompt_text
+        norm = lambda t: re.sub(r"[^a-z0-9 ]", "", t.lower()).strip()
+        if norm(prompt_text) != norm(clause) and norm(prompt_text).startswith(norm(clause)):
+            return clause
+        return prompt_text
+
     def _ensure_loaded(self):
         if self.tts_api is None and self.model is None:
             self.load_model()
@@ -444,10 +465,8 @@ class F5TTSBackbone(TTSBackbone):
         prompt_text = ref_text.strip() if ref_text and ref_text.strip() else ""
         if not prompt_text:
             prompt_text = f5_preset_text or ""
-        elif is_michael and ("proximal" in prompt_text.lower() or "tcl" in prompt_text.lower() or "branches" in prompt_text.lower() or "remains" in prompt_text.lower()):
-            prompt_text = f5_preset_text or "The sensibility of the palm remains normal."
-        elif is_blessing and ("dedicated" in prompt_text.lower() or "ecosystem" in prompt_text.lower()):
-            prompt_text = f5_preset_text or "In oncology, delivery of breakthrough therapy is a high-stakes mission."
+        else:
+            prompt_text = self._preset_prompt_text(audio_path, prompt_text)
 
         # 2. For Blessing and Michael presets, trim to exact clean clause to match verbatim in-context prompt
         ref_waveform = prepared_audio.waveform
@@ -527,7 +546,7 @@ class F5TTSBackbone(TTSBackbone):
                     logger.warning(f"Reference audio transcription notice: {e}")
 
         if not prompt_text or prompt_text == ".":
-            prompt_text = "In oncology, delivery of breakthrough therapy is a high-stakes mission."
+            prompt_text = f5_preset_text or get_preset_voice_transcript("default", for_f5=True) or "."
 
         res = {
             "audio_path": prepared_audio.source_path,
@@ -869,11 +888,8 @@ class F5TTSBackbone(TTSBackbone):
         if not ref_text:
             ref_text = "."
 
-        # Guard against stale external prompt strings for Michael preset
-        ref_lower = ref_text.lower()
-        spk_lower = str(temp_ref).lower() + " " + str(speaker_conditioning.get("audio_path", "")).lower()
-        if ("michael" in spk_lower or "male" in spk_lower) and ("branches" in ref_lower or "proximal" in ref_lower or "tcl" in ref_lower):
-            ref_text = "The sensibility of the palm remains normal."
+        # A preset voice's full transcript does not match its trimmed F5 prompt audio
+        ref_text = self._preset_prompt_text(speaker_conditioning.get("audio_path", "") or temp_ref, ref_text)
 
         ref_duration = speaker_conditioning.get("duration_seconds")
         planner = DurationPlanner()
@@ -915,65 +931,53 @@ class F5TTSBackbone(TTSBackbone):
         hook_handles = []
         if text_embedding_delta is not None and hook_targets:
             target_ids = self.get_token_ids(text, language)[0].tolist()
+            delta_rows = text_embedding_delta.detach()
+            if delta_rows.dim() == 2:
+                delta_rows = delta_rows.unsqueeze(0)
+            spans = self._active_delta_spans(delta_rows)
+            clamp_val = self.delta_bounds[0]
+            placements_cache: Dict[Tuple[int, ...], List[Tuple[int, int, int]]] = {}
 
             def hook(module, inputs, output):
-                # Detect unconditional CFG pass: when drop_text=True in F5-TTS, input text tokens are all zeros
-                if len(inputs) > 0 and isinstance(inputs[0], torch.Tensor):
-                    if (inputs[0] == 0).all().item():
-                        logger.info(f"[F5TTS Forward Hook] (uncond branch skipped, all-zero tokens) on {module.__class__.__name__}")
-                        return output
+                if not inputs or not isinstance(inputs[0], torch.Tensor) or not spans:
+                    return output
+                ids_t = inputs[0]
+                # Unconditional CFG pass: F5-TTS drops text by feeding all-zero tokens
+                if (ids_t == 0).all().item():
+                    return output
 
                 with torch.set_grad_enabled(False):
                     is_tuple = isinstance(output, tuple)
                     raw_out = output[0] if is_tuple else output
-                    t_delta = text_embedding_delta.to(device=raw_out.device, dtype=raw_out.dtype)
+                    t_delta = delta_rows.to(device=raw_out.device, dtype=raw_out.dtype)
                     if t_delta.shape[-1] != raw_out.shape[-1]:
                         flat_d = t_delta.reshape(-1, 1, t_delta.shape[-1]).float()
                         res_d = F.interpolate(flat_d, size=raw_out.shape[-1], mode='linear', align_corners=True)
                         t_delta = res_d.reshape(list(t_delta.shape[:-1]) + [raw_out.shape[-1]]).to(dtype=raw_out.dtype)
-                    L_delta = t_delta.shape[1]
-                    L_out = raw_out.shape[1]
+                    t_delta = torch.clamp(t_delta, -clamp_val, clamp_val)
 
-                    # Exact sub-sequence matching to find where 'gen_text' begins in the input tokens
-                    start_pos = -1
-                    if len(inputs) > 0 and isinstance(inputs[0], torch.Tensor):
-                        input_ids = inputs[0][0].tolist()
-                        match_len = min(len(target_ids), 16)
-                        if match_len > 0:
-                            prefix_to_find = target_ids[:match_len]
-                            prefix_to_find_shifted = [t + 1 for t in prefix_to_find]
-                            for i in range(len(input_ids) - match_len + 1):
-                                sub = input_ids[i : i + match_len]
-                                if sub == prefix_to_find or sub == prefix_to_find_shifted:
-                                    start_pos = i
-                                    break
-
-                    # Fallback if pattern matching did not find exact match
-                    if start_pos < 0:
-                        if ref_text and ref_text != ".":
-                            prefix_str = ref_text if ref_text.endswith(" ") else f"{ref_text} "
-                            try:
-                                from f5_tts.model.utils import convert_char_to_pinyin
-                                ref_tokens = len(convert_char_to_pinyin([prefix_str])[0])
-                            except Exception:
-                                ref_tokens = len(prefix_str)
-                        else:
-                            ref_tokens = 0
-                        start_pos = min(L_out, ref_tokens)
-
-                    end_pos = min(L_out, start_pos + L_delta)
-                    actual_delta_len = end_pos - start_pos
-
-                    t_delta = torch.clamp(t_delta, -0.35, 0.35)
                     out = raw_out.clone()
-                    if actual_delta_len > 0:
-                        out[:, start_pos:end_pos, :] = out[:, start_pos:end_pos, :] + t_delta[:, :actual_delta_len, :]
+                    injected = []
+                    for b in range(ids_t.shape[0]):
+                        row = ids_t[b].tolist()
+                        if not any(row):
+                            continue  # batched unconditional row
+                        sig = tuple(row)
+                        places = placements_cache.get(sig)
+                        if places is None:
+                            places = self._locate_delta_spans(row, target_ids, spans)
+                            placements_cache[sig] = places
+                        for src_s, src_e, dst_s in places:
+                            n = min(src_e - src_s, raw_out.shape[1] - dst_s)
+                            if n > 0:
+                                out[b, dst_s:dst_s + n, :] += t_delta[0, src_s:src_s + n, :]
+                                injected.append((src_s, dst_s, n))
 
-                    logger.info(
-                        f"✓ [F5TTS Token-Level Injection] (cond branch) Exact matched start_pos={start_pos} → "
-                        f"Injected δ* on {module.__class__.__name__} at character tokens [{start_pos}:{end_pos}] "
-                        f"(delta_len={L_delta}, delta_norm={t_delta.norm().item():.4f})"
-                    )
+                    if injected:
+                        logger.info(
+                            f"✓ [F5TTS Span Injection] {module.__class__.__name__}: (text_pos→input_pos, len) "
+                            f"{[(s_, d_, n_) for s_, d_, n_ in injected]}"
+                        )
                     if is_tuple:
                         return (out,) + output[1:]
                     return out
@@ -1083,6 +1087,63 @@ class F5TTSBackbone(TTSBackbone):
         finally:
             for h in hook_handles:
                 h.remove()
+
+    @staticmethod
+    def _active_delta_spans(delta: torch.Tensor) -> List[Tuple[int, int]]:
+        """Contiguous runs of non-zero perturbation rows in a [1, L, d] delta."""
+        active = (delta[0].abs().sum(dim=-1) > 1e-8).tolist()
+        spans, start = [], None
+        for i, a in enumerate(active + [False]):
+            if a and start is None:
+                start = i
+            elif not a and start is not None:
+                spans.append((start, i))
+                start = None
+        return spans
+
+    @staticmethod
+    def _locate_delta_spans(
+        input_ids: List[int],
+        target_ids: List[int],
+        spans: List[Tuple[int, int]],
+        max_context: int = 8,
+    ) -> List[Tuple[int, int, int]]:
+        """Map each corrected span of the generation text onto the model's input token row.
+
+        The row holds the reference prompt followed by (a chunk of) the generation text, with
+        F5-TTS's +1 vocabulary shift applied before the embedding table. Each span is anchored by
+        its own characters plus up to `max_context` neighbours on each side, so placement stays
+        exact when the text is chunked or the same word occurs several times.
+        """
+        def positions(seq: List[int], pat: List[int]) -> List[int]:
+            m = len(pat)
+            return [i for i in range(len(seq) - m + 1) if seq[i:i + m] == pat]
+
+        n_t = len(target_ids)
+        placements = []
+        for s, e in spans:
+            found = None
+            for k in sorted({max_context, max_context // 2, 2, 0}, reverse=True):
+                lo, hi = max(0, s - k), min(n_t, e + k)
+                pattern = target_ids[lo:hi]
+                if not pattern:
+                    continue
+                in_target = positions(target_ids, pattern)
+                for shift in (1, 0):
+                    hits = positions(input_ids, [t + shift for t in pattern])
+                    if not hits:
+                        continue
+                    if len(hits) == 1 and len(in_target) == 1:
+                        found = hits[0] + (s - lo)
+                    elif len(hits) == len(in_target):
+                        # Whole repeated context present: the occurrence rank identifies the span
+                        found = hits[in_target.index(lo)] + (s - lo)
+                    break  # pattern present but ambiguous: a shorter context cannot disambiguate
+                if found is not None or any(positions(input_ids, [t + sh for t in pattern]) for sh in (1, 0)):
+                    break
+            if found is not None:
+                placements.append((s, e, found))
+        return placements
 
     def synthesize_baseline(
         self,

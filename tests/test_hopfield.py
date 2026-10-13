@@ -333,6 +333,7 @@ class TestHopfieldRefiner:
         assert (res.waveform == 0).all()
 
     def test_homograph_contextual_disambiguation_lead(self):
+        # The pronunciation comes from the learned correction itself (no built-in word tables)
         k = torch.randn(self.dim)
         v = torch.randn(self.dim)
         self.memory.write(
@@ -340,7 +341,7 @@ class TestHopfieldRefiner:
             value=v,
             word="lead",
             carrier_text="This toy is made up of lead",
-            phonetic_text="lead",
+            phonetic_text="led",
         )
 
         class DummyBackbone:

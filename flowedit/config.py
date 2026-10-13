@@ -78,11 +78,47 @@ class MemoryConfig:
     # EMA decay α for deduplication merges (α = 0.80 for smooth exponential moving average)
     dedup_ema_decay: float = 0.80
 
+    # EMA warm-up: while a cluster has at most this many members, the newest correction dominates
+    # (decay = ema_warmup_decay) so early re-corrections replace a poor first reference quickly.
+    ema_warmup_count: int = 2
+    ema_warmup_decay: float = 0.20
+
     # Hopfield inverse temperature β = 1/√d (Paper Eq. 6: auto-computed from embedding_dim if None)
     hopfield_beta: Optional[float] = None
 
+    # Score scale applied to cosine similarities when β < 1 (keeps sigmoid gating in a usable range)
+    retrieval_score_scale: float = 10.0
+
+    # Minimum per-position gate for the text-free continuous retrieval path (Paper Eq. 7)
+    gate_activation_floor: float = 0.50
+
     # Learned gate threshold scalar τ (Calibrated to 4.0 for robust target word matching across sentences)
     gate_threshold_init: float = 4.0
+
+    # ─── Contextual sense prototypes (EMA homograph disambiguation) ───
+    # Every memory entry is a sense cluster whose prototype is an EMA of contextual occurrence
+    # embeddings. The encoder is backbone-independent, so XTTS and F5-TTS share the same senses.
+    # Empty string disables the encoder; disambiguation then falls back to backbone context keys.
+    sense_encoder_model: str = field(
+        default_factory=lambda: os.environ.get("FLOWEDIT_SENSE_ENCODER", "sentence-transformers/all-MiniLM-L6-v2")
+    )
+    # Hidden-state layers averaged for the occurrence embedding (middle layers carry word sense best)
+    sense_encoder_layers: Tuple[int, ...] = (3, 4, 5)
+    sense_encoder_device: str = field(default_factory=lambda: os.environ.get("FLOWEDIT_SENSE_DEVICE", "cpu"))
+    # Words of context kept on each side of an occurrence, bounded by clause punctuation, so a
+    # second occurrence in the same sentence is not contaminated by the first one's context
+    sense_context_words: int = 6
+    sense_clause_delimiters: str = ",;:.!?"
+    sense_cache_size: int = 256
+    # Same-pronunciation-unknown corrections merge into a cluster at or above this prototype similarity
+    sense_merge_threshold: float = 0.90
+    # A word with a single learned sense applies it only when the occurrence is at least this similar
+    # (calibrated on held-out contexts: 30/31 same-sense applied, 15/21 other-sense rejected)
+    sense_match_threshold: float = 0.84
+    # A word with several learned senses picks the most similar one, provided it reaches this floor
+    sense_min_similarity: float = 0.60
+    # Encoder-unavailable fallback: minimum distance-weighted word-overlap for a single registered sense
+    sense_lexical_threshold: float = 0.25
 
     # Context window in words for homograph disambiguation (Paper Section 3.2: ±1-3 words)
     context_window: int = 3
@@ -176,6 +212,13 @@ class BackboneConfig:
     f5tts_vocab_file: str = ""
     vocoder_local_path: str = ""
     f5tts_model_name: str = ""  # e.g. "F5TTS_Base" or "F5TTS_v1_Base"
+
+    # Acoustic safety bounds on injected text-embedding perturbations: element-wise clamp and
+    # L2 cap over the active positions (prevents out-of-distribution noise)
+    xtts_delta_clamp: float = 0.30
+    xtts_delta_norm_cap: float = 4.0
+    f5tts_delta_clamp: float = 0.35
+    f5tts_delta_norm_cap: float = 3.5
 
     # Device & dtype
     device: str = field(default_factory=lambda: os.environ.get("FLOWEDIT_DEVICE", "cuda" if torch.cuda.is_available() else "cpu"))

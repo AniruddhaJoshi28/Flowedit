@@ -5,6 +5,13 @@ Pytest configuration and environment mocks for test suite.
 import sys
 from unittest.mock import MagicMock
 
+# Let transformers record its optional-dependency availability before any module below is
+# replaced by a mock (the contextual sense encoder loads a transformers text model).
+try:
+    import transformers.utils.import_utils  # noqa: F401
+except Exception:
+    pass
+
 # Guard against C++ DLL mismatch on Windows for torchaudio
 try:
     import torchaudio

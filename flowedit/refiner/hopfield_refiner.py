@@ -8,8 +8,9 @@ Paper Section 3.2 & Equation 7:
 
 Enhanced for:
     1. Multi-word simultaneous correction injection across complete sentences.
-    2. Contextual homograph disambiguation (accurate per-span injection).
-    3. Speaker-invariant direct synthesis without audio degradation.
+    2. Per-occurrence homograph pronunciation: every matched span is respelled with the
+       pronunciation of the sense cluster the memory assigned to that occurrence.
+    3. Backbone-declared alignment (character vs token level) and acoustic safety bounds.
 """
 
 import logging
@@ -21,7 +22,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from flowedit.config import MemoryConfig
-from flowedit.memory.hopfield_memory import HopfieldMemory, RetrievalResult
+from flowedit.memory.hopfield_memory import HopfieldMemory, MatchedWordSpan, RetrievalResult
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,47 @@ class HopfieldRefiner(nn.Module):
         super().__init__()
         self.memory = memory
         self.config = config or MemoryConfig()
+
+    @staticmethod
+    def _apply_pronunciations(
+        text: str, spans: List[MatchedWordSpan]
+    ) -> Tuple[str, List[Tuple[MatchedWordSpan, int, int]]]:
+        """Respell each matched occurrence with its own sense's pronunciation.
+
+        Returns the synthesis text and, for every matched span, its [start, end) in that text.
+        Offsets follow exactly from the substitutions (no re-searching), so repeated words keep
+        their own positions.
+        """
+        def match_case(original: str, spelling: str) -> str:
+            if original.isupper() and len(original) > 1:
+                return spelling.upper()
+            if original[:1].isupper():
+                return spelling[:1].upper() + spelling[1:]
+            return spelling
+
+        edits = []
+        for sp in spans:
+            if sp.char_start is None or sp.char_end is None:
+                continue
+            p = (sp.phonetic_text or "").strip()
+            original = text[sp.char_start:sp.char_end]
+            new = match_case(original, p) if p and p.lower() != sp.word.strip().lower() else original
+            edits.append((sp.char_start, sp.char_end, new, sp))
+        edits.sort(key=lambda e: e[0])
+
+        out, located, cursor, shift = [], [], 0, 0
+        for c_s, c_e, new, sp in edits:
+            if c_s < cursor:
+                continue  # overlapping spans: keep the first
+            out.append(text[cursor:c_s])
+            out.append(new)
+            located.append((sp, c_s + shift, c_s + shift + len(new)))
+            if new != text[c_s:c_e]:
+                logger.info(f"[Hopfield Refiner] '{text[c_s:c_e]}'@{c_s} -> '{new}'")
+            shift += len(new) - (c_e - c_s)
+            cursor = c_e
+        out.append(text[cursor:])
+        return "".join(out), located
 
     def forward(
         self,
@@ -80,242 +122,86 @@ class HopfieldRefiner(nn.Module):
             language=language,
         )
 
-        # Step 3: Decide synthesis path
+        # Step 3: Each matched span already carries its own sense (chosen per occurrence by the memory)
+        spans_with_phonetics = [
+            sp for sp in retrieval.matched_spans
+            if sp.phonetic_text and sp.phonetic_text.strip().lower() != sp.word.strip().lower()
+            and sp.char_start is not None and sp.char_end is not None
+        ]
         has_active_delta = retrieval.is_active and (
-            retrieval.retrieved_delta.abs().sum() > 1e-5 or any(getattr(s, "phonetic_text", None) for s in retrieval.matched_spans)
+            retrieval.retrieved_delta.abs().sum() > 1e-5 or bool(spans_with_phonetics)
         )
 
         if has_active_delta:
-            import re
-            synth_text = text
+            # Substitute learned pronunciations span-by-span and track where every matched span lands
+            synth_text, synth_spans = self._apply_pronunciations(text, retrieval.matched_spans)
 
-            # Resolve phonetic pronunciation for matched spans if not explicitly stored
-            from flowedit.alignment.homograph_resolver import HomographContextResolver
-            resolver = HomographContextResolver()
-
-            KNOWN_HOMOGRAPHS = {
-                "lead", "read", "bow", "tear", "wind", "bass", "close", "record",
-                "live", "object", "present", "project", "rebel", "subject", "minute",
-                "row", "sow", "desert", "wound", "refuse"
-            }
-
-            for span in retrieval.matched_spans:
-                w_lower = span.word.strip().lower()
-                is_homograph = (w_lower in KNOWN_HOMOGRAPHS)
-                if span.entry_index < len(self.memory.entries):
-                    cand_count = sum(1 for e in self.memory.entries if e.word.strip().lower() == w_lower)
-                    if cand_count > 1:
-                        is_homograph = True
-
-                if span.entry_index < len(self.memory.entries):
-                    entry = self.memory.entries[span.entry_index]
-                    entry_carrier = (getattr(entry, "carrier_text", "") or "").strip()
-                    carrier_list = getattr(entry, "carrier_texts", None) or ([entry_carrier] if entry_carrier else [])
-                    c_p = getattr(entry, "phonetic_text", None) or entry.metadata.get("phonetic_text") or entry.metadata.get("phonetic_hint")
-
-                    if is_homograph and carrier_list:
-                        # Strictly check contextual sense alignment across all known carrier examples
-                        sense_ok = any(resolver.is_same_sense(ct, text, span.word, char_offset=getattr(span, "char_start", None)) for ct in carrier_list if ct)
-                        if sense_ok:
-                            if c_p and c_p.strip().lower() != span.word.strip().lower():
-                                span.phonetic_text = c_p.strip()
-                            else:
-                                auto_p = resolver.resolve_homograph_phonetic(
-                                    span.word, text, char_offset=getattr(span, "char_start", None)
-                                )
-                                if not auto_p or auto_p.strip().lower() == span.word.strip().lower():
-                                    for ct in carrier_list:
-                                        if ct:
-                                            auto_p = resolver.resolve_homograph_phonetic(span.word, ct)
-                                            if auto_p and auto_p.strip().lower() != span.word.strip().lower():
-                                                break
-                                if auto_p and auto_p.strip().lower() != span.word.strip().lower():
-                                    span.phonetic_text = auto_p.strip()
-                        else:
-                            # Not in the same context sense: leave unedited
-                            span.phonetic_text = None
-                    else:
-                        # Non-homograph: always apply learned pronunciation
-                        if c_p and c_p.strip().lower() != span.word.strip().lower():
-                            span.phonetic_text = c_p.strip()
-                        elif is_homograph:
-                            auto_p = resolver.resolve_homograph_phonetic(
-                                span.word, text, char_offset=getattr(span, "char_start", None)
-                            )
-                            if auto_p and auto_p.strip().lower() != span.word.strip().lower():
-                                span.phonetic_text = auto_p.strip()
-                else:
-                    resolved_p = None
-                    try:
-                        resolved_p = resolver.resolve_homograph_phonetic(
-                            span.word, text, char_offset=getattr(span, "char_start", None)
-                        )
-                    except TypeError:
-                        resolved_p = resolver.resolve_homograph_phonetic(span.word, text)
-
-                    if resolved_p and resolved_p.strip().lower() != span.word.strip().lower():
-                        span.phonetic_text = resolved_p.strip()
-
-            # If reference audio phonetic pronunciation is stored, substitute only the matched spans
-            spans_with_phonetics = [
-                s for s in retrieval.matched_spans
-                if getattr(s, "phonetic_text", None) and s.phonetic_text.strip().lower() != s.word.strip().lower()
-            ]
-            span_map_in_synth = []  # List of (span, new_c_start, new_c_end, p_text)
-            if spans_with_phonetics:
-                # Sort from end to beginning so character replacements don't shift earlier character offsets
-                spans_sorted_desc = sorted(
-                    spans_with_phonetics,
-                    key=lambda s: getattr(s, "char_start", 0) if getattr(s, "char_start", None) is not None else -1,
-                    reverse=True
-                )
-                for span in spans_sorted_desc:
-                    p_text = (getattr(span, "phonetic_text", None) or "").strip()
-                    c_s = getattr(span, "char_start", None)
-                    c_e = getattr(span, "char_end", None)
-                    if p_text and p_text.lower() != span.word.lower() and c_s is not None and c_e is not None and 0 <= c_s < c_e <= len(synth_text):
-                        synth_text = synth_text[:c_s] + p_text + synth_text[c_e:]
-                        logger.info(f"[Hopfield Refiner] Applied span-specific pronunciation '{span.word}' → '{p_text}' at chars [{c_s}:{c_e}]")
-                    elif p_text and p_text.lower() != span.word.lower():
-                        pattern = r'\b' + re.escape(span.word) + r'\b'
-                        synth_text = re.sub(pattern, p_text, synth_text, count=1, flags=re.IGNORECASE)
-                        logger.info(f"[Hopfield Refiner] Applied pronunciation '{span.word}' → '{p_text}' in synthesis text")
-
-            # Re-locate matched spans in synth_text for exact continuous delta alignment
-            for span in retrieval.matched_spans:
-                p_text = (getattr(span, "phonetic_text", None) or "").strip()
-                search_word = p_text if (p_text and p_text.lower() in synth_text.lower()) else span.word
-                pattern = re.escape(search_word)
-                matches = [m.span() for m in re.finditer(pattern, synth_text, flags=re.IGNORECASE)]
-                if matches:
-                    # Pick match closest to original character start
-                    orig_cs = getattr(span, "char_start", 0) or 0
-                    best_m = min(matches, key=lambda m: abs(m[0] - orig_cs))
-                    span_map_in_synth.append((span, best_m[0], best_m[1], search_word))
-                else:
-                    span_map_in_synth.append((span, getattr(span, "char_start", 0) or 0, getattr(span, "char_end", 0) or 0, span.word))
-
-            scale = float(kwargs.get("correction_scale") or getattr(self.config, "correction_scale", 1.0))
+            scale = float(kwargs.get("correction_scale") or self.config.correction_scale)
             scaled_delta = retrieval.retrieved_delta.to(
                 device=base_embeddings.device, dtype=base_embeddings.dtype
             ) * scale
-            backbone_dim = getattr(backbone, "embedding_dim", 1024)
+            backbone_dim = backbone.embedding_dim
 
-            # Construct continuous text_embedding_delta aligned with synth_text
-            if backbone_dim == 512:
-                # F5-TTS: character-level continuous DiT embedding space (d=512)
+            if getattr(backbone, "is_character_level", False):
+                # Character-level backbone (F5-TTS): one perturbation row per character of synth_text
                 delta_for_synth = torch.zeros(1, len(synth_text), backbone_dim, device=base_embeddings.device, dtype=base_embeddings.dtype)
-                for span, s_start, s_end, word_text in span_map_in_synth:
-                    target_len = max(1, s_end - s_start)
+                for span, s_start, s_end in synth_spans:
                     entry = self.memory.entries[span.entry_index] if span.entry_index < len(self.memory.entries) else None
-                    if entry is not None:
-                        w_lower = span.word.strip().lower()
-                        cand_count = sum(1 for e in self.memory.entries if e.word.strip().lower() == w_lower)
-                        is_homo = (w_lower in KNOWN_HOMOGRAPHS) or (cand_count > 1)
-                        entry_carrier = (getattr(entry, "carrier_text", "") or "").strip()
-                        carrier_list = getattr(entry, "carrier_texts", None) or ([entry_carrier] if entry_carrier else [])
-                        if is_homo and carrier_list:
-                            sense_ok = any(resolver.is_same_sense(ct, text, span.word, char_offset=getattr(span, "char_start", None)) for ct in carrier_list if ct)
-                            if not sense_ok and getattr(span, "phonetic_text", None):
-                                loc_p = resolver.resolve_homograph_phonetic(span.word, text, char_offset=getattr(span, "char_start", None))
-                                if loc_p and loc_p.strip().lower() == span.phonetic_text.strip().lower():
-                                    sense_ok = True
-                            if not sense_ok and getattr(span, "score", 0.0) < 1.5:
-                                continue
-                        w_delta = entry.word_delta if entry.word_delta is not None else entry.value.unsqueeze(0).unsqueeze(0)
-                        w_delta = w_delta.to(device=base_embeddings.device, dtype=base_embeddings.dtype)
-                        src_delta = w_delta[0] if w_delta.dim() == 3 else w_delta
-                        # Adapt channel dimension to 512 if needed
-                        if src_delta.shape[-1] != backbone_dim:
-                            flat_src = src_delta.reshape(-1, 1, src_delta.shape[-1]).float()
-                            res_src = F.interpolate(flat_src, size=backbone_dim, mode='linear', align_corners=True)
-                            src_delta = res_src.reshape(list(src_delta.shape[:-1]) + [backbone_dim]).to(dtype=base_embeddings.dtype)
-                        # Interpolate along sequence length to match target character span in synth_text
-                        if src_delta.shape[0] != target_len:
-                            if target_len == 1:
-                                aligned_d = src_delta.mean(dim=0, keepdim=True)
-                            elif src_delta.shape[0] == 1:
-                                aligned_d = src_delta.repeat(target_len, 1)
-                            else:
-                                s_3d = src_delta.unsqueeze(0).transpose(1, 2)
-                                aligned_d = F.interpolate(s_3d, size=target_len, mode='linear', align_corners=True).transpose(1, 2).squeeze(0)
-                        else:
-                            aligned_d = src_delta
-                        actual_end = min(len(synth_text), s_start + target_len)
-                        act_len = actual_end - s_start
-                        if act_len > 0:
-                            delta_for_synth[0, s_start:actual_end, :] = aligned_d[:act_len, :] * scale
-
-                # Acoustic safety & clarity bounds for F5-TTS flow matching
-                delta_for_synth = torch.clamp(delta_for_synth, -0.35, 0.35)
-                active_mask = (delta_for_synth.abs().sum(dim=-1) > 1e-5)
-                if active_mask.any():
-                    d_norm = delta_for_synth[active_mask].norm().item()
-                    max_f5_norm = 3.5
-                    if d_norm > max_f5_norm:
-                        delta_for_synth = delta_for_synth * (max_f5_norm / d_norm)
-                        logger.info(f"[Hopfield Refiner] F5-TTS delta norm capped from {d_norm:.4f} to {max_f5_norm:.4f}")
+                    if entry is None or not span.has_delta or entry.word_delta is None:
+                        continue
+                    w_delta = entry.word_delta.to(device=base_embeddings.device, dtype=base_embeddings.dtype)
+                    src_delta = w_delta[0] if w_delta.dim() == 3 else w_delta
+                    target_len = max(1, s_end - s_start)
+                    aligned_d = self.memory._align_delta(src_delta, target_len)
+                    actual_end = min(len(synth_text), s_start + target_len)
+                    if actual_end > s_start:
+                        delta_for_synth[0, s_start:actual_end, :] = aligned_d[:actual_end - s_start, :] * scale
+            elif synth_text == text:
+                delta_for_synth = scaled_delta
             else:
-                # XTTS / Other Backbones: token-level continuous embedding space (d=1024)
-                if synth_text == text:
-                    delta_for_synth = scaled_delta
-                else:
-                    # Target word was replaced in synth_text (e.g. phonetic spelling)
-                    # Reconstruct delta aligned to token positions in synth_text
-                    synth_emb = backbone.encode_text(synth_text, language)
-                    delta_for_synth = torch.zeros_like(synth_emb)
-                    S_synth = synth_emb.shape[1]
+                # Token-level backbone (XTTS) with respelled words: re-align δ* to synth_text tokens
+                synth_emb = backbone.encode_text(synth_text, language)
+                delta_for_synth = torch.zeros_like(synth_emb)
+                S_synth = synth_emb.shape[1]
+                for span, s_start, s_end in synth_spans:
+                    if not span.has_delta:
+                        continue
+                    entry = self.memory.entries[span.entry_index] if span.entry_index < len(self.memory.entries) else None
+                    w_delta = entry.word_delta if (entry is not None and entry.word_delta is not None) else scaled_delta[:, span.start_pos:span.end_pos, :]
+                    if w_delta.numel() == 0:
+                        continue
+                    w_delta = w_delta.to(device=base_embeddings.device, dtype=base_embeddings.dtype)
+                    src_delta = w_delta[0] if w_delta.dim() == 3 else w_delta
+                    tok_s, tok_e = self.memory._char_span_to_token_span(s_start, s_end, len(synth_text), S_synth)
+                    target_tok_len = max(1, tok_e - tok_s)
+                    aligned_d = self.memory._align_delta(src_delta, target_tok_len)
+                    act_end = min(S_synth, tok_s + target_tok_len)
+                    if act_end > tok_s:
+                        delta_for_synth[0, tok_s:act_end, :] = aligned_d[:act_end - tok_s, :] * scale
 
-                    for span, s_start, s_end, word_text in span_map_in_synth:
-                        entry = self.memory.entries[span.entry_index] if span.entry_index < len(self.memory.entries) else None
-                        w_delta = entry.word_delta if (entry and entry.word_delta is not None) else None
-                        if w_delta is None:
-                            w_delta = scaled_delta[:, span.start_pos:span.end_pos, :]
-                        if w_delta.numel() == 0:
-                            continue
-                        w_delta = w_delta.to(device=base_embeddings.device, dtype=base_embeddings.dtype)
-                        src_delta = w_delta[0] if w_delta.dim() == 3 else w_delta
-
-                        # Resolve token span of word_text in synth_text
-                        tok_s, tok_e = self.memory._char_span_to_token_span(s_start, s_end, len(synth_text), S_synth)
-                        target_tok_len = max(1, tok_e - tok_s)
-
-                        if src_delta.shape[0] != target_tok_len:
-                            if target_tok_len == 1:
-                                aligned_d = src_delta.mean(dim=0, keepdim=True)
-                            elif src_delta.shape[0] == 1:
-                                aligned_d = src_delta.repeat(target_tok_len, 1)
-                            else:
-                                s_3d = src_delta.unsqueeze(0).transpose(1, 2)
-                                aligned_d = F.interpolate(s_3d, size=target_tok_len, mode='linear', align_corners=True).transpose(1, 2).squeeze(0)
-                        else:
-                            aligned_d = src_delta
-
-                        act_end = min(S_synth, tok_s + target_tok_len)
-                        act_len = act_end - tok_s
-                        if act_len > 0:
-                            delta_for_synth[0, tok_s:act_end, :] = aligned_d[:act_len, :] * scale
-
-                # Bounded safety clamp & norm cap for XTTS to ensure zero acoustic noise / artifacts
-                delta_for_synth = torch.clamp(delta_for_synth, -0.30, 0.30)
-                active_mask = (delta_for_synth.abs().sum(dim=-1) > 1e-5)
-                if active_mask.any():
-                    d_norm = delta_for_synth[active_mask].norm().item()
-                    max_xtts_norm = 4.0
-                    if d_norm > max_xtts_norm:
-                        delta_for_synth = delta_for_synth * (max_xtts_norm / d_norm)
-                        logger.info(f"[Hopfield Refiner] XTTS delta norm capped from {d_norm:.4f} to {max_xtts_norm:.4f}")
+            # Acoustic safety bounds declared by the backbone (element clamp + L2 cap)
+            clamp_val, norm_cap = getattr(backbone, "delta_bounds", (float("inf"), float("inf")))
+            if clamp_val != float("inf"):
+                delta_for_synth = torch.clamp(delta_for_synth, -clamp_val, clamp_val)
+            active_mask = (delta_for_synth.abs().sum(dim=-1) > 1e-5)
+            if active_mask.any():
+                d_norm = delta_for_synth[active_mask].norm().item()
+                if d_norm > norm_cap:
+                    delta_for_synth = delta_for_synth * (norm_cap / d_norm)
+                    logger.info(f"[Hopfield Refiner] delta norm capped from {d_norm:.4f} to {norm_cap:.4f}")
+            else:
+                delta_for_synth = None
 
             match_info = (
                 [(s.word, s.start_pos, getattr(s, "phonetic_text", None)) for s in retrieval.matched_spans]
                 if retrieval.matched_spans
                 else [(retrieval.matched_word, 0, None)]
             )
-            should_inject_delta = True
             logger.info(
                 f"[Hopfield Refiner] INJECTION ACTIVE: {match_info} "
-                f"(gate_max={retrieval.gate_values.max().item():.3f}, delta_norm={delta_for_synth.norm().item():.4f}, "
-                f"inject_delta={should_inject_delta}, scale={scale}, synth_text='{synth_text}')."
+                f"(gate_max={retrieval.gate_values.max().item():.3f}, "
+                f"delta_norm={(delta_for_synth.norm().item() if delta_for_synth is not None else 0.0):.4f}, "
+                f"scale={scale}, synth_text='{synth_text}')."
             )
 
             waveform, sr = backbone.synthesize_direct(
@@ -345,12 +231,15 @@ class HopfieldRefiner(nn.Module):
                             "score": s.score,
                             "gate": s.gate_value,
                             "phonetic_text": getattr(s, "phonetic_text", None),
+                            "char_start": s.char_start,
+                            "sense_similarity": s.sense_similarity,
+                            "has_delta": s.has_delta,
                         }
                         for s in retrieval.matched_spans
                     ],
                     "gate_max": retrieval.gate_values.max().item(),
-                    "injection_mode": "multi_span_word_delta",
-                    "delta_norm": scaled_delta.norm().item(),
+                    "injection_mode": "multi_span_word_delta" if delta_for_synth is not None else "pronunciation_only",
+                    "delta_norm": delta_for_synth.norm().item() if delta_for_synth is not None else 0.0,
                     "synth_text": synth_text,
                 },
             )
