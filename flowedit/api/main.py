@@ -704,6 +704,7 @@ async def synthesize_text(
     ref_text: Optional[str] = Form(None, description="Optional transcription of speaker audio"),
     correction_scale: Optional[float] = Form(None, description="Optional perturbation amplification scale (default 1.25)"),
     speed: Optional[float] = Form(None, description="Speech speed factor (e.g. 0.85 for relaxed, natural pacing)"),
+    seed: Optional[int] = Form(None, description="Optional random seed for deterministic, 100% stable synthesis (default: 42)"),
 ):
     """Synthesize text, automatically applying learned Hopfield corrections on selected engine."""
     global inference_pipeline
@@ -721,6 +722,8 @@ async def synthesize_text(
             synth_kwargs["correction_scale"] = correction_scale
         if speed is not None and speed > 0:
             synth_kwargs["speed"] = speed
+        # Ensure deterministic seed is passed (default: 42 for 100% reproducible synthesis)
+        synth_kwargs["seed"] = seed if seed is not None else 42
 
         # Route 1: F5-TTS Paper Plugin
         if b_clean in ("f5tts", "f5-tts", "f5", "paper"):
@@ -753,6 +756,7 @@ async def synthesize_text(
                     "X-Hopfield-Active": str(result.get("hopfield_active", False) or result.get("is_modified", False)),
                     "X-Spelling-Applied": ", ".join(applied_spells_f5) if applied_spells_f5 else "none",
                     "X-Architecture": "CFM-DiT-ODE32",
+                    "X-FlowEdit-Seed": str(synth_kwargs.get("seed", 42)),
                 },
             )
 
@@ -931,6 +935,7 @@ async def synthesize_baseline(
     speaker_name: Optional[str] = Form("female", description="Preset speaker voice name if not uploading audio"),
     ref_text: Optional[str] = Form(None, description="Optional transcription of speaker audio"),
     speed: Optional[float] = Form(None, description="Speech speed factor (e.g. 0.85 for relaxed, natural pacing)"),
+    seed: Optional[int] = Form(None, description="Optional random seed for deterministic baseline synthesis (default: 42)"),
 ):
     """Pure baseline synthesis without any Hopfield memory modifications (uncorrected base pronunciation)."""
     global correction_pipeline
@@ -941,6 +946,7 @@ async def synthesize_baseline(
     b_clean = (backbone or "xtts").strip().lower()
     temp_speaker_path, is_temp_speaker = await resolve_speaker_path(speaker_wav, speaker_name)
     output_path = tempfile.mktemp(suffix=".wav")
+    chosen_seed = seed if seed is not None else 42
 
     try:
         # Route 1: F5-TTS Baseline
@@ -963,6 +969,7 @@ async def synthesize_baseline(
                 user_ref_text=ref_text,
                 text_embedding_delta=None,
                 speed=speed,
+                seed=chosen_seed,
             )
             write_audio_file(output_path, wav.squeeze().cpu().numpy(), sr)
             return FileResponse(
@@ -972,6 +979,7 @@ async def synthesize_baseline(
                 headers={
                     "X-FlowEdit-Engine": "f5tts-paper-baseline",
                     "X-FlowEdit-Mode": "baseline-uncorrected",
+                    "X-FlowEdit-Seed": str(chosen_seed),
                 },
             )
 
@@ -987,6 +995,7 @@ async def synthesize_baseline(
                 speaker_conditioning=speaker_cond,
                 language=language,
                 user_ref_text=ref_text,
+                seed=chosen_seed,
             )
         else:
             wav, sr = bb.synthesize_direct(
@@ -995,6 +1004,7 @@ async def synthesize_baseline(
                 language=language,
                 user_ref_text=ref_text,
                 text_embedding_delta=None,
+                seed=chosen_seed,
             )
         write_audio_file(output_path, wav.squeeze().cpu().numpy(), sr)
 

@@ -216,6 +216,10 @@ class HopfieldRefiner(nn.Module):
                         carrier_list = getattr(entry, "carrier_texts", None) or ([entry_carrier] if entry_carrier else [])
                         if is_homo and carrier_list:
                             sense_ok = any(resolver.is_same_sense(ct, text, span.word, char_offset=getattr(span, "char_start", None)) for ct in carrier_list if ct)
+                            if not sense_ok and getattr(span, "phonetic_text", None):
+                                loc_p = resolver.resolve_homograph_phonetic(span.word, text, char_offset=getattr(span, "char_start", None))
+                                if loc_p and loc_p.strip().lower() == span.phonetic_text.strip().lower():
+                                    sense_ok = True
                             if not sense_ok and getattr(span, "score", 0.0) < 1.5:
                                 continue
                         w_delta = entry.word_delta if entry.word_delta is not None else entry.value.unsqueeze(0).unsqueeze(0)

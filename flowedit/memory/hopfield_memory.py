@@ -775,6 +775,15 @@ class HopfieldMemory(nn.Module):
                                 if ct and resolver.is_same_sense(ct, text, entry.word, char_offset=c_start):
                                     sense_aligned = True
                                     break
+                            if not sense_aligned:
+                                local_p = resolver.resolve_homograph_phonetic(entry.word, text, char_offset=c_start)
+                                if local_p and entry.phonetic_text and local_p.strip().lower() == entry.phonetic_text.strip().lower():
+                                    sense_aligned = True
+                                elif local_p and local_p.strip().lower() != entry.word.strip().lower():
+                                    for ct in carrier_list:
+                                        if ct and resolver.resolve_homograph_phonetic(entry.word, ct) == local_p:
+                                            sense_aligned = True
+                                            break
                         except Exception:
                             sense_aligned = False
 

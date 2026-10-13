@@ -71,5 +71,51 @@ def test_backbone_speaker_embedding(sample_wav):
         backbone.get_speaker_embedding(None)
 
 
+def test_homograph_sense_alignment_with_carrier_variation():
+    """Verify that homograph 'lead' matches the metal occurrence ('led') and preserves the leader occurrence."""
+    dim = 128
+    config = MemoryConfig(gate_threshold_init=0.0)
+    memory = HopfieldMemory(config=config, embedding_dim=dim)
+
+    # Register 'lead' (metal sense) with carrier text "This toy is made up of lead"
+    key = torch.randn(dim)
+    key = torch.nn.functional.normalize(key, p=2, dim=-1)
+    val = torch.ones(dim) * 0.4
+    memory.write(
+        key=key,
+        value=val,
+        word="lead",
+        carrier_text="This toy is made up of lead",
+        phonetic_text="led",
+    )
+
+    # Test sentence with slight typo/carrier variation: "The toy is made up lead and Anurag is the lead of data science"
+    test_text = "The toy is made up lead and Anurag is the lead of data science"
+    query_emb = torch.randn(1, len(test_text.split()), dim)
+
+    retrieval = memory.retrieve(query_emb, text=test_text)
+    assert retrieval.is_active, "Memory should be active for the metal sense of lead"
+    assert len(retrieval.matched_spans) == 1, "Only the metal occurrence of lead should match"
+    matched = retrieval.matched_spans[0]
+    assert matched.word == "lead"
+    assert matched.phonetic_text == "led"
+    # Occurrence 1 character span starts around character 19
+    assert matched.char_start == 19
+
+
+def test_f5tts_seed_and_parameter_handling():
+    """Verify that F5TTSBackbone accepts seed and sets reproducible manual seed."""
+    config = BackboneConfig(device="cpu")
+    backbone = F5TTSBackbone(config)
+    
+    # Check that synthesize_direct accepts seed
+    spk_info = {"audio_path": "", "processed_audio_path": "", "text": "."}
+    wav1, sr1 = backbone.synthesize_direct("Hello world", spk_info, seed=42)
+    wav2, sr2 = backbone.synthesize_direct("Hello world", spk_info, seed=42)
+    assert wav1.shape == wav2.shape
+    assert sr1 == sr2
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+

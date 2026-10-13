@@ -976,6 +976,16 @@ class XTTSBackbone(TTSBackbone):
                 hook_handle = target_embed.register_forward_hook(hook)
 
         try:
+            seed_val = kwargs.get("seed")
+            if seed_val is not None:
+                try:
+                    seed_val = int(seed_val)
+                    torch.manual_seed(seed_val)
+                    if torch.cuda.is_available():
+                        torch.cuda.manual_seed_all(seed_val)
+                except ValueError:
+                    pass
+
             out = self.model.inference(
                 text=text,
                 language=language,

@@ -997,16 +997,46 @@ class F5TTSBackbone(TTSBackbone):
             else:
                 speed_val = 0.85
 
+        # Determine deterministic seed for flow-matching ODE integration (Paper Section 3.2)
+        seed_val = kwargs.get("seed")
+        if seed_val is None:
+            env_seed = os.environ.get("FLOWEDIT_F5TTS_SEED")
+            if env_seed:
+                try:
+                    seed_val = int(env_seed)
+                except ValueError:
+                    seed_val = 42
+            else:
+                seed_val = 42
+        else:
+            try:
+                seed_val = int(seed_val)
+            except ValueError:
+                seed_val = 42
+
+        torch.manual_seed(seed_val)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(seed_val)
+
+        nfe_val = int(kwargs.get("nfe_step", 32))
+        cfg_val = float(kwargs.get("cfg_strength", 2.0))
+
+        logger.info(
+            f"[F5TTS Synthesize] Deterministic flow matching active "
+            f"(seed={seed_val}, nfe_step={nfe_val}, cfg_strength={cfg_val:.2f}, speed={float(speed_val):.2f})"
+        )
+
         infer_kwargs = {
             "ref_file": temp_ref,
             "ref_text": ref_text.strip(),
             "gen_text": text.strip(),
             "speed": float(speed_val),
-            "nfe_step": 32,          # 32 ODE steps
-            "cfg_strength": 2.0,     # Standard F5-TTS CFG
+            "nfe_step": nfe_val,          # 32 ODE steps
+            "cfg_strength": cfg_val,     # Standard F5-TTS CFG
             "target_rms": 0.1,
             "sway_sampling_coef": -1.0,
             "remove_silence": True,
+            "seed": seed_val,
         }
 
         import inspect

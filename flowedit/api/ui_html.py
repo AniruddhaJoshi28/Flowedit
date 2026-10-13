@@ -1084,6 +1084,10 @@ HTML_CONTENT = r"""<!DOCTYPE html>
                                 <input type="checkbox" id="streamAudioToggle" checked style="accent-color:var(--primary); width:15px; height:15px;">
                                 Stream Audio
                             </label>
+                            <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--text-muted); margin-right:8px;" title="Deterministic random seed for stable, 100% reproducible synthesis">
+                                Seed:
+                                <input type="number" id="synthSeedInput" value="42" style="width:65px; height:32px; padding:2px 6px; font-size:12px; font-weight:700; border:1px solid var(--border-subtle); border-radius:6px; text-align:center; background:#fff; color:var(--text-main);">
+                            </label>
                             <button class="btn btn-secondary" onclick="document.getElementById('promptInput').value=''; updateCharCount();">Clear</button>
                             <button class="btn btn-primary" id="synthBtn" onclick="runSynthesis()">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
@@ -1662,6 +1666,11 @@ HTML_CONTENT = r"""<!DOCTYPE html>
                     formData.append('speaker_name', _selectedSpeaker);
                     if (_customSpeakerFile) {
                         formData.append('speaker_wav', _customSpeakerFile);
+                    }
+                    const seedInput = document.getElementById('synthSeedInput');
+                    const seedVal = seedInput ? seedInput.value.trim() : '42';
+                    if (seedVal) {
+                        formData.append('seed', seedVal);
                     }
 
                     const t0 = performance.now();
