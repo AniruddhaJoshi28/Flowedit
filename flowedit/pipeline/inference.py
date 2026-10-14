@@ -67,6 +67,7 @@ class FlowEditInference:
 
         self.refiner = HopfieldRefiner(memory=self.memory, config=self.config.memory)
         self.memory.sense_encoder  # warm the shared contextual sense encoder
+        self.memory.sense_lexicon  # and the pretrained homograph sense lexicon
         self._is_ready = True
         logger.info(f"✓ Inference pipeline ready. Memory has {self.memory.num_entries} corrections.")
 

@@ -61,3 +61,5 @@ temp_packages/
 scratch/
 .env
 .venv
+# Pretrained homograph sense lexicon (built by scripts/build_sense_lexicon.py) ships with the code
+!flowedit/resources/sense_lexicon.pt

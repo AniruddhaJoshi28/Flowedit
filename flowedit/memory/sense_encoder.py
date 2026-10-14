@@ -60,18 +60,9 @@ class ContextualSenseEncoder:
             if self._model is not None:
                 return True
             try:
-                from transformers import AutoModel, AutoTokenizer
-
-                try:
-                    tok = AutoTokenizer.from_pretrained(self.model_name, local_files_only=True)
-                    mdl = AutoModel.from_pretrained(self.model_name, local_files_only=True)
-                except Exception:
-                    tok = AutoTokenizer.from_pretrained(self.model_name)
-                    mdl = AutoModel.from_pretrained(self.model_name)
-                if not getattr(tok, "is_fast", False):
-                    raise RuntimeError("a fast tokenizer (offset mapping) is required")
+                tok, mdl = _load_model(self.model_name, self.device)
                 self._tokenizer = tok
-                self._model = mdl.to(self.device).eval()
+                self._model = mdl
                 n_hidden = int(getattr(mdl.config, "num_hidden_layers", max(self.layers)))
                 self.layers = tuple(i for i in self.layers if 0 <= i <= n_hidden) or (n_hidden,)
                 logger.info(f"✓ Contextual sense encoder ready: {self.model_name} (layers={self.layers}, device={self.device})")
@@ -117,18 +108,14 @@ class ContextualSenseEncoder:
         e = max(e, char_end)
         return text[s:e], char_start - s, char_end - s
 
-    def encode(self, text: str, spans: Sequence[Tuple[int, int]]) -> Optional[torch.Tensor]:
-        """Encode each character span of `text` → [len(spans), H] normalised, or None if unavailable."""
-        if not spans or not text or not self._ensure_loaded():
-            return None
-        key = (text, tuple((int(a), int(b)) for a, b in spans))
-        with self._lock:
-            cached = self._cache.get(key)
-            if cached is not None:
-                self._cache.move_to_end(key)
-                return cached
+    def encode_batch(self, occurrences: Sequence[Tuple[str, int, int]]) -> torch.Tensor:
+        """Encode (text, start, end) occurrences from any texts in one forward pass → [N, H] (uncached)."""
+        if not self._ensure_loaded():
+            raise RuntimeError("contextual sense encoder unavailable")
+        windows = [self._window(t, int(a), int(b)) for t, a, b in occurrences]
+        return self._forward(windows)
 
-        windows = [self._window(text, int(a), int(b)) for a, b in spans]
+    def _forward(self, windows) -> torch.Tensor:
         with self._lock, torch.no_grad():
             enc = self._tokenizer(
                 [w[0] for w in windows],
@@ -148,8 +135,22 @@ class ContextualSenseEncoder:
             sel = (off[:, 1] > off[:, 0]) & (off[:, 0] < ce) & (off[:, 1] > cs)
             if not bool(sel.any()):
                 sel = off[:, 1] > off[:, 0]
-            vectors.append(F.normalize(hidden[row][sel].mean(dim=0), p=2, dim=-1))
-        result = torch.stack(vectors)
+            vectors.append(F.normalize(torch.nan_to_num(hidden[row][sel].mean(dim=0)), p=2, dim=-1))
+        return torch.stack(vectors)
+
+    def encode(self, text: str, spans: Sequence[Tuple[int, int]]) -> Optional[torch.Tensor]:
+        """Encode each character span of `text` → [len(spans), H] normalised, or None if unavailable."""
+        if not spans or not text or not self._ensure_loaded():
+            return None
+        key = (text, tuple((int(a), int(b)) for a, b in spans))
+        with self._lock:
+            cached = self._cache.get(key)
+            if cached is not None:
+                self._cache.move_to_end(key)
+                return cached
+
+        windows = [self._window(text, int(a), int(b)) for a, b in spans]
+        result = self._forward(windows)
 
         if self.cache_size:
             with self._lock:
@@ -165,17 +166,41 @@ class ContextualSenseEncoder:
 
 _ENCODERS: Dict[Tuple, ContextualSenseEncoder] = {}
 _ENCODERS_LOCK = threading.Lock()
+_MODELS: Dict[Tuple[str, str], Tuple] = {}
 
 
-def get_sense_encoder(config) -> Optional[ContextualSenseEncoder]:
-    """Process-wide shared encoder for a MemoryConfig (one model instance for XTTS and F5-TTS)."""
+def _load_model(model_name: str, device: str):
+    """(tokenizer, model) shared by every encoder using the same weights on the same device."""
+    with _ENCODERS_LOCK:
+        cached = _MODELS.get((model_name, device))
+        if cached is not None:
+            return cached
+        from transformers import AutoModel, AutoTokenizer
+
+        try:
+            tok = AutoTokenizer.from_pretrained(model_name, local_files_only=True)
+            mdl = AutoModel.from_pretrained(model_name, local_files_only=True)
+        except Exception:
+            tok = AutoTokenizer.from_pretrained(model_name)
+            mdl = AutoModel.from_pretrained(model_name)
+        if not getattr(tok, "is_fast", False):
+            raise RuntimeError("a fast tokenizer (offset mapping) is required")
+        _MODELS[(model_name, device)] = (tok, mdl.to(device).eval())
+        return _MODELS[(model_name, device)]
+
+
+def get_sense_encoder(config, context_words: Optional[int] = None) -> Optional[ContextualSenseEncoder]:
+    """Process-wide shared encoder for a MemoryConfig (one model instance for XTTS and F5-TTS).
+
+    `context_words` overrides the window size; encoders with different windows share weights.
+    """
     model_name = (getattr(config, "sense_encoder_model", "") or "").strip()
     if not model_name:
         return None
     sig = (
         model_name,
         tuple(getattr(config, "sense_encoder_layers", ())),
-        int(getattr(config, "sense_context_words", 6)),
+        int(context_words if context_words is not None else getattr(config, "sense_context_words", 6)),
         getattr(config, "sense_clause_delimiters", ""),
         getattr(config, "sense_encoder_device", "cpu"),
         int(getattr(config, "sense_cache_size", 256)),

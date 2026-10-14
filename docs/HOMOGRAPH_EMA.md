@@ -173,3 +173,59 @@ EMA prototypes built from three corrections per sense.
   which are much weaker for F5's character embeddings.
 - **Audio verification** needs a listening pass on the server. ASR transcribes both "led" and
   "leed" as "lead", so it cannot confirm pronunciation automatically.
+
+## 7. Automatic disambiguation: pretrained sense lexicon (no corrections needed)
+
+Learned corrections alone cannot pronounce a homograph the system has never been taught. The
+**sense lexicon** (`flowedit/memory/sense_lexicon.py`, data file
+`flowedit/resources/sense_lexicon.pt`) adds that knowledge from labelled data. There are no word
+lists in code and no LLM.
+
+- **Training data:** Google's Wikipedia Homograph Data (Apache-2.0). It has 16,102 sentences, each
+  with one homograph occurrence labelled by sense and IPA pronunciation, covering 162 homographs.
+  Build with `python scripts/build_sense_lexicon.py --whd <dir|zip|url>`.
+- **Classifier:** one logistic-regression model per homograph. Its input is the occurrence
+  embedding (same MiniLM encoder) at two clause-bounded window sizes (3 and 6 words). Each
+  occurrence is classified on its own, so one sentence can contain both senses.
+  **Held-out accuracy: 96.8% (1,563 / 1,614)**, against 84% for always picking the most frequent
+  sense.
+- **Pronunciation:** each sense gets a respelling the TTS will read with that pronunciation. Real
+  homophones come first ("red", "reed", "led", "tier"). Otherwise the respelling is assembled from
+  the most frequent English spellings of the onset and rime ("tare", "wined", "lyve"). Every
+  respelling is verified with g2p_en to read back exactly the sense's phones. That gives 41 senses,
+  covering the one-syllable homographs. Stress-only pairs (REcord / reCORD, ~266 senses) cannot be
+  expressed by spelling and are left as written.
+- **Default reading is not touched:** a sense covering ≥ `sense_lexicon_default_share` (0.65) of
+  the corpus is the word's normal reading and is not respelled. For example, "lead" = leader
+  (79%) is left as "lead", and only the metal sense becomes "led".
+- **Learning from corrections:** a spell- or audio-mode correction of a lexicon homograph is
+  stored as a labelled context example (`sense_lexicon_user.pt`). A new occurrence whose context is
+  close to a corrected example follows the correction. "Close" means word-centred similarity
+  ≥ `sense_lexicon_user_radius` (0.75). All other occurrences keep the corpus decision.
+  Re-training the classifier on corrections was tried and rejected: it changed 3–6 unrelated
+  held-out sentences. Local override changed none.
+- **Custom pronunciations:** a correction whose spelling does not denote one of the lexicon's
+  pronunciations (e.g. "lehd") becomes that sense's pronunciation for this deployment.
+
+| Check (full pipeline, F5 path) | Result |
+|---|---|
+| 26 hard sentences (many with two senses in one sentence), no corrections | 20 / 26 sentences, 36 / 42 occurrences |
+| same, after 3 one-time corrections | 22 / 26 sentences, 38 / 42 occurrences, no previously-correct output changed |
+| "I read books every day, but yesterday I read an entire novel…" | needs one correction ("I read books every day" → reed), then correct |
+| "The old paint contains lead, and Priya is the lead researcher…" | correct with no correction |
+
+**Known weak spots:**
+- Habitual present tense of *read* in new wordings ("We read the news every morning"): the encoder
+  captures meaning better than tense.
+- Senses whose cue is distant in a mixed sentence ("caught a bass while … played bass guitar").
+- "wound" as a verb.
+
+Part-of-speech tags as extra features were evaluated and rejected: accuracy fell from 96.8% to
+95.5% held-out.
+
+**Deployment:**
+- `sense_lexicon.pt` ships in git (1.6 MB, un-ignored in `.gitignore`).
+- The server needs only the MiniLM encoder, which is already cached there.
+- `g2p_en` is optional at runtime. It is only used to map free-form correction spellings to a
+  sense.
+- The build script additionally needs `nltk` (cmudict) and `g2p_en`.

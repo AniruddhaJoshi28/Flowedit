@@ -215,6 +215,7 @@ class HopfieldMemory(nn.Module):
         embedding_space: Optional[str] = None,
         text_encoder: Optional[Callable[[str, str], torch.Tensor]] = None,
         sense_encoder: Any = _AUTO,
+        sense_lexicon: Any = _AUTO,
     ):
         super().__init__()
         self.config = config or MemoryConfig()
@@ -243,6 +244,7 @@ class HopfieldMemory(nn.Module):
         self.current_step = 0
         self._text_encoder = text_encoder
         self._sense_encoder_spec = sense_encoder
+        self._sense_lexicon_spec = sense_lexicon
         self._rekey_cache: Dict[Tuple[str, str, Tuple[int, int]], torch.Tensor] = {}
 
     @property
@@ -269,6 +271,37 @@ class HopfieldMemory(nn.Module):
         if hasattr(spec, "available") and not spec.available:
             return None
         return spec
+
+    @property
+    def sense_lexicon(self):
+        """Pretrained homograph sense lexicon (shared, adapts to corrections), or None."""
+        spec = self._sense_lexicon_spec
+        if spec is _AUTO:
+            from flowedit.memory.sense_lexicon import get_sense_lexicon
+            spec = get_sense_lexicon(self.config)
+            self._sense_lexicon_spec = spec
+        return spec or None
+
+    def _lexicon_word(self, word: str) -> bool:
+        lex = self.sense_lexicon
+        return lex is not None and len(lex.labels(word)) > 1
+
+    def _entry_label(self, entry: MemoryEntry) -> Optional[str]:
+        """Lexicon sense an entry belongs to (from its spelling, else from its carrier context)."""
+        if not self._lexicon_word(entry.word):
+            return None
+        label = entry.metadata.get("lexicon_label")
+        lex = self.sense_lexicon
+        if label in lex.labels(entry.word):
+            return label
+        label = lex.label_for_spelling(entry.word, entry.phonetic_text)
+        if label is None and not self._is_unconditional(entry.word, entry.carrier_text):
+            span = self._pick_span(entry.carrier_text, entry.word, char_span=entry.metadata.get("char_span"))
+            if span is not None:
+                label = lex.predict(entry.carrier_text, [(entry.word.lower(), span[0], span[1])])[0][0]
+        if label is not None:
+            entry.metadata["lexicon_label"] = label
+        return label
 
     def attach_text_encoder(self, text_encoder: Callable[[str, str], torch.Tensor]) -> None:
         """Attach the owning backbone's text encoder and re-key entries learned on other backbones."""
@@ -524,6 +557,7 @@ class HopfieldMemory(nn.Module):
         proto: Optional[torch.Tensor],
         pron: Optional[str],
         unconditional: bool,
+        label: Optional[str] = None,
     ) -> Tuple[int, float]:
         """Best same-sense cluster for a new correction, or (-1, best_similarity).
 
@@ -547,7 +581,10 @@ class HopfieldMemory(nn.Module):
                 threshold = self.homograph_threshold
             best_any = max(best_any, sim)
 
-            if pron is not None and e_pron is not None:
+            e_label = self._entry_label(entry) if label is not None else None
+            if label is not None and e_label is not None:
+                compatible = label == e_label
+            elif pron is not None and e_pron is not None:
                 compatible = pron == e_pron
             elif unconditional and self._is_unconditional(entry.word, entry.carrier_text):
                 compatible = True
@@ -619,8 +656,21 @@ class HopfieldMemory(nn.Module):
 
         pron = _norm_pron(word, phonetic_text)
 
+        # Homographs known to the sense lexicon: a spelling that denotes one of its senses is a
+        # labelled example (the lexicon learns this context); any other spelling is a custom
+        # pronunciation for the sense the lexicon assigns to this context.
+        new_label = None
+        if self._lexicon_word(word) and occ_span is not None:
+            lex = self.sense_lexicon
+            new_label = lex.label_for_spelling(word, phonetic_text)
+            if new_label is not None:
+                lex.learn(word, carrier_text, occ_span, new_label)
+            else:
+                new_label = lex.predict(carrier_text, [(word.lower(), occ_span[0], occ_span[1])])[0][0]
+            meta["lexicon_label"] = new_label
+
         if self.entries:
-            best_idx, best_sim = self._find_merge_target(word, key_norm, proto, pron, unconditional)
+            best_idx, best_sim = self._find_merge_target(word, key_norm, proto, pron, unconditional, new_label)
             if best_idx >= 0:
                 matched = self.entries[best_idx]
                 if matched.access_count <= self.config.ema_warmup_count:
@@ -888,7 +938,10 @@ class HopfieldMemory(nn.Module):
                 if e.key.shape[-1] != dim else e
                 for e in valid_entries
             ]
-        if not valid_entries:
+        lexicon_occ: List[Tuple[str, int, int]] = []
+        if text and self.sense_lexicon is not None:
+            lexicon_occ = [o for o in self.sense_lexicon.occurrences(text) if self._lexicon_word(o[0])]
+        if not valid_entries and not lexicon_occ:
             zeros_delta = torch.zeros_like(query_embeddings)
             zeros_gate = torch.zeros(1, seq_len, 1, device=device, dtype=dtype)
             return RetrievalResult(
@@ -900,8 +953,12 @@ class HopfieldMemory(nn.Module):
             )
 
         # 1. Stack memory keys K ∈ R^[M, d] and values V ∈ R^[M, d]
-        K = torch.stack([e.key.to(device=device, dtype=dtype) for e in valid_entries])   # [M, d]
-        V = torch.stack([e.value.to(device=device, dtype=dtype) for e in valid_entries]) # [M, d]
+        if valid_entries:
+            K = torch.stack([e.key.to(device=device, dtype=dtype) for e in valid_entries])   # [M, d]
+            V = torch.stack([e.value.to(device=device, dtype=dtype) for e in valid_entries]) # [M, d]
+        else:
+            K = torch.zeros(1, dim, device=device, dtype=dtype)
+            V = torch.zeros(1, dim, device=device, dtype=dtype)
 
         # 2. Compute contextual query vectors Q_ctx across sequence using Gaussian smoothing
         char_radius = max(1, min(int(self.context_char_radius), max(1, seq_len // 4)))
@@ -926,6 +983,8 @@ class HopfieldMemory(nn.Module):
 
         # 5. Similarity Gating (Paper Section 3.2 & Eq. 7)
         tau = self.gate_threshold.to(device=device, dtype=dtype)
+        if not valid_entries:
+            scores = torch.full_like(scores, -1e4)
         max_scores, max_indices = torch.max(scores, dim=-1)                   # [S]
         gate_seq = torch.sigmoid(max_scores - tau)                            # [S]
         floor = float(self.config.gate_activation_floor)
@@ -946,13 +1005,15 @@ class HopfieldMemory(nn.Module):
 
             occurrences: List[Tuple[str, int, int]] = []
             for w_norm, candidates in word_to_entries.items():
+                if self._lexicon_word(w_norm):
+                    continue
                 for c_start, c_end in self._find_word_char_spans(text, candidates[0][1].word):
                     occurrences.append((w_norm, c_start, c_end))
             occurrences.sort(key=lambda o: o[1])
 
             # Exact BPE prefix boundaries, decoded once per text (not once per occurrence)
             prefix_ends: Optional[List[int]] = None
-            if occurrences and tokenizer is not None and hasattr(tokenizer, "encode") and hasattr(tokenizer, "decode") \
+            if (occurrences or lexicon_occ) and tokenizer is not None and hasattr(tokenizer, "encode") and hasattr(tokenizer, "decode") \
                     and total_chars != seq_len:
                 try:
                     enc = tokenizer.encode(text, lang=language)
@@ -970,7 +1031,7 @@ class HopfieldMemory(nn.Module):
             occ_vecs = self._occurrence_vectors(text, [(o[1], o[2]) for o in occurrences]) if occurrences else None
             processed_token_spans = set()
 
-            for o_idx, (w_norm, c_start, c_end) in enumerate(occurrences):
+            def token_span(c_start: int, c_end: int) -> Tuple[int, int]:
                 t_start = t_end = None
                 if prefix_ends:
                     prev_len = 0
@@ -984,9 +1045,51 @@ class HopfieldMemory(nn.Module):
                         t_end = min(seq_len, max(tok_indices) + 1)
                 if t_start is None:
                     t_start, t_end = self._char_span_to_token_span(c_start, c_end, total_chars, seq_len)
+                start = max(0, t_start)
+                return start, min(seq_len, max(t_end, start + 1))
 
-                span_start = max(0, t_start)
-                span_end = min(seq_len, max(t_end, span_start + 1))
+            def inject(entry: MemoryEntry, span_start: int, span_end: int) -> None:
+                src_delta = entry.word_delta.to(device=device, dtype=dtype)
+                src_delta = src_delta[0] if src_delta.dim() == 3 else src_delta
+                assembled_delta[0, span_start:span_end, :] += self._align_delta(src_delta, span_end - span_start)
+                gate_map[0, span_start:span_end, 0] = 1.0
+
+            # 6a. Lexicon homographs: the pretrained (and correction-adapted) classifier picks the
+            #     sense of every occurrence; learned entries of that sense supply their pronunciation/δ*
+            if lexicon_occ:
+                lex = self.sense_lexicon
+                preds = lex.predict(text, lexicon_occ)
+                for (w_norm, c_start, c_end), (label, prob) in zip(lexicon_occ, preds):
+                    span_start, span_end = token_span(c_start, c_end)
+                    same_sense = [
+                        (i, e) for i, e in word_to_entries.get(w_norm, []) if self._entry_label(e) == label
+                    ]
+                    m_idx, entry = max(same_sense, key=lambda c: c[1].access_count) if same_sense else (-1, None)
+                    pron = None
+                    if entry is not None and _norm_pron(entry.word, entry.phonetic_text):
+                        pron = entry.phonetic_text.strip()
+                    elif prob >= self.config.sense_lexicon_min_confidence and self._respell_sense(w_norm, label):
+                        pron = lex.respelling(w_norm, label)
+                    has_delta = entry is not None and entry.delta_space == self.space and entry.word_delta is not None
+                    logger.info(
+                        f"[Sense Lexicon] '{text[c_start:c_end]}'@{c_start} → {label} (p={prob:.2f}) "
+                        f"pronounce={pron or '(default reading)'}{' +δ*' if has_delta else ''}"
+                    )
+                    if not pron and not has_delta:
+                        continue
+                    processed_token_spans.add((span_start, span_end))
+                    matched_spans.append(MatchedWordSpan(
+                        word=text[c_start:c_end], start_pos=span_start, end_pos=span_end, entry_index=m_idx,
+                        score=float(scores[max(0, span_start - 2):min(seq_len, span_end + 2), m_idx].max().item()) if m_idx >= 0 else 0.0,
+                        gate_value=1.0, carrier_text=entry.carrier_text if entry is not None else "",
+                        phonetic_text=pron, char_start=c_start, char_end=c_end,
+                        has_delta=has_delta, sense_similarity=prob,
+                    ))
+                    if has_delta:
+                        inject(entry, span_start, span_end)
+
+            for o_idx, (w_norm, c_start, c_end) in enumerate(occurrences):
+                span_start, span_end = token_span(c_start, c_end)
                 if (span_start, span_end) in processed_token_spans:
                     continue
 
@@ -1024,16 +1127,8 @@ class HopfieldMemory(nn.Module):
                     )
                 )
 
-                if not has_delta:
-                    continue
-
-                # Place word perturbation into assembled delta
-                src_delta = entry.word_delta.to(device=device, dtype=dtype)
-                src_delta = src_delta[0] if src_delta.dim() == 3 else src_delta
-                span_len = span_end - span_start
-                aligned_delta = self._align_delta(src_delta, span_len)
-                assembled_delta[0, span_start:span_end, :] += aligned_delta
-                gate_map[0, span_start:span_end, 0] = 1.0
+                if has_delta:
+                    inject(entry, span_start, span_end)
 
         # 7. Text-free continuous retrieval (pure embedding query, Paper Eq. 6-7)
         if not matched_spans:
@@ -1057,12 +1152,13 @@ class HopfieldMemory(nn.Module):
         best_carrier = None
 
         if matched_spans:
-            top_span = max(matched_spans, key=lambda s: s.score)
-            best_entry = valid_entries[top_span.entry_index]
-            best_full_delta = best_entry.full_delta
-            best_word = best_entry.word
-            best_token_indices = best_entry.token_indices
-            best_carrier = best_entry.carrier_text
+            with_entry = [sp for sp in matched_spans if sp.entry_index >= 0]
+            if with_entry:
+                best_entry = valid_entries[max(with_entry, key=lambda sp: sp.score).entry_index]
+                best_full_delta = best_entry.full_delta
+                best_word = best_entry.word
+                best_token_indices = best_entry.token_indices
+                best_carrier = best_entry.carrier_text
             logger.info(
                 f"[Hopfield Retrieve] Active word corrections: "
                 f"{[(s.word, s.char_start, f'sense={s.entry_index}', f'sim={s.sense_similarity:.3f}', f'phonetic={s.phonetic_text}', f'delta={s.has_delta}') for s in matched_spans]}"
@@ -1088,6 +1184,12 @@ class HopfieldMemory(nn.Module):
             matched_token_indices=best_token_indices,
             matched_carrier_text=best_carrier,
         )
+
+    def _respell_sense(self, word: str, label: str) -> bool:
+        """The corpus-dominant sense is the word's default reading; only other senses are respelled."""
+        counts = self.sense_lexicon.sense_counts(word)
+        total = sum(counts.values())
+        return not total or counts.get(label, 0) / total < self.config.sense_lexicon_default_share
 
     @staticmethod
     def _align_delta(src_delta: torch.Tensor, span_len: int) -> torch.Tensor:

@@ -16,10 +16,16 @@ import torch
 import torch.nn.functional as F
 
 from flowedit.config import MemoryConfig
-from flowedit.memory.hopfield_memory import HopfieldMemory
+from flowedit.memory.hopfield_memory import HopfieldMemory as _HopfieldMemory
 from flowedit.memory.sense_encoder import get_sense_encoder
 from flowedit.refiner.hopfield_refiner import HopfieldRefiner
 from flowedit.backbone.f5tts_wrapper import F5TTSBackbone
+
+def HopfieldMemory(*args, **kwargs):
+    """EMA sense-cluster memory without the pretrained lexicon (tests the learned-correction path)."""
+    kwargs.setdefault("sense_lexicon", None)
+    return _HopfieldMemory(*args, **kwargs)
+
 
 SENTENCE = "The old paint contains lead, and Priya is the lead researcher studying it."
 METAL = "This toy is made of lead"
@@ -248,8 +254,10 @@ def test_f5_active_delta_spans():
 # Spelling store: per-occurrence respelling
 # ─────────────────────────────────────────────────────────────────────────────
 
-def test_spelling_store_resolves_each_occurrence_independently():
+def test_spelling_store_resolves_each_occurrence_independently(monkeypatch):
     _encoder_or_skip()
+    import flowedit.memory.sense_lexicon as sl
+    monkeypatch.setattr(sl, "get_sense_lexicon", lambda config: None)
     from flowedit.memory.s3_storage import S3SpellingStore
     store = S3SpellingStore.__new__(S3SpellingStore)
     from flowedit.alignment.homograph_resolver import HomographContextResolver
@@ -286,3 +294,68 @@ def test_no_builtin_homograph_tables_in_package():
     banned = re.compile(r"HOMOGRAPH_SENSE_MAP|KNOWN_HOMOGRAPHS|TEMPORAL_PAST|INFINITIVE_MODALS")
     offenders = [str(p) for p in root.rglob("*.py") if banned.search(p.read_text(encoding="utf-8"))]
     assert offenders == []
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Pretrained sense lexicon (automatic, no corrections) + learning from corrections
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _lexicon_memory(tmp_path):
+    import dataclasses
+    from flowedit.memory.sense_lexicon import SenseLexicon
+    cfg = dataclasses.replace(MemoryConfig(), sense_lexicon_user_path=str(tmp_path / "user.pt"))
+    lex = SenseLexicon(cfg)
+    if not lex.available:
+        pytest.skip("sense lexicon or encoder not available")
+    bb = CharBackbone()
+    mem = _HopfieldMemory(cfg, 512, bb.embedding_space, text_encoder=bb.encode_text, sense_lexicon=lex)
+    return bb, mem, HopfieldRefiner(mem, cfg), lex
+
+
+def test_lexicon_disambiguates_without_any_correction(tmp_path):
+    bb, mem, ref, _ = _lexicon_memory(tmp_path)
+    assert mem.num_entries == 0
+    expected = {
+        SENTENCE: "The old paint contains led, and Priya is the lead researcher studying it.",
+        "The lead researcher found lead in the old pipes.": "The lead researcher found led in the old pipes.",
+        "A tear rolled down her cheek as she watched him tear the letter.":
+            "A tier rolled down her cheek as she watched him tear the letter.",
+        "The archer drew his bow, then turned to bow to the king.": "The archer drew his bo, then turned to bao to the king.",
+        "The weather is pleasant today.": "The weather is pleasant today.",
+    }
+    for text, want in expected.items():
+        bb.calls.clear()
+        ref.forward(bb, text, {"audio_path": "x.wav"})
+        assert bb.calls[-1][0] == want
+
+
+def test_dominant_sense_is_not_respelled(tmp_path):
+    _, mem, _, lex = _lexicon_memory(tmp_path)
+    counts = lex.sense_counts("lead")
+    dominant = max(counts, key=counts.get)
+    assert not mem._respell_sense("lead", dominant)
+    assert mem._respell_sense("lead", min(counts, key=counts.get))
+
+
+def test_correction_teaches_its_context_without_changing_others(tmp_path):
+    bb, mem, ref, lex = _lexicon_memory(tmp_path)
+    text = "I read books every day, but yesterday I read an entire novel in one sitting."
+    unrelated = ["He read the paper yesterday.", "Please read the instructions carefully."]
+    before = [lex.predict(t, [("read", m.start(), m.end())])[0][0] for t in unrelated for m in [re.search(r"\bread\b", t)]]
+    _write(mem, bb, "read", "I read books every day.", phonetic="reed")  # spell-mode correction
+    ref.forward(bb, text, {"audio_path": "x.wav"})
+    assert bb.calls[-1][0] == "I reed books every day, but yesterday I red an entire novel in one sitting."
+    after = [lex.predict(t, [("read", m.start(), m.end())])[0][0] for t in unrelated for m in [re.search(r"\bread\b", t)]]
+    assert before == after
+    # learning persists for the next process
+    from flowedit.memory.sense_lexicon import SenseLexicon
+    again = SenseLexicon(lex.config)
+    m = re.search(r"\bread\b", text)
+    assert again.predict(text, [("read", m.start(), m.end())])[0][0] == "read_present"
+
+
+def test_custom_spelling_applies_to_the_predicted_sense_only(tmp_path):
+    bb, mem, ref, _ = _lexicon_memory(tmp_path)
+    _write(mem, bb, "lead", "The old paint contains lead", phonetic="lehd")
+    ref.forward(bb, SENTENCE, {"audio_path": "x.wav"})
+    assert bb.calls[-1][0] == "The old paint contains lehd, and Priya is the lead researcher studying it."

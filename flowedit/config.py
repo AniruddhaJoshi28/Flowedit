@@ -120,6 +120,26 @@ class MemoryConfig:
     # Encoder-unavailable fallback: minimum distance-weighted word-overlap for a single registered sense
     sense_lexical_threshold: float = 0.25
 
+    # ─── Pretrained sense lexicon (automatic homograph disambiguation, no corrections needed) ───
+    # Per-homograph classifiers trained from a labelled corpus (scripts/build_sense_lexicon.py).
+    # Features: occurrence embeddings over several clause-bounded window sizes. Empty path disables.
+    sense_lexicon_path: str = field(default_factory=lambda: os.environ.get(
+        "FLOWEDIT_SENSE_LEXICON",
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "sense_lexicon.pt"),
+    ))
+    # User corrections teaching the lexicon (stored as labelled context examples)
+    sense_lexicon_user_path: str = field(default_factory=lambda: os.environ.get(
+        "FLOWEDIT_SENSE_LEXICON_USER", "./sense_lexicon_user.pt"
+    ))
+    # An occurrence whose word-centred context similarity to a corrected example reaches this value
+    # follows that correction; all others follow the corpus-trained classifier (no collateral change)
+    sense_lexicon_user_radius: float = 0.75
+    # Below this predicted probability the word is left to the TTS model's own reading
+    sense_lexicon_min_confidence: float = 0.55
+    # A sense covering at least this share of the corpus is the word's default reading and is not
+    # respelled (TTS models already read the bare word that way); rarer senses are respelled
+    sense_lexicon_default_share: float = 0.65
+
     # Context window in words for homograph disambiguation (Paper Section 3.2: ±1-3 words)
     context_window: int = 3
 

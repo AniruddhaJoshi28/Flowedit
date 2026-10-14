@@ -2,8 +2,13 @@
 Pytest configuration and environment mocks for test suite.
 """
 
+import os
 import sys
+import tempfile
 from unittest.mock import MagicMock
+
+# Corrections learned by the sense lexicon during tests go to a throwaway file, never the repo
+os.environ["FLOWEDIT_SENSE_LEXICON_USER"] = os.path.join(tempfile.mkdtemp(prefix="flowedit_test_"), "sense_lexicon_user.pt")
 
 # Let transformers record its optional-dependency availability before any module below is
 # replaced by a mock (the contextual sense encoder loads a transformers text model).

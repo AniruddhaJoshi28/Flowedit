@@ -146,7 +146,7 @@ class HopfieldRefiner(nn.Module):
                 # Character-level backbone (F5-TTS): one perturbation row per character of synth_text
                 delta_for_synth = torch.zeros(1, len(synth_text), backbone_dim, device=base_embeddings.device, dtype=base_embeddings.dtype)
                 for span, s_start, s_end in synth_spans:
-                    entry = self.memory.entries[span.entry_index] if span.entry_index < len(self.memory.entries) else None
+                    entry = self.memory.entries[span.entry_index] if 0 <= span.entry_index < len(self.memory.entries) else None
                     if entry is None or not span.has_delta or entry.word_delta is None:
                         continue
                     w_delta = entry.word_delta.to(device=base_embeddings.device, dtype=base_embeddings.dtype)
@@ -166,7 +166,7 @@ class HopfieldRefiner(nn.Module):
                 for span, s_start, s_end in synth_spans:
                     if not span.has_delta:
                         continue
-                    entry = self.memory.entries[span.entry_index] if span.entry_index < len(self.memory.entries) else None
+                    entry = self.memory.entries[span.entry_index] if 0 <= span.entry_index < len(self.memory.entries) else None
                     w_delta = entry.word_delta if (entry is not None and entry.word_delta is not None) else scaled_delta[:, span.start_pos:span.end_pos, :]
                     if w_delta.numel() == 0:
                         continue
