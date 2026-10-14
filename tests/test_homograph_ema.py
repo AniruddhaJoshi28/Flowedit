@@ -359,3 +359,27 @@ def test_custom_spelling_applies_to_the_predicted_sense_only(tmp_path):
     _write(mem, bb, "lead", "The old paint contains lead", phonetic="lehd")
     ref.forward(bb, SENTENCE, {"audio_path": "x.wav"})
     assert bb.calls[-1][0] == "The old paint contains lehd, and Priya is the lead researcher studying it."
+
+
+def test_wordnet_sense_evidence_shifts_uncertain_decisions(tmp_path, monkeypatch):
+    """When the lexicon is unsure, WordNet-sense evidence (learned sense→pronunciation table) is combined in."""
+    import dataclasses
+    from flowedit.memory.sense_lexicon import SenseLexicon
+    import flowedit.memory.gloss_wsd as gw
+    cfg = dataclasses.replace(MemoryConfig(), sense_lexicon_user_path=str(tmp_path / "u.pt"), sense_wsd_skip_confidence=1.01)
+    lex = SenseLexicon(cfg)
+    if not lex.available or not lex._data["words"]["bow"].get("wsd_table"):
+        pytest.skip("lexicon with WSD tables not available")
+    table = lex._data["words"]["bow"]["wsd_table"]
+    ship_sense = max(table, key=lambda s: table[s].get("bow_nou-ship", 0) / (sum(table[s].values()) or 1) * (sum(table[s].values()) > 5))
+
+    class FakeWSD:
+        def sense_probs(self, text, start, end, glosses):
+            return {ship_sense: 1.0}
+    monkeypatch.setattr(gw, "get_gloss_wsd", lambda config: FakeWSD())
+    text = "She tied a bow in her hair, and the actor took a bow after the performance."
+    with_wsd = lex.predict(text, [("bow", 49, 52)])[0]
+    monkeypatch.setattr(gw, "get_gloss_wsd", lambda config: None)
+    without = lex.predict(text, [("bow", 49, 52)])[0]
+    assert with_wsd[0] == "bow_nou-ship"
+    assert (without[0] != "bow_nou-ship") or with_wsd[1] > without[1]

@@ -139,6 +139,24 @@ class MemoryConfig:
     # A sense covering at least this share of the corpus is the word's default reading and is not
     # respelled (TTS models already read the bare word that way); rarer senses are respelled
     sense_lexicon_default_share: float = 0.65
+    # Fine-tuned sense encoder (scripts/train_sense_model.py); its sense probabilities are averaged
+    # with the lexicon's with this weight. A missing model directory means lexicon only.
+    sense_model_path: str = field(default_factory=lambda: os.environ.get(
+        "FLOWEDIT_SENSE_MODEL",
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models", "sense_model"),
+    ))
+    sense_model_weight: float = 0.0
+    # GlossBERT word-sense model (WordNet definitions; scripts/build_wsd_tables.py). Its meaning →
+    # pronunciation evidence is combined with the lexicon only when the lexicon is less sure than
+    # sense_wsd_skip_confidence (keeps ~97% of the accuracy gain while running on ~9% of homographs)
+    sense_wsd_model_path: str = field(default_factory=lambda: os.environ.get(
+        "FLOWEDIT_SENSE_WSD",
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models", "glossbert"),
+    ))
+    sense_wsd_device: str = field(default_factory=lambda: os.environ.get("FLOWEDIT_SENSE_WSD_DEVICE", ""))
+    sense_wsd_window_words: int = 8
+    sense_wsd_skip_confidence: float = 0.95
+    sense_wsd_smoothing: float = 1.0
 
     # Context window in words for homograph disambiguation (Paper Section 3.2: ±1-3 words)
     context_window: int = 3

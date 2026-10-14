@@ -63,3 +63,7 @@ scratch/
 .venv
 # Pretrained homograph sense lexicon (built by scripts/build_sense_lexicon.py) ships with the code
 !flowedit/resources/sense_lexicon.pt
+
+# GlossBERT word-sense model weights (copied per deployment, see docs/INCREMENTAL_CONTEXTUAL_HOMOGRAPHS.md)
+models/glossbert/
+models/sense_model/

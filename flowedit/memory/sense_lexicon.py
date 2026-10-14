@@ -107,6 +107,12 @@ class SenseLexicon:
                 )
                 self._data = data
                 self._load_user()
+                if float(self.config.sense_model_weight) > 0:
+                    from flowedit.memory.sense_model import get_sense_model
+                    get_sense_model(self.config)  # warm the fine-tuned model alongside the lexicon
+                if float(data.get("wsd_weight", 0.0)) > 0:
+                    from flowedit.memory.gloss_wsd import get_gloss_wsd
+                    get_gloss_wsd(self.config)  # warm the word-sense model alongside the lexicon
                 logger.info(
                     f"✓ Sense lexicon ready: {len(data['words'])} homographs "
                     f"(held-out accuracy {data.get('heldout_accuracy', float('nan')):.3f}, "
@@ -172,11 +178,21 @@ class SenseLexicon:
         if not occurrences or not self._load():
             return []
         x = self.features(text, [(a, b) for _, a, b in occurrences])
+        model_probs = self._model_probs(text, occurrences)
+        weight = float(self.config.sense_model_weight)
         out = []
         radius = float(self.config.sense_lexicon_user_radius)
         for i, (word, _, _) in enumerate(occurrences):
             d = self._data["words"][word]
             p = torch.softmax(x[i] @ d["W"] + d["b"], dim=-1)
+            mp = model_probs[i] if model_probs else None
+            if mp and set(mp) == set(d["labels"]):
+                p = (1.0 - weight) * p + weight * torch.tensor([mp[l] for l in d["labels"]])
+            if float(p.max()) < float(self.config.sense_wsd_skip_confidence):
+                pw = self._wsd_probs(word, text, occurrences[i][1], occurrences[i][2])
+                if pw is not None:
+                    w_wsd = float(self._data.get("wsd_weight", 0.0))
+                    p = torch.softmax(torch.log(p + 1e-9) + w_wsd * torch.log(pw + 1e-9), dim=-1)
             k = int(p.argmax())
             label, prob = d["labels"][k], float(p[k])
             taught = self._user.get(word)
@@ -187,6 +203,47 @@ class SenseLexicon:
                     label, prob = taught[j][1], max(prob if taught[j][1] == label else 0.0, float(sims[j]))
             out.append((label, prob))
         return out
+
+    def _model_probs(self, text: str, occurrences) -> Optional[List[Dict[str, float]]]:
+        """Fine-tuned sense model probabilities (None when not installed or disabled)."""
+        if float(self.config.sense_model_weight) <= 0:
+            return None
+        from flowedit.memory.sense_model import get_sense_model
+        model = get_sense_model(self.config)
+        if model is None:
+            return None
+        try:
+            return model.predict([(w, text, a, b) for w, a, b in occurrences])
+        except Exception as e:
+            logger.warning(f"Fine-tuned sense model failed on {text[:60]!r}: {e}")
+            return None
+
+    def _wsd_probs(self, word: str, text: str, start: int, end: int) -> Optional[torch.Tensor]:
+        """P(pronunciation | WordNet sense of this occurrence), learned sense→pronunciation table."""
+        d = self._data["words"][word]
+        glosses, table = d.get("wsd_glosses"), d.get("wsd_table")
+        if not glosses or not table or not float(self._data.get("wsd_weight", 0.0)):
+            return None
+        from flowedit.memory.gloss_wsd import get_gloss_wsd
+        wsd = get_gloss_wsd(self.config)
+        if wsd is None:
+            return None
+        try:
+            senses = wsd.sense_probs(text, start, end, glosses)
+        except Exception as e:
+            logger.warning(f"GlossBERT failed on {text[:60]!r}: {e}")
+            return None
+        labels = d["labels"]
+        counts = d.get("counts") or {}
+        total = sum(counts.values()) or 1
+        prior = torch.tensor([(counts.get(l, 0) + 1) / (total + len(labels)) for l in labels])
+        alpha = float(self.config.sense_wsd_smoothing)
+        out = torch.zeros(len(labels))
+        for synset, ps in senses.items():
+            row = table.get(synset, {})
+            n = sum(row.values())
+            out += ps * (torch.tensor([row.get(l, 0.0) for l in labels]) + alpha * prior) / (n + alpha)
+        return out / out.sum()
 
     # ── learning from corrections ────────────────────────────────────────────
 

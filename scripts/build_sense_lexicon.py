@@ -177,7 +177,7 @@ def main():
     ap.add_argument("--out", default=MemoryConfig().sense_lexicon_path)
     ap.add_argument("--windows", default="3,6", help="clause-bounded context window sizes (words)")
     ap.add_argument("--reg", type=float, default=1e-3)
-    ap.add_argument("--final-on-all", action="store_true", default=True,
+    ap.add_argument("--final-on-all", action=argparse.BooleanOptionalAction, default=True,
                     help="after reporting held-out accuracy, retrain on train+eval for the shipped model")
     args = ap.parse_args()
 
