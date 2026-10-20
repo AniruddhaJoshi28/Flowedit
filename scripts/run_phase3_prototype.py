@@ -77,6 +77,7 @@ from scripts.validate_acoustic_correction_study import (
     compute_bsd_at_boundaries,
     compute_non_target_per_wer,
     SPEAKER_REFS,
+    ensure_reference_audios,
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -333,18 +334,23 @@ def run_phase3_suite():
     logger.info("STARTING PHASE 3 RESEARCH PROTOTYPE VALIDATION")
     logger.info("=" * 70)
 
-    device = "cpu"
+    ensure_reference_audios()
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    logger.info(f"Target compute device: '{device}'")
 
     # Step 1: Load F5-TTS Backbone & Whisper
     logger.info(f"Loading official F5TTS_Base on device '{device}'...")
     tts = F5TTS(model="F5TTS_Base", device=device)
     logger.info("Loading Whisper Tiny for alignment...")
-    whisper = WhisperModel("tiny", device="cpu", compute_type="int8")
+    whisper_dev = "cuda" if device == "cuda" else "cpu"
+    whisper_type = "float16" if whisper_dev == "cuda" else "int8"
+    whisper = WhisperModel("tiny", device=whisper_dev, compute_type=whisper_type)
 
     # Step 2: Load Acoustic Phoneme Evaluator
     logger.info("Loading Wav2Vec2 CTC for multi-dimensional phonemic evaluation...")
     ctc_processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-base-960h")
-    ctc_model = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-base-960h")
+    ctc_model = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-base-960h").to(device)
     ctc_model.eval()
     g2p = G2p()
     evaluator = PhonemeAwareEvaluator(ctc_processor, ctc_model, g2p)

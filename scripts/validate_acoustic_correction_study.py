@@ -353,13 +353,38 @@ EXPANDED_EVAL_CASES = [
 # 2. Speaker References
 # ---------------------------------------------------------------------------
 
+def ensure_reference_audios():
+    os.makedirs(os.path.join(REPO_ROOT, "scratch"), exist_ok=True)
+    import soundfile as sf
+    ref_fem = os.path.join(REPO_ROOT, "scratch", "ref_trimmed.wav")
+    if not os.path.exists(ref_fem):
+        src_fem = os.path.join(REPO_ROOT, "flowedit", "resources", "default_speaker.wav")
+        if not os.path.exists(src_fem):
+            src_fem = os.path.join(REPO_ROOT, "deploy_voices", "blessing.wav")
+        if os.path.exists(src_fem):
+            raw, sr = sf.read(src_fem)
+            trimmed = raw[:int(4.80 * sr)]
+            sf.write(ref_fem, trimmed, sr)
+
+    ref_male = os.path.join(REPO_ROOT, "scratch", "ref_male_trimmed.wav")
+    if not os.path.exists(ref_male):
+        src_male = os.path.join(REPO_ROOT, "flowedit", "resources", "michael.wav")
+        if not os.path.exists(src_male):
+            src_male = os.path.join(REPO_ROOT, "deploy_voices", "michael.wav")
+        if os.path.exists(src_male):
+            raw, sr = sf.read(src_male)
+            trimmed = raw[:int(3.10 * sr)]
+            sf.write(ref_male, trimmed, sr)
+
+ensure_reference_audios()
+
 SPEAKER_REFS = {
     "female": {
-        "wav_path": "scratch/ref_trimmed.wav",
+        "wav_path": os.path.join(REPO_ROOT, "scratch", "ref_trimmed.wav"),
         "ref_text": "In oncology, delivery in a breakthrough therapy is a high-stakes mission.",
     },
     "male": {
-        "wav_path": "scratch/ref_male_trimmed.wav",
+        "wav_path": os.path.join(REPO_ROOT, "scratch", "ref_male_trimmed.wav"),
         "ref_text": "The sensibility of the palm remains normal.",
     },
 }
@@ -447,9 +472,9 @@ class PhonemeAwareEvaluator:
     def decode_ctc_target_interval(self, wav: np.ndarray, t_s: float, t_e: float, sr: int = 24000) -> Tuple[str, str]:
         """Decodes full sentence and extracts the acoustic character sequence in target interval."""
         wav_16k = F_audio.resample(torch.from_numpy(wav).float(), sr, 16000)
-        inputs = self.processor(wav_16k.numpy(), sampling_rate=16000, return_tensors='pt')
+        device = next(self.ctc_model.parameters()).device
         with torch.no_grad():
-            logits = self.ctc_model(inputs.input_values).logits[0]
+            logits = self.ctc_model(inputs.input_values.to(device)).logits[0]
         full_pred = torch.argmax(logits, dim=-1)
         full_text = self.processor.decode(full_pred)
 
