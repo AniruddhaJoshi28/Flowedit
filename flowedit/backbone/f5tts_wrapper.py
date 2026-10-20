@@ -25,6 +25,7 @@ from flowedit.config import BackboneConfig
 from flowedit.backbone.base import TTSBackbone
 from flowedit.audio.prompt_validator import validate_reference_audio
 from flowedit.text.duration_planner import DurationPlanner
+from flowedit.backbone.checkpoint_identity import CheckpointIdentityError, inspect_f5_safetensors
 
 logger = logging.getLogger(__name__)
 
@@ -111,12 +112,14 @@ class F5TTSBackbone(TTSBackbone):
             for s_dir in search_dirs:
                 if s_dir and os.path.isdir(s_dir):
                     for root, dirs, files in os.walk(s_dir):
-                        # Avoid descending into XTTS or Vocos folders
-                        if any(x in root.lower() for x in ("xtts", "vocos")):
+                        # Avoid descending into XTTS, Vocos, or GlossBERT folders
+                        if any(x in root.lower() for x in ("xtts", "vocos", "glossbert")):
                             continue
                         for f in files:
                             f_lower = f.lower()
-                            if f_lower.endswith((".safetensors", ".pt", ".bin", ".ckpt")):
+                            # Fail closed during automatic discovery. Generic .pth/.pt
+                            # files in this repository include unrelated XTTS weights.
+                            if f_lower.endswith(".safetensors"):
                                 f_path = os.path.abspath(os.path.join(root, f))
                                 if f_path in seen_ckpt_paths:
                                     continue
@@ -124,7 +127,12 @@ class F5TTSBackbone(TTSBackbone):
                                 try:
                                     f_size = os.path.getsize(f_path)
                                     if f_size > 50_000_000:  # > 50 MB model weight
-                                        discovered_ckpts.append((f_path, f_size, f_lower))
+                                        try:
+                                            identity = inspect_f5_safetensors(f_path)
+                                        except CheckpointIdentityError as exc:
+                                            logger.warning("Rejected non-F5 checkpoint candidate %s: %s", f_path, exc)
+                                        else:
+                                            discovered_ckpts.append((identity.path, f_size, f_lower))
                                 except Exception:
                                     pass
 
@@ -160,6 +168,8 @@ class F5TTSBackbone(TTSBackbone):
             for s_dir in search_dirs:
                 if s_dir and os.path.isdir(s_dir):
                     for root, dirs, files in os.walk(s_dir):
+                        if any(x in root.lower() for x in ("xtts", "vocos", "glossbert")):
+                            continue
                         for f in files:
                             if f.lower() == "vocab.txt":
                                 v_path = os.path.join(root, f)
@@ -187,14 +197,14 @@ class F5TTSBackbone(TTSBackbone):
             ]
             for cand in vocoder_candidates:
                 if cand and os.path.isdir(cand):
-                    if os.path.isfile(os.path.join(cand, "config.yaml")):
+                    if os.path.isfile(os.path.join(cand, "config.yaml")) and os.path.isfile(os.path.join(cand, "pytorch_model.bin")):
                         vocoder_local_path = os.path.abspath(cand)
                         break
                     # Check immediate subdirectories
                     try:
                         for sub in os.listdir(cand):
                             sub_p = os.path.join(cand, sub)
-                            if os.path.isdir(sub_p) and os.path.isfile(os.path.join(sub_p, "config.yaml")):
+                            if os.path.isdir(sub_p) and os.path.isfile(os.path.join(sub_p, "config.yaml")) and os.path.isfile(os.path.join(sub_p, "pytorch_model.bin")):
                                 vocoder_local_path = os.path.abspath(sub_p)
                                 break
                     except Exception:
@@ -234,6 +244,21 @@ class F5TTSBackbone(TTSBackbone):
                     model_name = "F5TTS_Base"
             else:
                 model_name = "F5TTS_Base"
+
+        # Explicit paths are validated too. A large file and plausible name are
+        # not sufficient evidence of model identity.
+        if ckpt_file:
+            identity = inspect_f5_safetensors(ckpt_file, expected_architecture=model_name)
+            model_name = identity.architecture
+            logger.info(
+                "Verified F5 checkpoint identity: architecture=%s tensors=%d scalars=%d hidden=%d depth=%d mel=%d",
+                identity.architecture,
+                identity.tensor_count,
+                identity.scalar_count,
+                identity.hidden_dim,
+                identity.depth,
+                identity.mel_dim,
+            )
 
         # 6. When local models are found, enforce offline mode to prevent Hugging Face from downloading or using space
         if ckpt_file and os.path.isfile(ckpt_file):
