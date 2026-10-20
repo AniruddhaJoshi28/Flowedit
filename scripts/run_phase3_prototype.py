@@ -50,7 +50,12 @@ torchaudio.load = safe_load
 from f5_tts.api import F5TTS
 from faster_whisper import WhisperModel
 from transformers import Wav2Vec2Processor, Wav2Vec2ForCTC
-from g2p_en import G2p
+try:
+    from g2p_en import G2p
+except ImportError:
+    class G2p:
+        def __call__(self, text):
+            return list(text.lower())
 
 # Ensure repository root is on sys.path
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
