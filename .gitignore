@@ -4,6 +4,7 @@
 
 # ── 1. Python Cache & Virtual Environments ────────────────────────────────────
 __pycache__/
+research_test_tmp/
 *.py[cod]
 *$py.class
 *.so
