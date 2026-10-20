@@ -1,0 +1,349 @@
+{
+  "model_metadata": {
+    "model_name": "F5TTS_Base",
+    "total_parameters": 337096804,
+    "hidden_dim": 1024,
+    "depth": 22,
+    "vocab_size": 2545,
+    "vocab_path": "C:\\Users\\AniruddhaJoshi\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\f5_tts\\infer\\examples\\vocab.txt",
+    "device": "cpu",
+    "is_genuine_pretrained": true
+  },
+  "benchmark_info": {
+    "words": [
+      "lead",
+      "read",
+      "bow",
+      "tear"
+    ],
+    "num_sentences": 40,
+    "noise_seeds": 5
+  },
+  "summary": [
+    {
+      "layer": "text_embed",
+      "timestep": 0.0,
+      "probe_accuracy": 0.708,
+      "silhouette_score": 0.037,
+      "davies_bouldin": 2.586,
+      "noise_stability": 1.0,
+      "composite_score": 0.594
+    },
+    {
+      "layer": "text_embed",
+      "timestep": 0.25,
+      "probe_accuracy": 0.708,
+      "silhouette_score": 0.037,
+      "davies_bouldin": 2.586,
+      "noise_stability": 1.0,
+      "composite_score": 0.594
+    },
+    {
+      "layer": "text_embed",
+      "timestep": 0.5,
+      "probe_accuracy": 0.708,
+      "silhouette_score": 0.037,
+      "davies_bouldin": 2.586,
+      "noise_stability": 1.0,
+      "composite_score": 0.594
+    },
+    {
+      "layer": "text_embed",
+      "timestep": 0.75,
+      "probe_accuracy": 0.708,
+      "silhouette_score": 0.037,
+      "davies_bouldin": 2.586,
+      "noise_stability": 1.0,
+      "composite_score": 0.594
+    },
+    {
+      "layer": "text_embed",
+      "timestep": 1.0,
+      "probe_accuracy": 0.708,
+      "silhouette_score": 0.037,
+      "davies_bouldin": 2.586,
+      "noise_stability": 1.0,
+      "composite_score": 0.594
+    },
+    {
+      "layer": "2",
+      "timestep": 0.0,
+      "probe_accuracy": 0.556,
+      "silhouette_score": 0.019,
+      "davies_bouldin": 3.122,
+      "noise_stability": 0.987,
+      "composite_score": 0.524
+    },
+    {
+      "layer": "2",
+      "timestep": 0.25,
+      "probe_accuracy": 0.514,
+      "silhouette_score": 0.01,
+      "davies_bouldin": 3.212,
+      "noise_stability": 0.993,
+      "composite_score": 0.506
+    },
+    {
+      "layer": "2",
+      "timestep": 0.5,
+      "probe_accuracy": 0.514,
+      "silhouette_score": -0.011,
+      "davies_bouldin": 3.609,
+      "noise_stability": 0.993,
+      "composite_score": 0.503
+    },
+    {
+      "layer": "2",
+      "timestep": 0.75,
+      "probe_accuracy": 0.431,
+      "silhouette_score": -0.043,
+      "davies_bouldin": 3.804,
+      "noise_stability": 0.992,
+      "composite_score": 0.47
+    },
+    {
+      "layer": "2",
+      "timestep": 1.0,
+      "probe_accuracy": 0.5,
+      "silhouette_score": -0.01,
+      "davies_bouldin": 3.239,
+      "noise_stability": 0.997,
+      "composite_score": 0.499
+    },
+    {
+      "layer": "6",
+      "timestep": 0.0,
+      "probe_accuracy": 0.556,
+      "silhouette_score": 0.057,
+      "davies_bouldin": 2.637,
+      "noise_stability": 0.984,
+      "composite_score": 0.534
+    },
+    {
+      "layer": "6",
+      "timestep": 0.25,
+      "probe_accuracy": 0.458,
+      "silhouette_score": 0.031,
+      "davies_bouldin": 2.71,
+      "noise_stability": 0.989,
+      "composite_score": 0.489
+    },
+    {
+      "layer": "6",
+      "timestep": 0.5,
+      "probe_accuracy": 0.5,
+      "silhouette_score": -0.023,
+      "davies_bouldin": 3.53,
+      "noise_stability": 0.993,
+      "composite_score": 0.498
+    },
+    {
+      "layer": "6",
+      "timestep": 0.75,
+      "probe_accuracy": 0.347,
+      "silhouette_score": -0.04,
+      "davies_bouldin": 3.627,
+      "noise_stability": 0.993,
+      "composite_score": 0.437
+    },
+    {
+      "layer": "6",
+      "timestep": 1.0,
+      "probe_accuracy": 0.444,
+      "silhouette_score": -0.006,
+      "davies_bouldin": 3.102,
+      "noise_stability": 0.999,
+      "composite_score": 0.477
+    },
+    {
+      "layer": "10",
+      "timestep": 0.0,
+      "probe_accuracy": 0.542,
+      "silhouette_score": 0.045,
+      "davies_bouldin": 2.631,
+      "noise_stability": 0.989,
+      "composite_score": 0.527
+    },
+    {
+      "layer": "10",
+      "timestep": 0.25,
+      "probe_accuracy": 0.556,
+      "silhouette_score": 0.021,
+      "davies_bouldin": 2.74,
+      "noise_stability": 0.988,
+      "composite_score": 0.525
+    },
+    {
+      "layer": "10",
+      "timestep": 0.5,
+      "probe_accuracy": 0.556,
+      "silhouette_score": -0.006,
+      "davies_bouldin": 3.109,
+      "noise_stability": 0.994,
+      "composite_score": 0.52
+    },
+    {
+      "layer": "10",
+      "timestep": 0.75,
+      "probe_accuracy": 0.486,
+      "silhouette_score": -0.013,
+      "davies_bouldin": 3.144,
+      "noise_stability": 0.996,
+      "composite_score": 0.493
+    },
+    {
+      "layer": "10",
+      "timestep": 1.0,
+      "probe_accuracy": 0.472,
+      "silhouette_score": 0.004,
+      "davies_bouldin": 2.874,
+      "noise_stability": 1.0,
+      "composite_score": 0.49
+    },
+    {
+      "layer": "14",
+      "timestep": 0.0,
+      "probe_accuracy": 0.625,
+      "silhouette_score": 0.052,
+      "davies_bouldin": 2.522,
+      "noise_stability": 0.991,
+      "composite_score": 0.563
+    },
+    {
+      "layer": "14",
+      "timestep": 0.25,
+      "probe_accuracy": 0.514,
+      "silhouette_score": 0.021,
+      "davies_bouldin": 2.762,
+      "noise_stability": 0.987,
+      "composite_score": 0.508
+    },
+    {
+      "layer": "14",
+      "timestep": 0.5,
+      "probe_accuracy": 0.486,
+      "silhouette_score": -0.005,
+      "davies_bouldin": 3.028,
+      "noise_stability": 0.993,
+      "composite_score": 0.492
+    },
+    {
+      "layer": "14",
+      "timestep": 0.75,
+      "probe_accuracy": 0.431,
+      "silhouette_score": -0.011,
+      "davies_bouldin": 3.066,
+      "noise_stability": 0.995,
+      "composite_score": 0.471
+    },
+    {
+      "layer": "14",
+      "timestep": 1.0,
+      "probe_accuracy": 0.514,
+      "silhouette_score": 0.018,
+      "davies_bouldin": 2.725,
+      "noise_stability": 1.0,
+      "composite_score": 0.511
+    },
+    {
+      "layer": "18",
+      "timestep": 0.0,
+      "probe_accuracy": 0.569,
+      "silhouette_score": 0.035,
+      "davies_bouldin": 2.834,
+      "noise_stability": 0.991,
+      "composite_score": 0.535
+    },
+    {
+      "layer": "18",
+      "timestep": 0.25,
+      "probe_accuracy": 0.486,
+      "silhouette_score": 0.023,
+      "davies_bouldin": 2.689,
+      "noise_stability": 0.985,
+      "composite_score": 0.497
+    },
+    {
+      "layer": "18",
+      "timestep": 0.5,
+      "probe_accuracy": 0.5,
+      "silhouette_score": 0.012,
+      "davies_bouldin": 2.787,
+      "noise_stability": 0.993,
+      "composite_score": 0.501
+    },
+    {
+      "layer": "18",
+      "timestep": 0.75,
+      "probe_accuracy": 0.556,
+      "silhouette_score": 0.007,
+      "davies_bouldin": 2.814,
+      "noise_stability": 0.994,
+      "composite_score": 0.522
+    },
+    {
+      "layer": "18",
+      "timestep": 1.0,
+      "probe_accuracy": 0.417,
+      "silhouette_score": 0.038,
+      "davies_bouldin": 2.643,
+      "noise_stability": 0.999,
+      "composite_score": 0.478
+    },
+    {
+      "layer": "21",
+      "timestep": 0.0,
+      "probe_accuracy": 0.611,
+      "silhouette_score": 0.04,
+      "davies_bouldin": 2.742,
+      "noise_stability": 0.994,
+      "composite_score": 0.555
+    },
+    {
+      "layer": "21",
+      "timestep": 0.25,
+      "probe_accuracy": 0.736,
+      "silhouette_score": 0.012,
+      "davies_bouldin": 2.779,
+      "noise_stability": 0.982,
+      "composite_score": 0.592
+    },
+    {
+      "layer": "21",
+      "timestep": 0.5,
+      "probe_accuracy": 0.597,
+      "silhouette_score": 0.0,
+      "davies_bouldin": 2.896,
+      "noise_stability": 0.991,
+      "composite_score": 0.536
+    },
+    {
+      "layer": "21",
+      "timestep": 0.75,
+      "probe_accuracy": 0.639,
+      "silhouette_score": -0.003,
+      "davies_bouldin": 2.865,
+      "noise_stability": 0.993,
+      "composite_score": 0.554
+    },
+    {
+      "layer": "21",
+      "timestep": 1.0,
+      "probe_accuracy": 0.556,
+      "silhouette_score": 0.03,
+      "davies_bouldin": 2.691,
+      "noise_stability": 0.999,
+      "composite_score": 0.531
+    }
+  ],
+  "best_config": {
+    "layer": "text_embed",
+    "timestep": 0.0,
+    "probe_accuracy": 0.708,
+    "silhouette_score": 0.037,
+    "davies_bouldin": 2.586,
+    "noise_stability": 1.0,
+    "composite_score": 0.594
+  },
+  "recommendation": "MARGINAL SEPARABILITY: Native DiT Layer text_embed captures partial context (Probe Acc=70.8%, Sil=0.037), but requires refinement. Recommendation: Implement a lightweight Contrastive Pronunciation Adapter (2-layer projection with InfoNCE margin loss) to sharpen the decision boundary before memory indexing."
+}

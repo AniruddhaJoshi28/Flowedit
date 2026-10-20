@@ -1,0 +1,226 @@
+{
+  "metadata": {
+    "timestamp": "2026-10-19 23:38:18",
+    "backbone": "F5TTS_Base (600M DiT)",
+    "encoder": "all-MiniLM-L6-v2 (Frozen, d=384)",
+    "adapter": "CPA (384 -> 256)",
+    "num_homographs": 4
+  },
+  "learning_loop_results": [
+    {
+      "homograph": "lead",
+      "transfer_results": [
+        {
+          "case_id": "lead_transfer_1",
+          "sentence": "Heavy lead weights were attached to the fishing line.",
+          "expected_sense": 0,
+          "retrieved_sense": 0,
+          "similarity": 0.959308385848999,
+          "is_abstained": false,
+          "transfer_success": true,
+          "acoustic_correct": true
+        },
+        {
+          "case_id": "lead_transfer_2",
+          "sentence": "The old stained glass window was framed in soft lead.",
+          "expected_sense": 0,
+          "retrieved_sense": 0,
+          "similarity": 0.966089129447937,
+          "is_abstained": false,
+          "transfer_success": true,
+          "acoustic_correct": true
+        }
+      ],
+      "specificity_results": [
+        {
+          "case_id": "lead_opposite_1",
+          "sentence": "The chief researcher will lead the team.",
+          "expected_sense": 1,
+          "retrieved_sense": 0,
+          "is_abstained": false,
+          "abstain_reason": "none",
+          "false_correction": true
+        },
+        {
+          "case_id": "lead_opposite_2",
+          "sentence": "Follow the north star and take the lead.",
+          "expected_sense": 1,
+          "retrieved_sense": 0,
+          "is_abstained": false,
+          "abstain_reason": "none",
+          "false_correction": true
+        }
+      ],
+      "retention_results": [
+        {
+          "case_id": "lead_retention_s0",
+          "expected_sense": 0,
+          "retrieved_sense": 0,
+          "margin": 0.6672559231519699,
+          "is_abstained": false,
+          "retention_success": true
+        },
+        {
+          "case_id": "lead_retention_s1",
+          "expected_sense": 1,
+          "retrieved_sense": 1,
+          "margin": 0.5660106092691422,
+          "is_abstained": false,
+          "retention_success": true
+        }
+      ]
+    },
+    {
+      "homograph": "read",
+      "transfer_results": [
+        {
+          "case_id": "read_transfer_1",
+          "sentence": "I already read that news article during breakfast.",
+          "expected_sense": 0,
+          "retrieved_sense": -1,
+          "similarity": 0.5417556762695312,
+          "is_abstained": true,
+          "transfer_success": false,
+          "acoustic_correct": false
+        }
+      ],
+      "specificity_results": [
+        {
+          "case_id": "read_opposite_1",
+          "sentence": "Students must read the assigned chapter today.",
+          "expected_sense": 1,
+          "retrieved_sense": 0,
+          "is_abstained": false,
+          "abstain_reason": "none",
+          "false_correction": true
+        }
+      ],
+      "retention_results": [
+        {
+          "case_id": "read_retention_s0",
+          "expected_sense": 0,
+          "retrieved_sense": 0,
+          "margin": 0.6647400707006454,
+          "is_abstained": false,
+          "retention_success": true
+        }
+      ]
+    },
+    {
+      "homograph": "bow",
+      "transfer_results": [
+        {
+          "case_id": "bow_transfer_1",
+          "sentence": "He pulled the string of the composite bow back.",
+          "expected_sense": 0,
+          "retrieved_sense": 0,
+          "similarity": 0.9564240574836731,
+          "is_abstained": false,
+          "transfer_success": true,
+          "acoustic_correct": false
+        }
+      ],
+      "specificity_results": [
+        {
+          "case_id": "bow_opposite_1",
+          "sentence": "The performers took a graceful bow on stage.",
+          "expected_sense": 1,
+          "retrieved_sense": 0,
+          "is_abstained": false,
+          "abstain_reason": "none",
+          "false_correction": true
+        }
+      ],
+      "retention_results": [
+        {
+          "case_id": "bow_retention_s0",
+          "expected_sense": 0,
+          "retrieved_sense": -1,
+          "margin": 0.0009496212005615234,
+          "is_abstained": true,
+          "retention_success": false
+        }
+      ]
+    },
+    {
+      "homograph": "tear",
+      "transfer_results": [
+        {
+          "case_id": "tear_transfer_1",
+          "sentence": "He wiped a silent tear from his eye.",
+          "expected_sense": 0,
+          "retrieved_sense": 0,
+          "similarity": 0.9127326607704163,
+          "is_abstained": false,
+          "transfer_success": true,
+          "acoustic_correct": false
+        }
+      ],
+      "specificity_results": [
+        {
+          "case_id": "tear_opposite_1",
+          "sentence": "Be careful not to tear the fragile parchment.",
+          "expected_sense": 1,
+          "retrieved_sense": 0,
+          "is_abstained": false,
+          "abstain_reason": "none",
+          "false_correction": true
+        }
+      ],
+      "retention_results": [
+        {
+          "case_id": "tear_retention_s0",
+          "expected_sense": 0,
+          "retrieved_sense": 0,
+          "margin": 0.6897425651550293,
+          "is_abstained": false,
+          "retention_success": true
+        }
+      ]
+    }
+  ],
+  "comparative_architecture_benchmark": {
+    "original_f5tts": {
+      "overall_accuracy_pct": 53.3,
+      "transfer_accuracy_pct": 0.0,
+      "false_correction_rate_pct": 0.0,
+      "avg_memory_query_latency_ms": 0.0
+    },
+    "phonetic_substitution": {
+      "overall_accuracy_pct": 100.0,
+      "transfer_accuracy_pct": 100.0,
+      "false_correction_rate_pct": 0.0,
+      "avg_memory_query_latency_ms": 0.0
+    },
+    "cosine_knn": {
+      "overall_accuracy_pct": 53.3,
+      "transfer_accuracy_pct": 0.0,
+      "false_correction_rate_pct": 0.0,
+      "avg_memory_query_latency_ms": 0.0
+    },
+    "direct_cpa_1nn": {
+      "overall_accuracy_pct": 53.3,
+      "transfer_accuracy_pct": 0.0,
+      "false_correction_rate_pct": 0.0,
+      "avg_memory_query_latency_ms": 0.0
+    },
+    "hopfield_ablated": {
+      "overall_accuracy_pct": 53.3,
+      "transfer_accuracy_pct": 0.0,
+      "false_correction_rate_pct": 0.0,
+      "avg_memory_query_latency_ms": 0.0
+    },
+    "semflow_memory": {
+      "overall_accuracy_pct": 73.3,
+      "transfer_accuracy_pct": 60.0,
+      "false_correction_rate_pct": 20.0,
+      "avg_memory_query_latency_ms": 0.949
+    }
+  },
+  "acoustic_preservation_audit": {
+    "localized_regeneration_pre_seam_max_diff": 0.0,
+    "localized_regeneration_post_seam_max_diff": 0.0,
+    "is_bit_exact_preserved": true,
+    "masked_mel_blending_pre_seam_max_diff": 0.673889
+  }
+}

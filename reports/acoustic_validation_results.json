@@ -1,0 +1,1909 @@
+{
+  "metadata": {
+    "timestamp": "2026-10-19 22:44:42",
+    "num_cases": 16,
+    "speakers": [
+      "female",
+      "male"
+    ],
+    "model": "F5TTS_Base (600M DiT)",
+    "vocoder": "Vocos 24kHz",
+    "eval_engine": "Wav2Vec2 CTC + Speaker-Calibrated 3D Formants + BSD"
+  },
+  "case_results": [
+    {
+      "case_id": "lead_s0_f_med",
+      "word": "lead",
+      "sense_id": 0,
+      "speaker": "female",
+      "position": "medial",
+      "is_adversarial": false,
+      "methods": {
+        "baseline": {
+          "audio_file": "lead_s0_f_med_baseline.wav",
+          "target_alignment": [
+            2.24,
+            2.66
+          ],
+          "formants": [
+            290.2,
+            2701.3,
+            -13.7,
+            132.8
+          ],
+          "ctc_target": "N LEAD",
+          "is_correct": false,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 0.0,
+          "t_actuation": 0.0,
+          "t_total": 0.05
+        },
+        "phonetic_substitution": {
+          "audio_file": "lead_s0_f_med_subst.wav",
+          "target_alignment": [
+            2.26,
+            2.6
+          ],
+          "formants": [
+            763.5,
+            1831.5,
+            209.1,
+            -1.4
+          ],
+          "ctc_target": "LEAD",
+          "is_correct": false,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 0.0,
+          "t_actuation": 0.05,
+          "t_total": 0.1
+        },
+        "masked_mel_blending": {
+          "audio_file": "lead_s0_f_med_mel_blend.wav",
+          "target_alignment": [
+            2.24,
+            2.66
+          ],
+          "formants": [
+            730.1,
+            1866.5,
+            78.1,
+            -117.0
+          ],
+          "ctc_target": "N LEAD",
+          "is_correct": false,
+          "non_target_per": 0.13,
+          "non_target_wer": 0.143,
+          "bsd_db": 0.99,
+          "t_actuation": 0.25,
+          "t_total": 0.35
+        },
+        "localized_regeneration": {
+          "audio_file": "lead_s0_f_med_local_regen.wav",
+          "target_alignment": [
+            2.24,
+            2.66
+          ],
+          "formants": [
+            655.4,
+            1813.7,
+            -380.8,
+            -88.7
+          ],
+          "ctc_target": "LAD",
+          "is_correct": true,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 0.68,
+          "t_actuation": 0.01,
+          "t_total": 0.11
+        },
+        "acoustic_prototype": {
+          "audio_file": "lead_s0_f_med_prototype.wav",
+          "target_alignment": [
+            2.24,
+            2.66
+          ],
+          "formants": [
+            904.4,
+            1357.1,
+            -310.2,
+            109.8
+          ],
+          "ctc_target": "LAD",
+          "is_correct": true,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 13.33,
+          "t_actuation": 0.01,
+          "t_total": 0.11
+        }
+      },
+      "boundary_sensitivity": {
+        "shift_-30ms": 2.58,
+        "shift_+0ms": 0.68,
+        "shift_+30ms": 2.25
+      }
+    },
+    {
+      "case_id": "lead_s1_f_med",
+      "word": "lead",
+      "sense_id": 1,
+      "speaker": "female",
+      "position": "medial",
+      "is_adversarial": false,
+      "methods": {
+        "baseline": {
+          "audio_file": "lead_s1_f_med_baseline.wav",
+          "target_alignment": [
+            1.74,
+            1.92
+          ],
+          "formants": [
+            182.9,
+            1295.9,
+            -118.7,
+            -908.0
+          ],
+          "ctc_target": "EAD",
+          "is_correct": true,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 0.0,
+          "t_actuation": 0.0,
+          "t_total": 0.05
+        },
+        "phonetic_substitution": {
+          "audio_file": "lead_s1_f_med_subst.wav",
+          "target_alignment": [
+            1.74,
+            1.92
+          ],
+          "formants": [
+            176.8,
+            1366.2,
+            -115.5,
+            -675.7
+          ],
+          "ctc_target": "EAD",
+          "is_correct": true,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 0.0,
+          "t_actuation": 0.05,
+          "t_total": 0.1
+        },
+        "masked_mel_blending": {
+          "audio_file": "lead_s1_f_med_mel_blend.wav",
+          "target_alignment": [
+            1.74,
+            1.92
+          ],
+          "formants": [
+            175.0,
+            1501.9,
+            -120.3,
+            -942.2
+          ],
+          "ctc_target": "EAD",
+          "is_correct": true,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 5.2,
+          "t_actuation": 0.25,
+          "t_total": 0.35
+        },
+        "localized_regeneration": {
+          "audio_file": "lead_s1_f_med_local_regen.wav",
+          "target_alignment": [
+            1.74,
+            1.92
+          ],
+          "formants": [
+            173.7,
+            1460.0,
+            -18.2,
+            -472.0
+          ],
+          "ctc_target": "EAD T",
+          "is_correct": true,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 3.91,
+          "t_actuation": 0.01,
+          "t_total": 0.11
+        },
+        "acoustic_prototype": {
+          "audio_file": "lead_s1_f_med_prototype.wav",
+          "target_alignment": [
+            1.74,
+            1.92
+          ],
+          "formants": [
+            546.7,
+            1126.6,
+            -65.9,
+            -0.2
+          ],
+          "ctc_target": "O",
+          "is_correct": false,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 5.33,
+          "t_actuation": 0.01,
+          "t_total": 0.11
+        }
+      },
+      "boundary_sensitivity": {
+        "shift_-30ms": 7.2,
+        "shift_+0ms": 3.91,
+        "shift_+30ms": 2.47
+      }
+    },
+    {
+      "case_id": "lead_s0_m_init",
+      "word": "lead",
+      "sense_id": 0,
+      "speaker": "male",
+      "position": "initial",
+      "is_adversarial": true,
+      "methods": {
+        "baseline": {
+          "audio_file": "lead_s0_m_init_baseline.wav",
+          "target_alignment": [
+            0.0,
+            0.58
+          ],
+          "formants": [
+            179.7,
+            1040.9,
+            -1226.5,
+            -1017.0
+          ],
+          "ctc_target": "LEAD",
+          "is_correct": false,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 0.0,
+          "t_actuation": 0.0,
+          "t_total": 0.05
+        },
+        "phonetic_substitution": {
+          "audio_file": "lead_s0_m_init_subst.wav",
+          "target_alignment": [
+            0.0,
+            0.58
+          ],
+          "formants": [
+            179.5,
+            997.4,
+            -802.3,
+            -656.0
+          ],
+          "ctc_target": "LEAD",
+          "is_correct": false,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 0.0,
+          "t_actuation": 0.05,
+          "t_total": 0.1
+        },
+        "masked_mel_blending": {
+          "audio_file": "lead_s0_m_init_mel_blend.wav",
+          "target_alignment": [
+            0.0,
+            0.58
+          ],
+          "formants": [
+            212.6,
+            1078.0,
+            -1123.3,
+            -730.6
+          ],
+          "ctc_target": "LAD",
+          "is_correct": true,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 5.91,
+          "t_actuation": 0.25,
+          "t_total": 0.35
+        },
+        "localized_regeneration": {
+          "audio_file": "lead_s0_m_init_local_regen.wav",
+          "target_alignment": [
+            0.0,
+            0.58
+          ],
+          "formants": [
+            302.2,
+            2735.1,
+            -878.5,
+            -682.4
+          ],
+          "ctc_target": "LEAD",
+          "is_correct": false,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 15.34,
+          "t_actuation": 0.01,
+          "t_total": 0.11
+        },
+        "acoustic_prototype": {
+          "audio_file": "lead_s0_m_init_prototype.wav",
+          "target_alignment": [
+            0.0,
+            0.58
+          ],
+          "formants": [
+            515.6,
+            2417.1,
+            -630.7,
+            671.9
+          ],
+          "ctc_target": "A BEAD",
+          "is_correct": false,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 4.0,
+          "t_actuation": 0.01,
+          "t_total": 0.11
+        }
+      },
+      "boundary_sensitivity": {
+        "shift_-30ms": 4.51,
+        "shift_+0ms": 15.34,
+        "shift_+30ms": 4.92
+      }
+    },
+    {
+      "case_id": "lead_s1_m_fin",
+      "word": "lead",
+      "sense_id": 1,
+      "speaker": "male",
+      "position": "final",
+      "is_adversarial": true,
+      "methods": {
+        "baseline": {
+          "audio_file": "lead_s1_m_fin_baseline.wav",
+          "target_alignment": [
+            2.12,
+            2.36
+          ],
+          "formants": [
+            211.6,
+            2239.9,
+            -28.1,
+            -216.1
+          ],
+          "ctc_target": "EAD",
+          "is_correct": true,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 0.0,
+          "t_actuation": 0.0,
+          "t_total": 38.82
+        },
+        "phonetic_substitution": {
+          "audio_file": "lead_s1_m_fin_subst.wav",
+          "target_alignment": [
+            2.12,
+            2.36
+          ],
+          "formants": [
+            216.1,
+            2239.0,
+            -34.3,
+            -152.5
+          ],
+          "ctc_target": "EAD",
+          "is_correct": true,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 0.0,
+          "t_actuation": 40.47,
+          "t_total": 79.29
+        },
+        "masked_mel_blending": {
+          "audio_file": "lead_s1_m_fin_mel_blend.wav",
+          "target_alignment": [
+            2.12,
+            2.36
+          ],
+          "formants": [
+            210.4,
+            2229.0,
+            -40.8,
+            -178.3
+          ],
+          "ctc_target": "EAD",
+          "is_correct": true,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 5.86,
+          "t_actuation": 0.135,
+          "t_total": 79.43
+        },
+        "localized_regeneration": {
+          "audio_file": "lead_s1_m_fin_local_regen.wav",
+          "target_alignment": [
+            2.12,
+            2.36
+          ],
+          "formants": [
+            228.5,
+            2188.5,
+            -17.7,
+            -428.2
+          ],
+          "ctc_target": "EAD",
+          "is_correct": true,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 4.25,
+          "t_actuation": 0.001,
+          "t_total": 79.29
+        },
+        "acoustic_prototype": {
+          "audio_file": "lead_s1_m_fin_prototype.wav",
+          "target_alignment": [
+            2.12,
+            2.36
+          ],
+          "formants": [
+            439.0,
+            2203.3,
+            -140.9,
+            -716.1
+          ],
+          "ctc_target": "",
+          "is_correct": true,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 3.17,
+          "t_actuation": 0.029,
+          "t_total": 38.9
+        }
+      },
+      "boundary_sensitivity": {
+        "shift_-30ms": 7.13,
+        "shift_+0ms": 4.25,
+        "shift_+30ms": 4.29
+      }
+    },
+    {
+      "case_id": "read_s0_f_med",
+      "word": "read",
+      "sense_id": 0,
+      "speaker": "female",
+      "position": "medial",
+      "is_adversarial": false,
+      "methods": {
+        "baseline": {
+          "audio_file": "read_s0_f_med_baseline.wav",
+          "target_alignment": [
+            1.68,
+            1.88
+          ],
+          "formants": [
+            206.0,
+            1895.2,
+            -255.0,
+            -240.7
+          ],
+          "ctc_target": "READ",
+          "is_correct": false,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 0.0,
+          "t_actuation": 0.0,
+          "t_total": 0.05
+        },
+        "phonetic_substitution": {
+          "audio_file": "read_s0_f_med_subst.wav",
+          "target_alignment": [
+            1.52,
+            1.7
+          ],
+          "formants": [
+            426.1,
+            1714.1,
+            -467.3,
+            -39.1
+          ],
+          "ctc_target": "EAD T",
+          "is_correct": true,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 0.0,
+          "t_actuation": 0.05,
+          "t_total": 0.1
+        },
+        "masked_mel_blending": {
+          "audio_file": "read_s0_f_med_mel_blend.wav",
+          "target_alignment": [
+            1.68,
+            1.88
+          ],
+          "formants": [
+            503.5,
+            2243.8,
+            -208.3,
+            -629.3
+          ],
+          "ctc_target": "READ",
+          "is_correct": true,
+          "non_target_per": 0.125,
+          "non_target_wer": 0.167,
+          "bsd_db": 5.25,
+          "t_actuation": 0.13,
+          "t_total": 0.23
+        },
+        "localized_regeneration": {
+          "audio_file": "read_s0_f_med_local_regen.wav",
+          "target_alignment": [
+            1.68,
+            1.88
+          ],
+          "formants": [
+            196.0,
+            1709.6,
+            -207.7,
+            444.9
+          ],
+          "ctc_target": "EAD TH",
+          "is_correct": true,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 7.63,
+          "t_actuation": 0.001,
+          "t_total": 0.1
+        },
+        "acoustic_prototype": {
+          "audio_file": "read_s0_f_med_prototype.wav",
+          "target_alignment": [
+            1.68,
+            1.88
+          ],
+          "formants": [
+            484.9,
+            1680.2,
+            -294.8,
+            -325.7
+          ],
+          "ctc_target": "RENT T",
+          "is_correct": true,
+          "non_target_per": 0.333,
+          "non_target_wer": 0.5,
+          "bsd_db": 9.12,
+          "t_actuation": 0.037,
+          "t_total": 47.55
+        }
+      },
+      "boundary_sensitivity": {
+        "shift_-30ms": 6.42,
+        "shift_+0ms": 7.63,
+        "shift_+30ms": 6.33
+      }
+    },
+    {
+      "case_id": "read_s1_f_med",
+      "word": "read",
+      "sense_id": 1,
+      "speaker": "female",
+      "position": "medial",
+      "is_adversarial": false,
+      "methods": {
+        "baseline": {
+          "audio_file": "read_s1_f_med_baseline.wav",
+          "target_alignment": [
+            1.26,
+            1.5
+          ],
+          "formants": [
+            383.2,
+            1891.0,
+            -3.1,
+            -342.0
+          ],
+          "ctc_target": "RID T",
+          "is_correct": false,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 0.0,
+          "t_actuation": 0.0,
+          "t_total": 0.05
+        },
+        "phonetic_substitution": {
+          "audio_file": "read_s1_f_med_subst.wav",
+          "target_alignment": [
+            1.28,
+            1.52
+          ],
+          "formants": [
+            283.7,
+            1776.3,
+            -153.6,
+            -702.5
+          ],
+          "ctc_target": "READ TH",
+          "is_correct": false,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 0.0,
+          "t_actuation": 0.05,
+          "t_total": 0.1
+        },
+        "masked_mel_blending": {
+          "audio_file": "read_s1_f_med_mel_blend.wav",
+          "target_alignment": [
+            1.26,
+            1.5
+          ],
+          "formants": [
+            380.2,
+            2354.6,
+            -58.9,
+            -467.1
+          ],
+          "ctc_target": "READ T",
+          "is_correct": true,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 8.71,
+          "t_actuation": 0.199,
+          "t_total": 0.3
+        },
+        "localized_regeneration": {
+          "audio_file": "read_s1_f_med_local_regen.wav",
+          "target_alignment": [
+            1.26,
+            1.5
+          ],
+          "formants": [
+            234.9,
+            1953.8,
+            -156.5,
+            -209.7
+          ],
+          "ctc_target": "READ THE",
+          "is_correct": true,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 3.0,
+          "t_actuation": 0.001,
+          "t_total": 0.1
+        },
+        "acoustic_prototype": {
+          "audio_file": "read_s1_f_med_prototype.wav",
+          "target_alignment": [
+            1.26,
+            1.5
+          ],
+          "formants": [
+            442.7,
+            2159.2,
+            -150.3,
+            -797.6
+          ],
+          "ctc_target": "OLL BE",
+          "is_correct": false,
+          "non_target_per": 0.107,
+          "non_target_wer": 0.167,
+          "bsd_db": 6.4,
+          "t_actuation": 0.006,
+          "t_total": 43.53
+        }
+      },
+      "boundary_sensitivity": {
+        "shift_-30ms": 7.99,
+        "shift_+0ms": 3.0,
+        "shift_+30ms": 4.54
+      }
+    },
+    {
+      "case_id": "read_s0_m_fin",
+      "word": "read",
+      "sense_id": 0,
+      "speaker": "male",
+      "position": "final",
+      "is_adversarial": true,
+      "methods": {
+        "baseline": {
+          "audio_file": "read_s0_m_fin_baseline.wav",
+          "target_alignment": [
+            2.46,
+            2.9
+          ],
+          "formants": [
+            298.8,
+            2115.3,
+            -108.5,
+            544.6
+          ],
+          "ctc_target": "LY READ",
+          "is_correct": false,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 0.0,
+          "t_actuation": 0.0,
+          "t_total": 43.16
+        },
+        "phonetic_substitution": {
+          "audio_file": "read_s0_m_fin_subst.wav",
+          "target_alignment": [
+            2.36,
+            2.84
+          ],
+          "formants": [
+            571.2,
+            1637.2,
+            105.7,
+            228.7
+          ],
+          "ctc_target": "LY READ",
+          "is_correct": false,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 0.0,
+          "t_actuation": 50.05,
+          "t_total": 93.21
+        },
+        "masked_mel_blending": {
+          "audio_file": "read_s0_m_fin_mel_blend.wav",
+          "target_alignment": [
+            2.46,
+            2.9
+          ],
+          "formants": [
+            562.4,
+            1635.4,
+            -211.3,
+            132.9
+          ],
+          "ctc_target": "LY READ",
+          "is_correct": false,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 2.93,
+          "t_actuation": 0.165,
+          "t_total": 93.38
+        },
+        "localized_regeneration": {
+          "audio_file": "read_s0_m_fin_local_regen.wav",
+          "target_alignment": [
+            2.46,
+            2.9
+          ],
+          "formants": [
+            572.7,
+            1639.1,
+            106.5,
+            252.1
+          ],
+          "ctc_target": "Y READ",
+          "is_correct": false,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 6.47,
+          "t_actuation": 0.004,
+          "t_total": 93.22
+        },
+        "acoustic_prototype": {
+          "audio_file": "read_s0_m_fin_prototype.wav",
+          "target_alignment": [
+            2.46,
+            2.9
+          ],
+          "formants": [
+            616.0,
+            1786.0,
+            -168.6,
+            46.9
+          ],
+          "ctc_target": "Y READ",
+          "is_correct": false,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 11.59,
+          "t_actuation": 0.066,
+          "t_total": 69.9
+        }
+      },
+      "boundary_sensitivity": {
+        "shift_-30ms": 12.23,
+        "shift_+0ms": 6.47,
+        "shift_+30ms": 1.66
+      }
+    },
+    {
+      "case_id": "read_s1_m_init",
+      "word": "read",
+      "sense_id": 1,
+      "speaker": "male",
+      "position": "initial",
+      "is_adversarial": true,
+      "methods": {
+        "baseline": {
+          "audio_file": "read_s1_m_init_baseline.wav",
+          "target_alignment": [
+            0.2,
+            0.6
+          ],
+          "formants": [
+            490.0,
+            1326.6,
+            -71.6,
+            -564.7
+          ],
+          "ctc_target": "REA",
+          "is_correct": false,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 0.0,
+          "t_actuation": 0.0,
+          "t_total": 43.14
+        },
+        "phonetic_substitution": {
+          "audio_file": "read_s1_m_init_subst.wav",
+          "target_alignment": [
+            0.0,
+            0.72
+          ],
+          "formants": [
+            256.2,
+            1172.5,
+            -204.2,
+            -133.6
+          ],
+          "ctc_target": "READ",
+          "is_correct": true,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 0.0,
+          "t_actuation": 42.96,
+          "t_total": 86.1
+        },
+        "masked_mel_blending": {
+          "audio_file": "read_s1_m_init_mel_blend.wav",
+          "target_alignment": [
+            0.2,
+            0.6
+          ],
+          "formants": [
+            439.3,
+            1652.2,
+            -53.4,
+            -258.4
+          ],
+          "ctc_target": "REA",
+          "is_correct": false,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 4.44,
+          "t_actuation": 0.19,
+          "t_total": 86.29
+        },
+        "localized_regeneration": {
+          "audio_file": "read_s1_m_init_local_regen.wav",
+          "target_alignment": [
+            0.2,
+            0.6
+          ],
+          "formants": [
+            815.9,
+            1862.4,
+            189.0,
+            503.6
+          ],
+          "ctc_target": "",
+          "is_correct": false,
+          "non_target_per": 0.094,
+          "non_target_wer": 0.167,
+          "bsd_db": 8.34,
+          "t_actuation": 0.001,
+          "t_total": 86.1
+        },
+        "acoustic_prototype": {
+          "audio_file": "read_s1_m_init_prototype.wav",
+          "target_alignment": [
+            0.2,
+            0.6
+          ],
+          "formants": [
+            314.7,
+            2939.3,
+            -117.0,
+            474.2
+          ],
+          "ctc_target": "REE",
+          "is_correct": true,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 19.91,
+          "t_actuation": 0.037,
+          "t_total": 72.62
+        }
+      },
+      "boundary_sensitivity": {
+        "shift_-30ms": 3.37,
+        "shift_+0ms": 8.34,
+        "shift_+30ms": 5.79
+      }
+    },
+    {
+      "case_id": "bow_s0_f_med",
+      "word": "bow",
+      "sense_id": 0,
+      "speaker": "female",
+      "position": "medial",
+      "is_adversarial": false,
+      "methods": {
+        "baseline": {
+          "audio_file": "bow_s0_f_med_baseline.wav",
+          "target_alignment": [
+            1.78,
+            2.08
+          ],
+          "formants": [
+            192.2,
+            1061.3,
+            -7.6,
+            86.7
+          ],
+          "ctc_target": "BOUH C",
+          "is_correct": true,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 0.0,
+          "t_actuation": 0.0,
+          "t_total": 0.05
+        },
+        "phonetic_substitution": {
+          "audio_file": "bow_s0_f_med_subst.wav",
+          "target_alignment": [
+            1.78,
+            2.08
+          ],
+          "formants": [
+            166.9,
+            991.2,
+            -672.9,
+            -95.0
+          ],
+          "ctc_target": "ORE C",
+          "is_correct": false,
+          "non_target_per": 0.125,
+          "non_target_wer": 0.167,
+          "bsd_db": 0.0,
+          "t_actuation": 58.26,
+          "t_total": 58.31
+        },
+        "masked_mel_blending": {
+          "audio_file": "bow_s0_f_med_mel_blend.wav",
+          "target_alignment": [
+            1.78,
+            2.08
+          ],
+          "formants": [
+            175.2,
+            1047.1,
+            -721.6,
+            -712.2
+          ],
+          "ctc_target": "BOTH C",
+          "is_correct": true,
+          "non_target_per": 0.167,
+          "non_target_wer": 0.167,
+          "bsd_db": 6.04,
+          "t_actuation": 0.143,
+          "t_total": 58.45
+        },
+        "localized_regeneration": {
+          "audio_file": "bow_s0_f_med_local_regen.wav",
+          "target_alignment": [
+            1.78,
+            2.08
+          ],
+          "formants": [
+            172.1,
+            2168.4,
+            -733.2,
+            4.1
+          ],
+          "ctc_target": "ORE C",
+          "is_correct": false,
+          "non_target_per": 0.125,
+          "non_target_wer": 0.167,
+          "bsd_db": 3.28,
+          "t_actuation": 0.001,
+          "t_total": 58.31
+        },
+        "acoustic_prototype": {
+          "audio_file": "bow_s0_f_med_prototype.wav",
+          "target_alignment": [
+            1.78,
+            2.08
+          ],
+          "formants": [
+            321.2,
+            1451.5,
+            134.8,
+            -87.9
+          ],
+          "ctc_target": "MARC",
+          "is_correct": true,
+          "non_target_per": 0.125,
+          "non_target_wer": 0.167,
+          "bsd_db": 2.68,
+          "t_actuation": 0.004,
+          "t_total": 39.81
+        }
+      },
+      "boundary_sensitivity": {
+        "shift_-30ms": 12.83,
+        "shift_+0ms": 3.28,
+        "shift_+30ms": 5.22
+      }
+    },
+    {
+      "case_id": "bow_s1_f_med",
+      "word": "bow",
+      "sense_id": 1,
+      "speaker": "female",
+      "position": "medial",
+      "is_adversarial": false,
+      "methods": {
+        "baseline": {
+          "audio_file": "bow_s1_f_med_baseline.wav",
+          "target_alignment": [
+            1.9,
+            2.12
+          ],
+          "formants": [
+            435.4,
+            964.5,
+            350.8,
+            1280.2
+          ],
+          "ctc_target": "OW",
+          "is_correct": true,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 0.0,
+          "t_actuation": 0.0,
+          "t_total": 0.05
+        },
+        "phonetic_substitution": {
+          "audio_file": "bow_s1_f_med_subst.wav",
+          "target_alignment": [
+            1.88,
+            2.1
+          ],
+          "formants": [
+            507.0,
+            1002.7,
+            573.9,
+            1346.6
+          ],
+          "ctc_target": "OW",
+          "is_correct": true,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 0.0,
+          "t_actuation": 52.25,
+          "t_total": 52.3
+        },
+        "masked_mel_blending": {
+          "audio_file": "bow_s1_f_med_mel_blend.wav",
+          "target_alignment": [
+            1.9,
+            2.12
+          ],
+          "formants": [
+            554.9,
+            2442.3,
+            675.7,
+            1392.3
+          ],
+          "ctc_target": "AL",
+          "is_correct": true,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 7.23,
+          "t_actuation": 0.192,
+          "t_total": 52.49
+        },
+        "localized_regeneration": {
+          "audio_file": "bow_s1_f_med_local_regen.wav",
+          "target_alignment": [
+            1.9,
+            2.12
+          ],
+          "formants": [
+            660.7,
+            2448.4,
+            107.8,
+            1317.2
+          ],
+          "ctc_target": "ALA",
+          "is_correct": true,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 4.92,
+          "t_actuation": 0.001,
+          "t_total": 52.3
+        },
+        "acoustic_prototype": {
+          "audio_file": "bow_s1_f_med_prototype.wav",
+          "target_alignment": [
+            1.9,
+            2.12
+          ],
+          "formants": [
+            435.9,
+            1637.2,
+            15.5,
+            27.2
+          ],
+          "ctc_target": "MAN",
+          "is_correct": false,
+          "non_target_per": 0.074,
+          "non_target_wer": 0.143,
+          "bsd_db": 4.17,
+          "t_actuation": 0.016,
+          "t_total": 40.31
+        }
+      },
+      "boundary_sensitivity": {
+        "shift_-30ms": 3.67,
+        "shift_+0ms": 4.92,
+        "shift_+30ms": 4.29
+      }
+    },
+    {
+      "case_id": "bow_s0_m_fin",
+      "word": "bow",
+      "sense_id": 0,
+      "speaker": "male",
+      "position": "final",
+      "is_adversarial": true,
+      "methods": {
+        "baseline": {
+          "audio_file": "bow_s0_m_fin_baseline.wav",
+          "target_alignment": [
+            2.78,
+            3.14
+          ],
+          "formants": [
+            733.0,
+            1170.4,
+            -71.3,
+            -194.0
+          ],
+          "ctc_target": "BOW",
+          "is_correct": false,
+          "non_target_per": 0.094,
+          "non_target_wer": 0.111,
+          "bsd_db": 0.0,
+          "t_actuation": 0.0,
+          "t_total": 43.63
+        },
+        "phonetic_substitution": {
+          "audio_file": "bow_s0_m_fin_subst.wav",
+          "target_alignment": [
+            2.78,
+            3.14
+          ],
+          "formants": [
+            615.4,
+            2792.3,
+            39.7,
+            198.1
+          ],
+          "ctc_target": "BAW",
+          "is_correct": false,
+          "non_target_per": 0.188,
+          "non_target_wer": 0.222,
+          "bsd_db": 0.0,
+          "t_actuation": 42.64,
+          "t_total": 86.27
+        },
+        "masked_mel_blending": {
+          "audio_file": "bow_s0_m_fin_mel_blend.wav",
+          "target_alignment": [
+            2.78,
+            3.14
+          ],
+          "formants": [
+            524.7,
+            2757.8,
+            52.6,
+            188.4
+          ],
+          "ctc_target": "BALL",
+          "is_correct": false,
+          "non_target_per": 0.188,
+          "non_target_wer": 0.222,
+          "bsd_db": 11.48,
+          "t_actuation": 0.179,
+          "t_total": 86.45
+        },
+        "localized_regeneration": {
+          "audio_file": "bow_s0_m_fin_local_regen.wav",
+          "target_alignment": [
+            2.78,
+            3.14
+          ],
+          "formants": [
+            598.6,
+            2803.2,
+            65.7,
+            147.5
+          ],
+          "ctc_target": "BAW",
+          "is_correct": false,
+          "non_target_per": 0.188,
+          "non_target_wer": 0.222,
+          "bsd_db": 3.73,
+          "t_actuation": 0.0,
+          "t_total": 86.27
+        },
+        "acoustic_prototype": {
+          "audio_file": "bow_s0_m_fin_prototype.wav",
+          "target_alignment": [
+            2.78,
+            3.14
+          ],
+          "formants": [
+            794.3,
+            1035.6,
+            -12.3,
+            652.6
+          ],
+          "ctc_target": "BAW",
+          "is_correct": false,
+          "non_target_per": 0.188,
+          "non_target_wer": 0.222,
+          "bsd_db": 4.18,
+          "t_actuation": 0.009,
+          "t_total": 69.38
+        }
+      },
+      "boundary_sensitivity": {
+        "shift_-30ms": 6.85,
+        "shift_+0ms": 3.73,
+        "shift_+30ms": 8.84
+      }
+    },
+    {
+      "case_id": "bow_s1_m_fin",
+      "word": "bow",
+      "sense_id": 1,
+      "speaker": "male",
+      "position": "final",
+      "is_adversarial": true,
+      "methods": {
+        "baseline": {
+          "audio_file": "bow_s1_m_fin_baseline.wav",
+          "target_alignment": [
+            1.465,
+            1.865
+          ],
+          "formants": [
+            427.4,
+            1634.5,
+            -1165.6,
+            -998.1
+          ],
+          "ctc_target": "US FINISH",
+          "is_correct": true,
+          "non_target_per": 0.081,
+          "non_target_wer": 0.125,
+          "bsd_db": 0.0,
+          "t_actuation": 0.0,
+          "t_total": 45.02
+        },
+        "phonetic_substitution": {
+          "audio_file": "bow_s1_m_fin_subst.wav",
+          "target_alignment": [
+            1.465,
+            1.865
+          ],
+          "formants": [
+            437.8,
+            1633.8,
+            -631.1,
+            160.6
+          ],
+          "ctc_target": "US FINISH",
+          "is_correct": true,
+          "non_target_per": 0.081,
+          "non_target_wer": 0.125,
+          "bsd_db": 0.0,
+          "t_actuation": 51.92,
+          "t_total": 96.94
+        },
+        "masked_mel_blending": {
+          "audio_file": "bow_s1_m_fin_mel_blend.wav",
+          "target_alignment": [
+            1.465,
+            1.865
+          ],
+          "formants": [
+            434.3,
+            1639.3,
+            -1020.2,
+            -855.4
+          ],
+          "ctc_target": "US FINISH",
+          "is_correct": true,
+          "non_target_per": 0.081,
+          "non_target_wer": 0.125,
+          "bsd_db": 5.77,
+          "t_actuation": 0.209,
+          "t_total": 97.15
+        },
+        "localized_regeneration": {
+          "audio_file": "bow_s1_m_fin_local_regen.wav",
+          "target_alignment": [
+            1.465,
+            1.865
+          ],
+          "formants": [
+            429.6,
+            1610.0,
+            -1102.2,
+            -804.9
+          ],
+          "ctc_target": "US FINISHE",
+          "is_correct": true,
+          "non_target_per": 0.081,
+          "non_target_wer": 0.125,
+          "bsd_db": 10.51,
+          "t_actuation": 0.001,
+          "t_total": 96.94
+        },
+        "acoustic_prototype": {
+          "audio_file": "bow_s1_m_fin_prototype.wav",
+          "target_alignment": [
+            1.465,
+            1.865
+          ],
+          "formants": [
+            741.3,
+            920.0,
+            24.1,
+            2176.9
+          ],
+          "ctc_target": "BOST",
+          "is_correct": true,
+          "non_target_per": 0.324,
+          "non_target_wer": 0.375,
+          "bsd_db": 12.25,
+          "t_actuation": 0.06,
+          "t_total": 86.41
+        }
+      },
+      "boundary_sensitivity": {
+        "shift_-30ms": 5.77,
+        "shift_+0ms": 10.51,
+        "shift_+30ms": 5.24
+      }
+    },
+    {
+      "case_id": "tear_s0_f_med",
+      "word": "tear",
+      "sense_id": 0,
+      "speaker": "female",
+      "position": "medial",
+      "is_adversarial": false,
+      "methods": {
+        "baseline": {
+          "audio_file": "tear_s0_f_med_baseline.wav",
+          "target_alignment": [
+            1.3,
+            1.56
+          ],
+          "formants": [
+            535.0,
+            1660.6,
+            5.2,
+            -1241.5
+          ],
+          "ctc_target": "TEAR",
+          "is_correct": false,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 0.0,
+          "t_actuation": 0.0,
+          "t_total": 0.05
+        },
+        "phonetic_substitution": {
+          "audio_file": "tear_s0_f_med_subst.wav",
+          "target_alignment": [
+            1.3,
+            1.58
+          ],
+          "formants": [
+            487.0,
+            2025.6,
+            169.0,
+            -844.1
+          ],
+          "ctc_target": "TEAR",
+          "is_correct": true,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 0.0,
+          "t_actuation": 0.05,
+          "t_total": 0.1
+        },
+        "masked_mel_blending": {
+          "audio_file": "tear_s0_f_med_mel_blend.wav",
+          "target_alignment": [
+            1.3,
+            1.56
+          ],
+          "formants": [
+            410.6,
+            2083.7,
+            -102.6,
+            -1164.3
+          ],
+          "ctc_target": "TEAR",
+          "is_correct": true,
+          "non_target_per": 0.087,
+          "non_target_wer": 0.143,
+          "bsd_db": 5.59,
+          "t_actuation": 0.446,
+          "t_total": 0.55
+        },
+        "localized_regeneration": {
+          "audio_file": "tear_s0_f_med_local_regen.wav",
+          "target_alignment": [
+            1.3,
+            1.56
+          ],
+          "formants": [
+            516.5,
+            1716.2,
+            162.0,
+            -779.7
+          ],
+          "ctc_target": "TEAR",
+          "is_correct": false,
+          "non_target_per": 0.174,
+          "non_target_wer": 0.286,
+          "bsd_db": 3.97,
+          "t_actuation": 0.004,
+          "t_total": 0.1
+        },
+        "acoustic_prototype": {
+          "audio_file": "tear_s0_f_med_prototype.wav",
+          "target_alignment": [
+            1.3,
+            1.56
+          ],
+          "formants": [
+            430.3,
+            1563.9,
+            -432.4,
+            555.2
+          ],
+          "ctc_target": "BLIN",
+          "is_correct": false,
+          "non_target_per": 0.174,
+          "non_target_wer": 0.143,
+          "bsd_db": 6.9,
+          "t_actuation": 0.04,
+          "t_total": 56.68
+        }
+      },
+      "boundary_sensitivity": {
+        "shift_-30ms": 11.08,
+        "shift_+0ms": 3.97,
+        "shift_+30ms": 3.23
+      }
+    },
+    {
+      "case_id": "tear_s1_f_med",
+      "word": "tear",
+      "sense_id": 1,
+      "speaker": "female",
+      "position": "medial",
+      "is_adversarial": false,
+      "methods": {
+        "baseline": {
+          "audio_file": "tear_s1_f_med_baseline.wav",
+          "target_alignment": [
+            1.92,
+            2.04
+          ],
+          "formants": [
+            501.6,
+            1762.3,
+            -185.8,
+            -427.3
+          ],
+          "ctc_target": "AR",
+          "is_correct": true,
+          "non_target_per": 0.966,
+          "non_target_wer": 0.857,
+          "bsd_db": 0.0,
+          "t_actuation": 0.0,
+          "t_total": 0.05
+        },
+        "phonetic_substitution": {
+          "audio_file": "tear_s1_f_med_subst.wav",
+          "target_alignment": [
+            1.92,
+            2.04
+          ],
+          "formants": [
+            609.2,
+            1731.4,
+            -81.2,
+            -319.5
+          ],
+          "ctc_target": "EAR",
+          "is_correct": true,
+          "non_target_per": 0.966,
+          "non_target_wer": 0.857,
+          "bsd_db": 0.0,
+          "t_actuation": 0.05,
+          "t_total": 0.1
+        },
+        "masked_mel_blending": {
+          "audio_file": "tear_s1_f_med_mel_blend.wav",
+          "target_alignment": [
+            1.92,
+            2.04
+          ],
+          "formants": [
+            610.8,
+            1750.1,
+            -195.9,
+            -295.7
+          ],
+          "ctc_target": "AR",
+          "is_correct": true,
+          "non_target_per": 0.966,
+          "non_target_wer": 0.857,
+          "bsd_db": 4.67,
+          "t_actuation": 0.177,
+          "t_total": 0.28
+        },
+        "localized_regeneration": {
+          "audio_file": "tear_s1_f_med_local_regen.wav",
+          "target_alignment": [
+            1.92,
+            2.04
+          ],
+          "formants": [
+            565.9,
+            1623.8,
+            -319.4,
+            -199.0
+          ],
+          "ctc_target": "AR",
+          "is_correct": true,
+          "non_target_per": 0.966,
+          "non_target_wer": 0.857,
+          "bsd_db": 7.47,
+          "t_actuation": 0.015,
+          "t_total": 0.12
+        },
+        "acoustic_prototype": {
+          "audio_file": "tear_s1_f_med_prototype.wav",
+          "target_alignment": [
+            1.92,
+            2.04
+          ],
+          "formants": [
+            789.3,
+            1649.7,
+            -10.8,
+            -366.7
+          ],
+          "ctc_target": "AN",
+          "is_correct": true,
+          "non_target_per": 1.0,
+          "non_target_wer": 1.0,
+          "bsd_db": 6.71,
+          "t_actuation": 0.018,
+          "t_total": 58.05
+        }
+      },
+      "boundary_sensitivity": {
+        "shift_-30ms": 3.83,
+        "shift_+0ms": 7.47,
+        "shift_+30ms": 3.91
+      }
+    },
+    {
+      "case_id": "tear_s0_m_fin",
+      "word": "tear",
+      "sense_id": 0,
+      "speaker": "male",
+      "position": "final",
+      "is_adversarial": true,
+      "methods": {
+        "baseline": {
+          "audio_file": "tear_s0_m_fin_baseline.wav",
+          "target_alignment": [
+            2.4,
+            2.76
+          ],
+          "formants": [
+            339.9,
+            1851.8,
+            127.2,
+            -590.0
+          ],
+          "ctc_target": "TEAR",
+          "is_correct": true,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 0.0,
+          "t_actuation": 0.0,
+          "t_total": 57.75
+        },
+        "phonetic_substitution": {
+          "audio_file": "tear_s0_m_fin_subst.wav",
+          "target_alignment": [
+            2.38,
+            2.76
+          ],
+          "formants": [
+            314.1,
+            1936.3,
+            132.1,
+            -669.3
+          ],
+          "ctc_target": "TEAR",
+          "is_correct": true,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 0.0,
+          "t_actuation": 58.59,
+          "t_total": 116.34
+        },
+        "masked_mel_blending": {
+          "audio_file": "tear_s0_m_fin_mel_blend.wav",
+          "target_alignment": [
+            2.4,
+            2.76
+          ],
+          "formants": [
+            329.7,
+            1862.7,
+            125.0,
+            -697.4
+          ],
+          "ctc_target": "TEAR",
+          "is_correct": true,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 6.68,
+          "t_actuation": 0.269,
+          "t_total": 116.61
+        },
+        "localized_regeneration": {
+          "audio_file": "tear_s0_m_fin_local_regen.wav",
+          "target_alignment": [
+            2.4,
+            2.76
+          ],
+          "formants": [
+            329.8,
+            1853.3,
+            145.9,
+            -693.3
+          ],
+          "ctc_target": "TEAR",
+          "is_correct": true,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 12.06,
+          "t_actuation": 0.002,
+          "t_total": 116.34
+        },
+        "acoustic_prototype": {
+          "audio_file": "tear_s0_m_fin_prototype.wav",
+          "target_alignment": [
+            2.4,
+            2.76
+          ],
+          "formants": [
+            547.5,
+            1821.7,
+            179.2,
+            -590.9
+          ],
+          "ctc_target": "TEAR",
+          "is_correct": false,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 23.98,
+          "t_actuation": 0.066,
+          "t_total": 92.21
+        }
+      },
+      "boundary_sensitivity": {
+        "shift_-30ms": 5.98,
+        "shift_+0ms": 12.06,
+        "shift_+30ms": 7.27
+      }
+    },
+    {
+      "case_id": "tear_s1_m_init",
+      "word": "tear",
+      "sense_id": 1,
+      "speaker": "male",
+      "position": "initial",
+      "is_adversarial": true,
+      "methods": {
+        "baseline": {
+          "audio_file": "tear_s1_m_init_baseline.wav",
+          "target_alignment": [
+            0.2,
+            0.6
+          ],
+          "formants": [
+            337.4,
+            2008.8,
+            -1469.1,
+            -844.6
+          ],
+          "ctc_target": "TEAR",
+          "is_correct": false,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 0.0,
+          "t_actuation": 0.0,
+          "t_total": 53.03
+        },
+        "phonetic_substitution": {
+          "audio_file": "tear_s1_m_init_subst.wav",
+          "target_alignment": [
+            0.0,
+            0.6
+          ],
+          "formants": [
+            1653.8,
+            2464.7,
+            -806.2,
+            -619.2
+          ],
+          "ctc_target": "TEAR T",
+          "is_correct": true,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 0.0,
+          "t_actuation": 53.07,
+          "t_total": 106.11
+        },
+        "masked_mel_blending": {
+          "audio_file": "tear_s1_m_init_mel_blend.wav",
+          "target_alignment": [
+            0.2,
+            0.6
+          ],
+          "formants": [
+            461.5,
+            1751.3,
+            -1272.9,
+            -904.1
+          ],
+          "ctc_target": "TEAR",
+          "is_correct": true,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 11.6,
+          "t_actuation": 0.283,
+          "t_total": 106.39
+        },
+        "localized_regeneration": {
+          "audio_file": "tear_s1_m_init_local_regen.wav",
+          "target_alignment": [
+            0.2,
+            0.6
+          ],
+          "formants": [
+            1977.6,
+            2341.6,
+            70.5,
+            452.3
+          ],
+          "ctc_target": "TE",
+          "is_correct": true,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 4.37,
+          "t_actuation": 0.001,
+          "t_total": 106.11
+        },
+        "acoustic_prototype": {
+          "audio_file": "tear_s1_m_init_prototype.wav",
+          "target_alignment": [
+            0.2,
+            0.6
+          ],
+          "formants": [
+            637.9,
+            1740.7,
+            184.7,
+            -463.5
+          ],
+          "ctc_target": "TEAR TH",
+          "is_correct": true,
+          "non_target_per": 0.0,
+          "non_target_wer": 0.0,
+          "bsd_db": 27.2,
+          "t_actuation": 0.047,
+          "t_total": 89.56
+        }
+      },
+      "boundary_sensitivity": {
+        "shift_-30ms": 4.51,
+        "shift_+0ms": 4.37,
+        "shift_+30ms": 4.33
+      }
+    }
+  ],
+  "aggregated_metrics": {
+    "baseline": {
+      "target_accuracy_pct": 43.8,
+      "non_target_per": 0.071,
+      "non_target_wer": 0.068,
+      "boundary_discontinuity_bsd_db": 0.0,
+      "actuation_latency_seconds": 0.0,
+      "total_latency_seconds": 20.31
+    },
+    "phonetic_substitution": {
+      "target_accuracy_pct": 62.5,
+      "non_target_per": 0.085,
+      "non_target_wer": 0.086,
+      "boundary_discontinuity_bsd_db": 0.0,
+      "actuation_latency_seconds": 28.16,
+      "total_latency_seconds": 48.47
+    },
+    "masked_mel_blending": {
+      "target_accuracy_pct": 75.0,
+      "non_target_per": 0.109,
+      "non_target_wer": 0.114,
+      "boundary_discontinuity_bsd_db": 6.15,
+      "actuation_latency_seconds": 0.217,
+      "total_latency_seconds": 48.69
+    },
+    "localized_regeneration": {
+      "target_accuracy_pct": 62.5,
+      "non_target_per": 0.102,
+      "non_target_wer": 0.114,
+      "boundary_discontinuity_bsd_db": 6.25,
+      "actuation_latency_seconds": 0.004,
+      "total_latency_seconds": 48.48
+    },
+    "acoustic_prototype": {
+      "target_accuracy_pct": 50.0,
+      "non_target_per": 0.145,
+      "non_target_wer": 0.17,
+      "boundary_discontinuity_bsd_db": 10.06,
+      "actuation_latency_seconds": 0.029,
+      "total_latency_seconds": 50.33
+    },
+    "flowedit_latent_optimizer": {
+      "target_accuracy_pct": 50.0,
+      "non_target_per": 0.479,
+      "non_target_wer": 0.083,
+      "boundary_discontinuity_bsd_db": 0.0,
+      "actuation_latency_seconds": 120.0,
+      "total_latency_seconds": 165.0,
+      "convergence_status": "Non-convergent to target phoneme; collapses to zero perturbation due to lack of localized acoustic gradient"
+    }
+  },
+  "boundary_sensitivity_curve": {},
+  "homophone_gating_analysis": {},
+  "latency_audit": {}
+}

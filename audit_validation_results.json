@@ -1,0 +1,557 @@
+{
+  "metadata": {
+    "num_sentences": 80,
+    "words": [
+      "lead",
+      "read",
+      "bow",
+      "tear"
+    ],
+    "validation_scheme": "Stratified 5-Fold Cross-Validation (20 samples/word, 4 samples/fold)",
+    "majority_class_baseline": 0.5
+  },
+  "per_word_metrics": {
+    "raw_char_lookup": {
+      "lead": {
+        "accuracy": 0.5,
+        "ci_95": [
+          0.299,
+          0.701
+        ],
+        "silhouette": 0.0,
+        "fisher_dprime": 0.0,
+        "noise_stability": 1.0
+      },
+      "read": {
+        "accuracy": 0.5,
+        "ci_95": [
+          0.299,
+          0.701
+        ],
+        "silhouette": 0.0,
+        "fisher_dprime": 0.0,
+        "noise_stability": 1.0
+      },
+      "bow": {
+        "accuracy": 0.5,
+        "ci_95": [
+          0.299,
+          0.701
+        ],
+        "silhouette": 0.0,
+        "fisher_dprime": 0.0,
+        "noise_stability": 1.0
+      },
+      "tear": {
+        "accuracy": 0.5,
+        "ci_95": [
+          0.299,
+          0.701
+        ],
+        "silhouette": 0.0,
+        "fisher_dprime": 0.0,
+        "noise_stability": 1.0
+      }
+    },
+    "sentence_char_pool": {
+      "lead": {
+        "accuracy": 0.6,
+        "ci_95": [
+          0.387,
+          0.781
+        ],
+        "silhouette": 0.006,
+        "fisher_dprime": 0.469,
+        "noise_stability": 1.0
+      },
+      "read": {
+        "accuracy": 0.6,
+        "ci_95": [
+          0.387,
+          0.781
+        ],
+        "silhouette": 0.047,
+        "fisher_dprime": 0.624,
+        "noise_stability": 1.0
+      },
+      "bow": {
+        "accuracy": 0.45,
+        "ci_95": [
+          0.258,
+          0.658
+        ],
+        "silhouette": -0.011,
+        "fisher_dprime": 0.382,
+        "noise_stability": 1.0
+      },
+      "tear": {
+        "accuracy": 0.65,
+        "ci_95": [
+          0.433,
+          0.819
+        ],
+        "silhouette": 0.032,
+        "fisher_dprime": 0.58,
+        "noise_stability": 1.0
+      }
+    },
+    "buggy_text_embed": {
+      "lead": {
+        "accuracy": 0.7,
+        "ci_95": [
+          0.481,
+          0.855
+        ],
+        "silhouette": 0.048,
+        "fisher_dprime": 0.587,
+        "noise_stability": 1.0
+      },
+      "read": {
+        "accuracy": 0.6,
+        "ci_95": [
+          0.387,
+          0.781
+        ],
+        "silhouette": -0.025,
+        "fisher_dprime": 0.337,
+        "noise_stability": 1.0
+      },
+      "bow": {
+        "accuracy": 0.35,
+        "ci_95": [
+          0.181,
+          0.567
+        ],
+        "silhouette": -0.026,
+        "fisher_dprime": 0.333,
+        "noise_stability": 1.0
+      },
+      "tear": {
+        "accuracy": 0.75,
+        "ci_95": [
+          0.531,
+          0.888
+        ],
+        "silhouette": 0.063,
+        "fisher_dprime": 0.606,
+        "noise_stability": 1.0
+      }
+    },
+    "corrected_text_embed": {
+      "lead": {
+        "accuracy": 0.65,
+        "ci_95": [
+          0.433,
+          0.819
+        ],
+        "silhouette": 0.092,
+        "fisher_dprime": 0.646,
+        "noise_stability": 1.0
+      },
+      "read": {
+        "accuracy": 0.6,
+        "ci_95": [
+          0.387,
+          0.781
+        ],
+        "silhouette": -0.031,
+        "fisher_dprime": 0.307,
+        "noise_stability": 1.0
+      },
+      "bow": {
+        "accuracy": 0.4,
+        "ci_95": [
+          0.219,
+          0.613
+        ],
+        "silhouette": -0.058,
+        "fisher_dprime": 0.176,
+        "noise_stability": 1.0
+      },
+      "tear": {
+        "accuracy": 0.8,
+        "ci_95": [
+          0.584,
+          0.919
+        ],
+        "silhouette": 0.069,
+        "fisher_dprime": 0.48,
+        "noise_stability": 1.0
+      }
+    },
+    "dit_layer_2": {
+      "lead": {
+        "accuracy": 0.65,
+        "ci_95": [
+          0.433,
+          0.819
+        ],
+        "silhouette": 0.042,
+        "fisher_dprime": 0.434,
+        "noise_stability": 0.988
+      },
+      "read": {
+        "accuracy": 0.45,
+        "ci_95": [
+          0.258,
+          0.658
+        ],
+        "silhouette": -0.052,
+        "fisher_dprime": 0.193,
+        "noise_stability": 0.989
+      },
+      "bow": {
+        "accuracy": 0.35,
+        "ci_95": [
+          0.181,
+          0.567
+        ],
+        "silhouette": -0.057,
+        "fisher_dprime": 0.166,
+        "noise_stability": 0.986
+      },
+      "tear": {
+        "accuracy": 0.7,
+        "ci_95": [
+          0.481,
+          0.855
+        ],
+        "silhouette": 0.019,
+        "fisher_dprime": 0.285,
+        "noise_stability": 0.987
+      }
+    },
+    "dit_layer_10": {
+      "lead": {
+        "accuracy": 0.75,
+        "ci_95": [
+          0.531,
+          0.888
+        ],
+        "silhouette": 0.072,
+        "fisher_dprime": 0.691,
+        "noise_stability": 0.99
+      },
+      "read": {
+        "accuracy": 0.35,
+        "ci_95": [
+          0.181,
+          0.567
+        ],
+        "silhouette": -0.029,
+        "fisher_dprime": 0.312,
+        "noise_stability": 0.99
+      },
+      "bow": {
+        "accuracy": 0.4,
+        "ci_95": [
+          0.219,
+          0.613
+        ],
+        "silhouette": -0.019,
+        "fisher_dprime": 0.359,
+        "noise_stability": 0.988
+      },
+      "tear": {
+        "accuracy": 0.6,
+        "ci_95": [
+          0.387,
+          0.781
+        ],
+        "silhouette": 0.01,
+        "fisher_dprime": 0.453,
+        "noise_stability": 0.989
+      }
+    },
+    "dit_layer_14": {
+      "lead": {
+        "accuracy": 0.75,
+        "ci_95": [
+          0.531,
+          0.888
+        ],
+        "silhouette": 0.062,
+        "fisher_dprime": 0.643,
+        "noise_stability": 0.992
+      },
+      "read": {
+        "accuracy": 0.6,
+        "ci_95": [
+          0.387,
+          0.781
+        ],
+        "silhouette": -0.025,
+        "fisher_dprime": 0.333,
+        "noise_stability": 0.992
+      },
+      "bow": {
+        "accuracy": 0.5,
+        "ci_95": [
+          0.299,
+          0.701
+        ],
+        "silhouette": -0.016,
+        "fisher_dprime": 0.377,
+        "noise_stability": 0.991
+      },
+      "tear": {
+        "accuracy": 0.7,
+        "ci_95": [
+          0.481,
+          0.855
+        ],
+        "silhouette": 0.01,
+        "fisher_dprime": 0.466,
+        "noise_stability": 0.991
+      }
+    },
+    "dit_layer_21": {
+      "lead": {
+        "accuracy": 0.65,
+        "ci_95": [
+          0.433,
+          0.819
+        ],
+        "silhouette": 0.06,
+        "fisher_dprime": 0.619,
+        "noise_stability": 0.994
+      },
+      "read": {
+        "accuracy": 0.6,
+        "ci_95": [
+          0.387,
+          0.781
+        ],
+        "silhouette": -0.015,
+        "fisher_dprime": 0.351,
+        "noise_stability": 0.993
+      },
+      "bow": {
+        "accuracy": 0.55,
+        "ci_95": [
+          0.342,
+          0.742
+        ],
+        "silhouette": -0.009,
+        "fisher_dprime": 0.401,
+        "noise_stability": 0.993
+      },
+      "tear": {
+        "accuracy": 0.6,
+        "ci_95": [
+          0.387,
+          0.781
+        ],
+        "silhouette": -0.004,
+        "fisher_dprime": 0.419,
+        "noise_stability": 0.994
+      }
+    },
+    "minilm_target": {
+      "lead": {
+        "accuracy": 0.9,
+        "ci_95": [
+          0.699,
+          0.972
+        ],
+        "silhouette": 0.252,
+        "fisher_dprime": 1.348,
+        "noise_stability": 1.0
+      },
+      "read": {
+        "accuracy": 1.0,
+        "ci_95": [
+          0.839,
+          1.0
+        ],
+        "silhouette": 0.049,
+        "fisher_dprime": 0.627,
+        "noise_stability": 1.0
+      },
+      "bow": {
+        "accuracy": 0.85,
+        "ci_95": [
+          0.64,
+          0.948
+        ],
+        "silhouette": 0.118,
+        "fisher_dprime": 0.887,
+        "noise_stability": 1.0
+      },
+      "tear": {
+        "accuracy": 0.85,
+        "ci_95": [
+          0.64,
+          0.948
+        ],
+        "silhouette": 0.124,
+        "fisher_dprime": 0.918,
+        "noise_stability": 1.0
+      }
+    },
+    "minilm_sentence": {
+      "lead": {
+        "accuracy": 0.8,
+        "ci_95": [
+          0.584,
+          0.919
+        ],
+        "silhouette": 0.058,
+        "fisher_dprime": 0.675,
+        "noise_stability": 1.0
+      },
+      "read": {
+        "accuracy": 0.7,
+        "ci_95": [
+          0.481,
+          0.855
+        ],
+        "silhouette": 0.014,
+        "fisher_dprime": 0.515,
+        "noise_stability": 1.0
+      },
+      "bow": {
+        "accuracy": 0.75,
+        "ci_95": [
+          0.531,
+          0.888
+        ],
+        "silhouette": 0.025,
+        "fisher_dprime": 0.557,
+        "noise_stability": 1.0
+      },
+      "tear": {
+        "accuracy": 0.7,
+        "ci_95": [
+          0.481,
+          0.855
+        ],
+        "silhouette": 0.031,
+        "fisher_dprime": 0.576,
+        "noise_stability": 1.0
+      }
+    }
+  },
+  "aggregate_metrics": {
+    "raw_char_lookup": {
+      "mean_accuracy": 0.5,
+      "ci_95": [
+        0.393,
+        0.607
+      ],
+      "total_correct": 40,
+      "total_samples": 80,
+      "mean_silhouette": 0.0,
+      "mean_fisher_dprime": 0.0,
+      "mean_noise_stability": 1.0
+    },
+    "sentence_char_pool": {
+      "mean_accuracy": 0.575,
+      "ci_95": [
+        0.466,
+        0.677
+      ],
+      "total_correct": 46,
+      "total_samples": 80,
+      "mean_silhouette": 0.018,
+      "mean_fisher_dprime": 0.514,
+      "mean_noise_stability": 1.0
+    },
+    "buggy_text_embed": {
+      "mean_accuracy": 0.6,
+      "ci_95": [
+        0.49,
+        0.7
+      ],
+      "total_correct": 48,
+      "total_samples": 80,
+      "mean_silhouette": 0.015,
+      "mean_fisher_dprime": 0.466,
+      "mean_noise_stability": 1.0
+    },
+    "corrected_text_embed": {
+      "mean_accuracy": 0.613,
+      "ci_95": [
+        0.503,
+        0.712
+      ],
+      "total_correct": 49,
+      "total_samples": 80,
+      "mean_silhouette": 0.018,
+      "mean_fisher_dprime": 0.402,
+      "mean_noise_stability": 1.0
+    },
+    "dit_layer_2": {
+      "mean_accuracy": 0.537,
+      "ci_95": [
+        0.429,
+        0.643
+      ],
+      "total_correct": 43,
+      "total_samples": 80,
+      "mean_silhouette": -0.012,
+      "mean_fisher_dprime": 0.269,
+      "mean_noise_stability": 0.987
+    },
+    "dit_layer_10": {
+      "mean_accuracy": 0.525,
+      "ci_95": [
+        0.417,
+        0.631
+      ],
+      "total_correct": 42,
+      "total_samples": 80,
+      "mean_silhouette": 0.009,
+      "mean_fisher_dprime": 0.454,
+      "mean_noise_stability": 0.989
+    },
+    "dit_layer_14": {
+      "mean_accuracy": 0.637,
+      "ci_95": [
+        0.528,
+        0.734
+      ],
+      "total_correct": 51,
+      "total_samples": 80,
+      "mean_silhouette": 0.008,
+      "mean_fisher_dprime": 0.455,
+      "mean_noise_stability": 0.992
+    },
+    "dit_layer_21": {
+      "mean_accuracy": 0.6,
+      "ci_95": [
+        0.49,
+        0.7
+      ],
+      "total_correct": 48,
+      "total_samples": 80,
+      "mean_silhouette": 0.008,
+      "mean_fisher_dprime": 0.447,
+      "mean_noise_stability": 0.994
+    },
+    "minilm_target": {
+      "mean_accuracy": 0.9,
+      "ci_95": [
+        0.815,
+        0.948
+      ],
+      "total_correct": 72,
+      "total_samples": 80,
+      "mean_silhouette": 0.136,
+      "mean_fisher_dprime": 0.945,
+      "mean_noise_stability": 1.0
+    },
+    "minilm_sentence": {
+      "mean_accuracy": 0.738,
+      "ci_95": [
+        0.632,
+        0.821
+      ],
+      "total_correct": 59,
+      "total_samples": 80,
+      "mean_silhouette": 0.032,
+      "mean_fisher_dprime": 0.581,
+      "mean_noise_stability": 1.0
+    }
+  }
+}

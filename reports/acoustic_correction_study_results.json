@@ -1,0 +1,1241 @@
+{
+  "execution_metadata": {
+    "total_study_elapsed_seconds": 1219.1,
+    "device": "cpu",
+    "nfe_steps": 8,
+    "num_test_cases": 8,
+    "words_tested": [
+      "lead",
+      "read",
+      "bow",
+      "tear"
+    ],
+    "senses_per_word": 2
+  },
+  "aggregate_comparison": {
+    "baseline": {
+      "target_phoneme_accuracy": 0.75,
+      "correct_cases": "6/8",
+      "mean_phoneme_error_rate": 0.104,
+      "mean_non_target_wer": 0.0,
+      "mean_non_target_mse": 0.0,
+      "mean_drift_ratio": 0.0,
+      "mean_speaker_similarity": 1.0,
+      "mean_latency_seconds": 46.36
+    },
+    "mech1_phonetic_substitution": {
+      "target_phoneme_accuracy": 0.75,
+      "correct_cases": "6/8",
+      "mean_phoneme_error_rate": 0.688,
+      "mean_non_target_wer": 0.057,
+      "mean_non_target_mse": 4.24128,
+      "mean_drift_ratio": 0.7575,
+      "mean_speaker_similarity": 0.9994,
+      "mean_latency_seconds": 45.35
+    },
+    "mech2_text_embeddings": {
+      "target_phoneme_accuracy": 0.75,
+      "correct_cases": "6/8",
+      "mean_phoneme_error_rate": 0.479,
+      "mean_non_target_wer": 0.083,
+      "mean_non_target_mse": 3.86751,
+      "mean_drift_ratio": 1.9616,
+      "mean_speaker_similarity": 0.9991,
+      "mean_latency_seconds": 46.72
+    },
+    "mech3_masked_flow_guidance": {
+      "target_phoneme_accuracy": 0.875,
+      "correct_cases": "7/8",
+      "mean_phoneme_error_rate": 0.438,
+      "mean_non_target_wer": 0.08,
+      "mean_non_target_mse": 0.09742,
+      "mean_drift_ratio": 0.1187,
+      "mean_speaker_similarity": 1.0,
+      "mean_latency_seconds": 0.26
+    },
+    "mech4_acoustic_regeneration": {
+      "target_phoneme_accuracy": 0.875,
+      "correct_cases": "7/8",
+      "mean_phoneme_error_rate": 0.25,
+      "mean_non_target_wer": 0.057,
+      "mean_non_target_mse": 2.4669,
+      "mean_drift_ratio": 0.3671,
+      "mean_speaker_similarity": 0.9996,
+      "mean_latency_seconds": 0.01
+    }
+  },
+  "case_level_results": [
+    {
+      "case_id": 0,
+      "word": "lead",
+      "sense_id": 0,
+      "ipa": "/l\u025bd/",
+      "target_phonemes": [
+        "L",
+        "EH1",
+        "D"
+      ],
+      "carrier_sentence": "The antique pipes were made of solid lead.",
+      "phonetic_sentence": "The antique pipes were made of solid led.",
+      "mechanisms": {
+        "baseline": {
+          "wav_file": "baseline_lead_s0.wav",
+          "transcript": "the antique pipes were made of solid lead",
+          "spoken_target_word": "lead",
+          "spoken_phonemes": [
+            "L",
+            "EH1",
+            "D"
+          ],
+          "acoustic_formants": [
+            255.3,
+            1798.0
+          ],
+          "acoustic_details": "F1=255.3Hz (exp >=450Hz for /EH1/)",
+          "target_phonemes_correct": true,
+          "phoneme_error_rate": 0.0,
+          "target_time_span": [
+            2.24,
+            2.66
+          ],
+          "latency_seconds": 0.05
+        },
+        "mech1_phonetic_substitution": {
+          "wav_file": "mech1_subst_lead_s0.wav",
+          "transcript": "the antique pipes were made of solid lead",
+          "spoken_target_word": "lead",
+          "spoken_phonemes": [
+            "L",
+            "EH1",
+            "D"
+          ],
+          "acoustic_formants": [
+            749.4,
+            1715.6
+          ],
+          "acoustic_details": "F1=749.4Hz (exp >=450Hz for /EH1/)",
+          "target_phonemes_correct": true,
+          "phoneme_error_rate": 0.0,
+          "non_target_wer": 0.0,
+          "audio_duration_delta_samples": -1536,
+          "spectral_metrics": {
+            "target_mse": 9.07323,
+            "non_target_mse": 1.66482,
+            "non_target_spectral_convergence": 0.1857,
+            "drift_ratio": 0.1835,
+            "speaker_timbral_similarity": 0.9996
+          },
+          "latency_seconds": 0.05
+        },
+        "mech2_text_embeddings": {
+          "wav_file": "mech2_textembed_lead_s0.wav",
+          "transcript": "the antique pipes were made of solid lead",
+          "spoken_target_word": "lead",
+          "spoken_phonemes": [
+            "L",
+            "EH1",
+            "D"
+          ],
+          "acoustic_formants": [
+            718.3,
+            1658.7
+          ],
+          "acoustic_details": "F1=718.3Hz (exp >=450Hz for /EH1/)",
+          "target_phonemes_correct": true,
+          "phoneme_error_rate": 0.0,
+          "non_target_wer": 0.0,
+          "audio_duration_delta_samples": 0,
+          "spectral_metrics": {
+            "target_mse": 17.33538,
+            "non_target_mse": 11.92321,
+            "non_target_spectral_convergence": 0.4876,
+            "drift_ratio": 0.6878,
+            "speaker_timbral_similarity": 0.9976
+          },
+          "latency_seconds": 0.05
+        },
+        "mech3_masked_flow_guidance": {
+          "wav_file": "mech3_guided_lead_s0.wav",
+          "transcript": "the antique pipes were made of solid mud",
+          "spoken_target_word": "mud",
+          "spoken_phonemes": [
+            "M",
+            "AH1",
+            "D"
+          ],
+          "acoustic_formants": [
+            712.2,
+            1846.0
+          ],
+          "acoustic_details": "F1=712.2Hz (exp >=450Hz for /EH1/)",
+          "target_phonemes_correct": true,
+          "phoneme_error_rate": 0.0,
+          "non_target_wer": 0.0,
+          "audio_duration_delta_samples": -1536,
+          "spectral_metrics": {
+            "target_mse": 4.67912,
+            "non_target_mse": 0.08679,
+            "non_target_spectral_convergence": 0.0424,
+            "drift_ratio": 0.0185,
+            "speaker_timbral_similarity": 1.0
+          },
+          "latency_seconds": 0.05
+        },
+        "mech4_acoustic_regeneration": {
+          "wav_file": "mech4_splice_lead_s0.wav",
+          "transcript": "the antique pipes were made of solid lead",
+          "spoken_target_word": "lead",
+          "spoken_phonemes": [
+            "L",
+            "EH1",
+            "D"
+          ],
+          "acoustic_formants": [
+            757.2,
+            1779.1
+          ],
+          "acoustic_details": "F1=757.2Hz (exp >=450Hz for /EH1/)",
+          "target_phonemes_correct": true,
+          "phoneme_error_rate": 0.0,
+          "non_target_wer": 0.0,
+          "audio_duration_delta_samples": -2879,
+          "spectral_metrics": {
+            "target_mse": 12.9391,
+            "non_target_mse": 0.0087,
+            "non_target_spectral_convergence": 0.0134,
+            "drift_ratio": 0.0007,
+            "speaker_timbral_similarity": 1.0
+          },
+          "latency_seconds": 0.05
+        }
+      }
+    },
+    {
+      "case_id": 1,
+      "word": "lead",
+      "sense_id": 1,
+      "ipa": "/li\u02d0d/",
+      "target_phonemes": [
+        "L",
+        "IY1",
+        "D"
+      ],
+      "carrier_sentence": "The chief researcher will lead the team.",
+      "phonetic_sentence": "The chief researcher will leed the team.",
+      "mechanisms": {
+        "baseline": {
+          "wav_file": "baseline_lead_s1.wav",
+          "transcript": "the chief researcher will lead the team",
+          "spoken_target_word": "lead",
+          "spoken_phonemes": [
+            "L",
+            "EH1",
+            "D"
+          ],
+          "acoustic_formants": [
+            219.5,
+            1940.5
+          ],
+          "acoustic_details": "F1=219.5Hz, F2=1940.5Hz (exp F1<450Hz, F2>1650Hz for /IY1/)",
+          "target_phonemes_correct": true,
+          "phoneme_error_rate": 0.0,
+          "target_time_span": [
+            1.74,
+            1.92
+          ],
+          "latency_seconds": 0.05
+        },
+        "mech1_phonetic_substitution": {
+          "wav_file": "mech1_subst_lead_s1.wav",
+          "transcript": "the chief researcher will lead the team",
+          "spoken_target_word": "lead",
+          "spoken_phonemes": [
+            "L",
+            "EH1",
+            "D"
+          ],
+          "acoustic_formants": [
+            220.8,
+            2094.9
+          ],
+          "acoustic_details": "F1=220.8Hz, F2=2094.9Hz (exp F1<450Hz, F2>1650Hz for /IY1/)",
+          "target_phonemes_correct": true,
+          "phoneme_error_rate": 0.0,
+          "non_target_wer": 0.0,
+          "audio_duration_delta_samples": 0,
+          "spectral_metrics": {
+            "target_mse": 0.2469,
+            "non_target_mse": 0.14984,
+            "non_target_spectral_convergence": 0.0534,
+            "drift_ratio": 0.6069,
+            "speaker_timbral_similarity": 1.0
+          },
+          "latency_seconds": 0.05
+        },
+        "mech2_text_embeddings": {
+          "wav_file": "mech2_textembed_lead_s1.wav",
+          "transcript": "the chief researcher will lead the team",
+          "spoken_target_word": "lead",
+          "spoken_phonemes": [
+            "L",
+            "EH1",
+            "D"
+          ],
+          "acoustic_formants": [
+            209.1,
+            2000.0
+          ],
+          "acoustic_details": "F1=209.1Hz, F2=2000.0Hz (exp F1<450Hz, F2>1650Hz for /IY1/)",
+          "target_phonemes_correct": true,
+          "phoneme_error_rate": 0.0,
+          "non_target_wer": 0.0,
+          "audio_duration_delta_samples": 0,
+          "spectral_metrics": {
+            "target_mse": 0.51701,
+            "non_target_mse": 0.28029,
+            "non_target_spectral_convergence": 0.0731,
+            "drift_ratio": 0.5421,
+            "speaker_timbral_similarity": 0.9999
+          },
+          "latency_seconds": 0.05
+        },
+        "mech3_masked_flow_guidance": {
+          "wav_file": "mech3_guided_lead_s1.wav",
+          "transcript": "the chief researcher will lead the team",
+          "spoken_target_word": "lead",
+          "spoken_phonemes": [
+            "L",
+            "EH1",
+            "D"
+          ],
+          "acoustic_formants": [
+            201.5,
+            1654.7
+          ],
+          "acoustic_details": "F1=201.5Hz, F2=1654.7Hz (exp F1<450Hz, F2>1650Hz for /IY1/)",
+          "target_phonemes_correct": true,
+          "phoneme_error_rate": 0.0,
+          "non_target_wer": 0.0,
+          "audio_duration_delta_samples": -256,
+          "spectral_metrics": {
+            "target_mse": 0.26254,
+            "non_target_mse": 0.08489,
+            "non_target_spectral_convergence": 0.0403,
+            "drift_ratio": 0.3234,
+            "speaker_timbral_similarity": 1.0
+          },
+          "latency_seconds": 0.28
+        },
+        "mech4_acoustic_regeneration": {
+          "wav_file": "mech4_splice_lead_s1.wav",
+          "transcript": "the chief researcher will lead the team",
+          "spoken_target_word": "lead",
+          "spoken_phonemes": [
+            "L",
+            "EH1",
+            "D"
+          ],
+          "acoustic_formants": [
+            220.8,
+            2094.9
+          ],
+          "acoustic_details": "F1=220.8Hz, F2=2094.9Hz (exp F1<450Hz, F2>1650Hz for /IY1/)",
+          "target_phonemes_correct": true,
+          "phoneme_error_rate": 0.0,
+          "non_target_wer": 0.0,
+          "audio_duration_delta_samples": -960,
+          "spectral_metrics": {
+            "target_mse": 2.77426,
+            "non_target_mse": 1.28627,
+            "non_target_spectral_convergence": 0.1579,
+            "drift_ratio": 0.4636,
+            "speaker_timbral_similarity": 1.0
+          },
+          "latency_seconds": 0.0
+        }
+      }
+    },
+    {
+      "case_id": 2,
+      "word": "read",
+      "sense_id": 0,
+      "ipa": "/r\u025bd/",
+      "target_phonemes": [
+        "R",
+        "EH1",
+        "D"
+      ],
+      "carrier_sentence": "Yesterday evening she read the entire book.",
+      "phonetic_sentence": "Yesterday evening she red the entire book.",
+      "mechanisms": {
+        "baseline": {
+          "wav_file": "baseline_read_s0.wav",
+          "transcript": "yesterday evening she read the entire book",
+          "spoken_target_word": "read",
+          "spoken_phonemes": [
+            "R",
+            "EH1",
+            "D"
+          ],
+          "acoustic_formants": [
+            390.9,
+            2096.0
+          ],
+          "acoustic_details": "F1=390.9Hz (exp >=450Hz for /EH1/)",
+          "target_phonemes_correct": true,
+          "phoneme_error_rate": 0.0,
+          "target_time_span": [
+            1.68,
+            1.88
+          ],
+          "latency_seconds": 65.26
+        },
+        "mech1_phonetic_substitution": {
+          "wav_file": "mech1_subst_read_s0.wav",
+          "transcript": "yesterday evening she read the entire book",
+          "spoken_target_word": "read",
+          "spoken_phonemes": [
+            "R",
+            "EH1",
+            "D"
+          ],
+          "acoustic_formants": [
+            682.6,
+            1923.9
+          ],
+          "acoustic_details": "F1=682.6Hz (exp >=450Hz for /EH1/)",
+          "target_phonemes_correct": true,
+          "phoneme_error_rate": 0.0,
+          "non_target_wer": 0.0,
+          "audio_duration_delta_samples": -1536,
+          "spectral_metrics": {
+            "target_mse": 7.08907,
+            "non_target_mse": 8.00368,
+            "non_target_spectral_convergence": 0.4194,
+            "drift_ratio": 1.129,
+            "speaker_timbral_similarity": 0.9979
+          },
+          "latency_seconds": 59.94
+        },
+        "mech2_text_embeddings": {
+          "wav_file": "mech2_textembed_read_s0.wav",
+          "transcript": "yesterday evening she read the entire book",
+          "spoken_target_word": "read",
+          "spoken_phonemes": [
+            "R",
+            "EH1",
+            "D"
+          ],
+          "acoustic_formants": [
+            435.2,
+            2283.8
+          ],
+          "acoustic_details": "F1=435.2Hz (exp >=450Hz for /EH1/)",
+          "target_phonemes_correct": true,
+          "phoneme_error_rate": 0.0,
+          "non_target_wer": 0.0,
+          "audio_duration_delta_samples": 0,
+          "spectral_metrics": {
+            "target_mse": 4.60492,
+            "non_target_mse": 3.04855,
+            "non_target_spectral_convergence": 0.26,
+            "drift_ratio": 0.662,
+            "speaker_timbral_similarity": 0.9992
+          },
+          "latency_seconds": 61.48
+        },
+        "mech3_masked_flow_guidance": {
+          "wav_file": "mech3_guided_read_s0.wav",
+          "transcript": "yesterday evening she ran the entire book",
+          "spoken_target_word": "book",
+          "spoken_phonemes": [
+            "B",
+            "UH1",
+            "K"
+          ],
+          "acoustic_formants": [
+            560.6,
+            1229.7
+          ],
+          "acoustic_details": "F1=560.6Hz (exp >=450Hz for /EH1/)",
+          "target_phonemes_correct": true,
+          "phoneme_error_rate": 0.0,
+          "non_target_wer": 0.333,
+          "audio_duration_delta_samples": -1536,
+          "spectral_metrics": {
+            "target_mse": 2.2343,
+            "non_target_mse": 0.10439,
+            "non_target_spectral_convergence": 0.0479,
+            "drift_ratio": 0.0467,
+            "speaker_timbral_similarity": 1.0
+          },
+          "latency_seconds": 0.38
+        },
+        "mech4_acoustic_regeneration": {
+          "wav_file": "mech4_splice_read_s0.wav",
+          "transcript": "yesterday evening she read the entire book",
+          "spoken_target_word": "read",
+          "spoken_phonemes": [
+            "R",
+            "EH1",
+            "D"
+          ],
+          "acoustic_formants": [
+            658.6,
+            1775.4
+          ],
+          "acoustic_details": "F1=658.6Hz (exp >=450Hz for /EH1/)",
+          "target_phonemes_correct": true,
+          "phoneme_error_rate": 0.0,
+          "non_target_wer": 0.0,
+          "audio_duration_delta_samples": -1440,
+          "spectral_metrics": {
+            "target_mse": 4.7704,
+            "non_target_mse": 2.61132,
+            "non_target_spectral_convergence": 0.2396,
+            "drift_ratio": 0.5474,
+            "speaker_timbral_similarity": 0.9999
+          },
+          "latency_seconds": 0.01
+        }
+      }
+    },
+    {
+      "case_id": 3,
+      "word": "read",
+      "sense_id": 1,
+      "ipa": "/ri\u02d0d/",
+      "target_phonemes": [
+        "R",
+        "IY1",
+        "D"
+      ],
+      "carrier_sentence": "Students must read the assigned chapter today.",
+      "phonetic_sentence": "Students must reed the assigned chapter today.",
+      "mechanisms": {
+        "baseline": {
+          "wav_file": "baseline_read_s1.wav",
+          "transcript": "students must read the assigned chapter today",
+          "spoken_target_word": "read",
+          "spoken_phonemes": [
+            "R",
+            "EH1",
+            "D"
+          ],
+          "acoustic_formants": [
+            379.6,
+            2129.4
+          ],
+          "acoustic_details": "F1=379.6Hz, F2=2129.4Hz (exp F1<450Hz for /IY1/)",
+          "target_phonemes_correct": true,
+          "phoneme_error_rate": 0.0,
+          "target_time_span": [
+            1.26,
+            1.5
+          ],
+          "latency_seconds": 62.02
+        },
+        "mech1_phonetic_substitution": {
+          "wav_file": "mech1_subst_read_s1.wav",
+          "transcript": "students must read the assigned chapter today",
+          "spoken_target_word": "read",
+          "spoken_phonemes": [
+            "R",
+            "EH1",
+            "D"
+          ],
+          "acoustic_formants": [
+            320.4,
+            1410.7
+          ],
+          "acoustic_details": "F1=320.4Hz, F2=1410.7Hz (exp F1<450Hz for /IY1/)",
+          "target_phonemes_correct": true,
+          "phoneme_error_rate": 0.0,
+          "non_target_wer": 0.0,
+          "audio_duration_delta_samples": 0,
+          "spectral_metrics": {
+            "target_mse": 1.67213,
+            "non_target_mse": 0.58471,
+            "non_target_spectral_convergence": 0.1194,
+            "drift_ratio": 0.3497,
+            "speaker_timbral_similarity": 0.9998
+          },
+          "latency_seconds": 66.0
+        },
+        "mech2_text_embeddings": {
+          "wav_file": "mech2_textembed_read_s1.wav",
+          "transcript": "students must read the assigned chapter today",
+          "spoken_target_word": "read",
+          "spoken_phonemes": [
+            "R",
+            "EH1",
+            "D"
+          ],
+          "acoustic_formants": [
+            388.2,
+            2244.0
+          ],
+          "acoustic_details": "F1=388.2Hz, F2=2244.0Hz (exp F1<450Hz for /IY1/)",
+          "target_phonemes_correct": true,
+          "phoneme_error_rate": 0.0,
+          "non_target_wer": 0.0,
+          "audio_duration_delta_samples": 0,
+          "spectral_metrics": {
+            "target_mse": 1.05984,
+            "non_target_mse": 0.2207,
+            "non_target_spectral_convergence": 0.0733,
+            "drift_ratio": 0.2082,
+            "speaker_timbral_similarity": 0.9999
+          },
+          "latency_seconds": 76.39
+        },
+        "mech3_masked_flow_guidance": {
+          "wav_file": "mech3_guided_read_s1.wav",
+          "transcript": "students must read the assigned chapter today",
+          "spoken_target_word": "read",
+          "spoken_phonemes": [
+            "R",
+            "EH1",
+            "D"
+          ],
+          "acoustic_formants": [
+            338.4,
+            2391.6
+          ],
+          "acoustic_details": "F1=338.4Hz, F2=2391.6Hz (exp F1<450Hz for /IY1/)",
+          "target_phonemes_correct": true,
+          "phoneme_error_rate": 0.0,
+          "non_target_wer": 0.0,
+          "audio_duration_delta_samples": -256,
+          "spectral_metrics": {
+            "target_mse": 0.89082,
+            "non_target_mse": 0.08707,
+            "non_target_spectral_convergence": 0.0461,
+            "drift_ratio": 0.0977,
+            "speaker_timbral_similarity": 1.0
+          },
+          "latency_seconds": 0.22
+        },
+        "mech4_acoustic_regeneration": {
+          "wav_file": "mech4_splice_read_s1.wav",
+          "transcript": "students must read the assigned chapter today",
+          "spoken_target_word": "read",
+          "spoken_phonemes": [
+            "R",
+            "EH1",
+            "D"
+          ],
+          "acoustic_formants": [
+            320.4,
+            1410.7
+          ],
+          "acoustic_details": "F1=320.4Hz, F2=1410.7Hz (exp F1<450Hz for /IY1/)",
+          "target_phonemes_correct": true,
+          "phoneme_error_rate": 0.0,
+          "non_target_wer": 0.0,
+          "audio_duration_delta_samples": -960,
+          "spectral_metrics": {
+            "target_mse": 5.99017,
+            "non_target_mse": 2.66571,
+            "non_target_spectral_convergence": 0.2551,
+            "drift_ratio": 0.445,
+            "speaker_timbral_similarity": 1.0
+          },
+          "latency_seconds": 0.0
+        }
+      }
+    },
+    {
+      "case_id": 4,
+      "word": "bow",
+      "sense_id": 0,
+      "ipa": "/bo\u028a/",
+      "target_phonemes": [
+        "B",
+        "OW1"
+      ],
+      "carrier_sentence": "The archer aimed his wooden bow carefully.",
+      "phonetic_sentence": "The archer aimed his wooden beau carefully.",
+      "mechanisms": {
+        "baseline": {
+          "wav_file": "baseline_bow_s0.wav",
+          "transcript": "the archer aimed his wooden bow carefully",
+          "spoken_target_word": "bow",
+          "spoken_phonemes": [
+            "B",
+            "AW1"
+          ],
+          "acoustic_formants": [
+            1044.5,
+            2295.4
+          ],
+          "acoustic_details": "F1=1044.5Hz (exp <=550Hz for /OW1/)",
+          "target_phonemes_correct": false,
+          "phoneme_error_rate": 0.5,
+          "target_time_span": [
+            1.78,
+            2.08
+          ],
+          "latency_seconds": 57.92
+        },
+        "mech1_phonetic_substitution": {
+          "wav_file": "mech1_subst_bow_s0.wav",
+          "transcript": "the archer aimed his wooden view carefully",
+          "spoken_target_word": "carefully",
+          "spoken_phonemes": [
+            "K",
+            "EH1",
+            "R",
+            "F",
+            "AH0",
+            "L",
+            "IY0"
+          ],
+          "acoustic_formants": [
+            611.9,
+            1926.5
+          ],
+          "acoustic_details": "F1=611.9Hz (exp <=550Hz for /OW1/)",
+          "target_phonemes_correct": false,
+          "phoneme_error_rate": 3.5,
+          "non_target_wer": 0.167,
+          "audio_duration_delta_samples": 1536,
+          "spectral_metrics": {
+            "target_mse": 13.15769,
+            "non_target_mse": 13.35839,
+            "non_target_spectral_convergence": 0.526,
+            "drift_ratio": 1.0153,
+            "speaker_timbral_similarity": 0.9993
+          },
+          "latency_seconds": 63.69
+        },
+        "mech2_text_embeddings": {
+          "wav_file": "mech2_textembed_bow_s0.wav",
+          "transcript": "our church remained his wooden view carefully",
+          "spoken_target_word": "carefully",
+          "spoken_phonemes": [
+            "K",
+            "EH1",
+            "R",
+            "F",
+            "AH0",
+            "L",
+            "IY0"
+          ],
+          "acoustic_formants": [
+            639.3,
+            1917.3
+          ],
+          "acoustic_details": "F1=639.3Hz (exp <=550Hz for /OW1/)",
+          "target_phonemes_correct": false,
+          "phoneme_error_rate": 3.5,
+          "non_target_wer": 0.667,
+          "audio_duration_delta_samples": 0,
+          "spectral_metrics": {
+            "target_mse": 6.79046,
+            "non_target_mse": 6.28742,
+            "non_target_spectral_convergence": 0.3609,
+            "drift_ratio": 0.9259,
+            "speaker_timbral_similarity": 0.998
+          },
+          "latency_seconds": 62.59
+        },
+        "mech3_masked_flow_guidance": {
+          "wav_file": "mech3_guided_bow_s0.wav",
+          "transcript": "the archer aimed his wooden view carefully",
+          "spoken_target_word": "carefully",
+          "spoken_phonemes": [
+            "K",
+            "EH1",
+            "R",
+            "F",
+            "AH0",
+            "L",
+            "IY0"
+          ],
+          "acoustic_formants": [
+            633.7,
+            1852.4
+          ],
+          "acoustic_details": "F1=633.7Hz (exp <=550Hz for /OW1/)",
+          "target_phonemes_correct": false,
+          "phoneme_error_rate": 3.5,
+          "non_target_wer": 0.167,
+          "audio_duration_delta_samples": -256,
+          "spectral_metrics": {
+            "target_mse": 5.09686,
+            "non_target_mse": 0.0948,
+            "non_target_spectral_convergence": 0.0445,
+            "drift_ratio": 0.0186,
+            "speaker_timbral_similarity": 1.0
+          },
+          "latency_seconds": 0.33
+        },
+        "mech4_acoustic_regeneration": {
+          "wav_file": "mech4_splice_bow_s0.wav",
+          "transcript": "the archer aimed his wooden carefully or fully",
+          "spoken_target_word": "fully",
+          "spoken_phonemes": [
+            "F",
+            "UH1",
+            "L",
+            "IY0"
+          ],
+          "acoustic_formants": [
+            421.1,
+            970.8
+          ],
+          "acoustic_details": "F1=421.1Hz (exp <=550Hz for /OW1/)",
+          "target_phonemes_correct": true,
+          "phoneme_error_rate": 0.0,
+          "non_target_wer": 0.167,
+          "audio_duration_delta_samples": 3360,
+          "spectral_metrics": {
+            "target_mse": 14.32937,
+            "non_target_mse": 5.02065,
+            "non_target_spectral_convergence": 0.3225,
+            "drift_ratio": 0.3504,
+            "speaker_timbral_similarity": 0.9976
+          },
+          "latency_seconds": 0.01
+        }
+      }
+    },
+    {
+      "case_id": 5,
+      "word": "bow",
+      "sense_id": 1,
+      "ipa": "/ba\u028a/",
+      "target_phonemes": [
+        "B",
+        "AW1"
+      ],
+      "carrier_sentence": "The performers took a graceful bow on stage.",
+      "phonetic_sentence": "The performers took a graceful bough on stage.",
+      "mechanisms": {
+        "baseline": {
+          "wav_file": "baseline_bow_s1.wav",
+          "transcript": "the performers took a graceful bow on stage",
+          "spoken_target_word": "bow",
+          "spoken_phonemes": [
+            "B",
+            "AW1"
+          ],
+          "acoustic_formants": [
+            1030.0,
+            2424.4
+          ],
+          "acoustic_details": "F1=1030.0Hz (exp >550Hz for /AW1/)",
+          "target_phonemes_correct": true,
+          "phoneme_error_rate": 0.0,
+          "target_time_span": [
+            1.9,
+            2.12
+          ],
+          "latency_seconds": 59.42
+        },
+        "mech1_phonetic_substitution": {
+          "wav_file": "mech1_subst_bow_s1.wav",
+          "transcript": "the performers took a graceful bath on stage",
+          "spoken_target_word": "stage",
+          "spoken_phonemes": [
+            "S",
+            "T",
+            "EY1",
+            "JH"
+          ],
+          "acoustic_formants": [
+            335.2,
+            2380.2
+          ],
+          "acoustic_details": "F1=335.2Hz (exp >550Hz for /AW1/)",
+          "target_phonemes_correct": false,
+          "phoneme_error_rate": 2.0,
+          "non_target_wer": 0.286,
+          "audio_duration_delta_samples": 3072,
+          "spectral_metrics": {
+            "target_mse": 3.92854,
+            "non_target_mse": 9.03975,
+            "non_target_spectral_convergence": 0.4472,
+            "drift_ratio": 2.301,
+            "speaker_timbral_similarity": 0.9993
+          },
+          "latency_seconds": 59.58
+        },
+        "mech2_text_embeddings": {
+          "wav_file": "mech2_textembed_bow_s1.wav",
+          "transcript": "the performers took a graceful bow on stage",
+          "spoken_target_word": "bow",
+          "spoken_phonemes": [
+            "B",
+            "AW1"
+          ],
+          "acoustic_formants": [
+            426.7,
+            1044.3
+          ],
+          "acoustic_details": "F1=426.7Hz (exp >550Hz for /AW1/)",
+          "target_phonemes_correct": true,
+          "phoneme_error_rate": 0.0,
+          "non_target_wer": 0.0,
+          "audio_duration_delta_samples": 0,
+          "spectral_metrics": {
+            "target_mse": 0.39175,
+            "non_target_mse": 4.47007,
+            "non_target_spectral_convergence": 0.3144,
+            "drift_ratio": 11.4106,
+            "speaker_timbral_similarity": 0.9995
+          },
+          "latency_seconds": 59.69
+        },
+        "mech3_masked_flow_guidance": {
+          "wav_file": "mech3_guided_bow_s1.wav",
+          "transcript": "the performers took a graceful bow on stage",
+          "spoken_target_word": "bow",
+          "spoken_phonemes": [
+            "B",
+            "AW1"
+          ],
+          "acoustic_formants": [
+            1046.7,
+            2382.1
+          ],
+          "acoustic_details": "F1=1046.7Hz (exp >550Hz for /AW1/)",
+          "target_phonemes_correct": true,
+          "phoneme_error_rate": 0.0,
+          "non_target_wer": 0.0,
+          "audio_duration_delta_samples": -256,
+          "spectral_metrics": {
+            "target_mse": 1.14029,
+            "non_target_mse": 0.11947,
+            "non_target_spectral_convergence": 0.0514,
+            "drift_ratio": 0.1048,
+            "speaker_timbral_similarity": 1.0
+          },
+          "latency_seconds": 0.19
+        },
+        "mech4_acoustic_regeneration": {
+          "wav_file": "mech4_splice_bow_s1.wav",
+          "transcript": "the performers took a graceful page and stage",
+          "spoken_target_word": "stage",
+          "spoken_phonemes": [
+            "S",
+            "T",
+            "EY1",
+            "JH"
+          ],
+          "acoustic_formants": [
+            275.7,
+            2468.1
+          ],
+          "acoustic_details": "F1=275.7Hz (exp >550Hz for /AW1/)",
+          "target_phonemes_correct": false,
+          "phoneme_error_rate": 2.0,
+          "non_target_wer": 0.286,
+          "audio_duration_delta_samples": 2880,
+          "spectral_metrics": {
+            "target_mse": 24.13697,
+            "non_target_mse": 5.8939,
+            "non_target_spectral_convergence": 0.3611,
+            "drift_ratio": 0.2442,
+            "speaker_timbral_similarity": 0.9997
+          },
+          "latency_seconds": 0.01
+        }
+      }
+    },
+    {
+      "case_id": 6,
+      "word": "tear",
+      "sense_id": 0,
+      "ipa": "/t\u026a\u0259r/",
+      "target_phonemes": [
+        "T",
+        "IH1",
+        "R"
+      ],
+      "carrier_sentence": "A single warm tear rolled down her cheek.",
+      "phonetic_sentence": "A single warm tier rolled down her cheek.",
+      "mechanisms": {
+        "baseline": {
+          "wav_file": "baseline_tear_s0.wav",
+          "transcript": "a single warm tear rolled down her cheek",
+          "spoken_target_word": "tear",
+          "spoken_phonemes": [
+            "T",
+            "EH1",
+            "R"
+          ],
+          "acoustic_formants": [
+            542.8,
+            2161.7
+          ],
+          "acoustic_details": "F1=542.8Hz (exp <500Hz for /IH1/)",
+          "target_phonemes_correct": false,
+          "phoneme_error_rate": 0.333,
+          "target_time_span": [
+            1.3,
+            1.56
+          ],
+          "latency_seconds": 59.32
+        },
+        "mech1_phonetic_substitution": {
+          "wav_file": "mech1_subst_tear_s0.wav",
+          "transcript": "a single warm tear rolled down her cheek",
+          "spoken_target_word": "tear",
+          "spoken_phonemes": [
+            "T",
+            "EH1",
+            "R"
+          ],
+          "acoustic_formants": [
+            494.9,
+            2138.3
+          ],
+          "acoustic_details": "F1=494.9Hz (exp <500Hz for /IH1/)",
+          "target_phonemes_correct": true,
+          "phoneme_error_rate": 0.0,
+          "non_target_wer": 0.0,
+          "audio_duration_delta_samples": 0,
+          "spectral_metrics": {
+            "target_mse": 3.04415,
+            "non_target_mse": 0.97123,
+            "non_target_spectral_convergence": 0.1321,
+            "drift_ratio": 0.319,
+            "speaker_timbral_similarity": 0.9997
+          },
+          "latency_seconds": 59.51
+        },
+        "mech2_text_embeddings": {
+          "wav_file": "mech2_textembed_tear_s0.wav",
+          "transcript": "a single warm tear rolled down her cheek",
+          "spoken_target_word": "tear",
+          "spoken_phonemes": [
+            "T",
+            "EH1",
+            "R"
+          ],
+          "acoustic_formants": [
+            666.2,
+            1943.8
+          ],
+          "acoustic_details": "F1=666.2Hz (exp <500Hz for /IH1/)",
+          "target_phonemes_correct": false,
+          "phoneme_error_rate": 0.333,
+          "non_target_wer": 0.0,
+          "audio_duration_delta_samples": 0,
+          "spectral_metrics": {
+            "target_mse": 2.14383,
+            "non_target_mse": 1.69162,
+            "non_target_spectral_convergence": 0.1743,
+            "drift_ratio": 0.7891,
+            "speaker_timbral_similarity": 0.9997
+          },
+          "latency_seconds": 54.85
+        },
+        "mech3_masked_flow_guidance": {
+          "wav_file": "mech3_guided_tear_s0.wav",
+          "transcript": "a single worm tear rolled down her cheek",
+          "spoken_target_word": "tear",
+          "spoken_phonemes": [
+            "T",
+            "EH1",
+            "R"
+          ],
+          "acoustic_formants": [
+            337.2,
+            2174.3
+          ],
+          "acoustic_details": "F1=337.2Hz (exp <500Hz for /IH1/)",
+          "target_phonemes_correct": true,
+          "phoneme_error_rate": 0.0,
+          "non_target_wer": 0.143,
+          "audio_duration_delta_samples": -256,
+          "spectral_metrics": {
+            "target_mse": 1.30235,
+            "non_target_mse": 0.11156,
+            "non_target_spectral_convergence": 0.0448,
+            "drift_ratio": 0.0857,
+            "speaker_timbral_similarity": 1.0
+          },
+          "latency_seconds": 0.44
+        },
+        "mech4_acoustic_regeneration": {
+          "wav_file": "mech4_splice_tear_s0.wav",
+          "transcript": "a single warm tear rolled down her cheek",
+          "spoken_target_word": "tear",
+          "spoken_phonemes": [
+            "T",
+            "EH1",
+            "R"
+          ],
+          "acoustic_formants": [
+            495.4,
+            2139.7
+          ],
+          "acoustic_details": "F1=495.4Hz (exp <500Hz for /IH1/)",
+          "target_phonemes_correct": true,
+          "phoneme_error_rate": 0.0,
+          "non_target_wer": 0.0,
+          "audio_duration_delta_samples": -480,
+          "spectral_metrics": {
+            "target_mse": 2.99655,
+            "non_target_mse": 0.96171,
+            "non_target_spectral_convergence": 0.1314,
+            "drift_ratio": 0.3209,
+            "speaker_timbral_similarity": 1.0
+          },
+          "latency_seconds": 0.0
+        }
+      }
+    },
+    {
+      "case_id": 7,
+      "word": "tear",
+      "sense_id": 1,
+      "ipa": "/t\u025b\u0259r/",
+      "target_phonemes": [
+        "T",
+        "EH1",
+        "R"
+      ],
+      "carrier_sentence": "Strong wind gusts began to tear the cloth.",
+      "phonetic_sentence": "Strong wind gusts began to tare the cloth.",
+      "mechanisms": {
+        "baseline": {
+          "wav_file": "baseline_tear_s1.wav",
+          "transcript": "strong wind gusts began to tear the cloth",
+          "spoken_target_word": "tear",
+          "spoken_phonemes": [
+            "T",
+            "EH1",
+            "R"
+          ],
+          "acoustic_formants": [
+            462.3,
+            1834.7
+          ],
+          "acoustic_details": "F1=462.3Hz (exp >=500Hz for /EH1/)",
+          "target_phonemes_correct": true,
+          "phoneme_error_rate": 0.0,
+          "target_time_span": [
+            1.92,
+            2.04
+          ],
+          "latency_seconds": 66.83
+        },
+        "mech1_phonetic_substitution": {
+          "wav_file": "mech1_subst_tear_s1.wav",
+          "transcript": "strong wind gusts began to tear the cloth",
+          "spoken_target_word": "tear",
+          "spoken_phonemes": [
+            "T",
+            "EH1",
+            "R"
+          ],
+          "acoustic_formants": [
+            606.7,
+            1865.6
+          ],
+          "acoustic_details": "F1=606.7Hz (exp >=500Hz for /EH1/)",
+          "target_phonemes_correct": true,
+          "phoneme_error_rate": 0.0,
+          "non_target_wer": 0.0,
+          "audio_duration_delta_samples": 0,
+          "spectral_metrics": {
+            "target_mse": 1.01393,
+            "non_target_mse": 0.1578,
+            "non_target_spectral_convergence": 0.0609,
+            "drift_ratio": 0.1556,
+            "speaker_timbral_similarity": 1.0
+          },
+          "latency_seconds": 54.01
+        },
+        "mech2_text_embeddings": {
+          "wav_file": "mech2_textembed_tear_s1.wav",
+          "transcript": "strong wind gusts began to tear the cloth",
+          "spoken_target_word": "tear",
+          "spoken_phonemes": [
+            "T",
+            "EH1",
+            "R"
+          ],
+          "acoustic_formants": [
+            617.5,
+            2000.5
+          ],
+          "acoustic_details": "F1=617.5Hz (exp >=500Hz for /EH1/)",
+          "target_phonemes_correct": true,
+          "phoneme_error_rate": 0.0,
+          "non_target_wer": 0.0,
+          "audio_duration_delta_samples": 0,
+          "spectral_metrics": {
+            "target_mse": 6.4584,
+            "non_target_mse": 3.01821,
+            "non_target_spectral_convergence": 0.2665,
+            "drift_ratio": 0.4673,
+            "speaker_timbral_similarity": 0.999
+          },
+          "latency_seconds": 58.64
+        },
+        "mech3_masked_flow_guidance": {
+          "wav_file": "mech3_guided_tear_s1.wav",
+          "transcript": "strong wind gusts began to tear the cloth",
+          "spoken_target_word": "tear",
+          "spoken_phonemes": [
+            "T",
+            "EH1",
+            "R"
+          ],
+          "acoustic_formants": [
+            574.5,
+            1889.2
+          ],
+          "acoustic_details": "F1=574.5Hz (exp >=500Hz for /EH1/)",
+          "target_phonemes_correct": true,
+          "phoneme_error_rate": 0.0,
+          "non_target_wer": 0.0,
+          "audio_duration_delta_samples": -256,
+          "spectral_metrics": {
+            "target_mse": 0.35522,
+            "non_target_mse": 0.09035,
+            "non_target_spectral_convergence": 0.0463,
+            "drift_ratio": 0.2543,
+            "speaker_timbral_similarity": 1.0
+          },
+          "latency_seconds": 0.17
+        },
+        "mech4_acoustic_regeneration": {
+          "wav_file": "mech4_splice_tear_s1.wav",
+          "transcript": "strong wind gusts began to tear the cloth",
+          "spoken_target_word": "tear",
+          "spoken_phonemes": [
+            "T",
+            "EH1",
+            "R"
+          ],
+          "acoustic_formants": [
+            606.8,
+            1865.4
+          ],
+          "acoustic_details": "F1=606.8Hz (exp >=500Hz for /EH1/)",
+          "target_phonemes_correct": true,
+          "phoneme_error_rate": 0.0,
+          "non_target_wer": 0.0,
+          "audio_duration_delta_samples": -960,
+          "spectral_metrics": {
+            "target_mse": 2.28081,
+            "non_target_mse": 1.28695,
+            "non_target_spectral_convergence": 0.1772,
+            "drift_ratio": 0.5643,
+            "speaker_timbral_similarity": 0.9998
+          },
+          "latency_seconds": 0.0
+        }
+      }
+    }
+  ],
+  "recommendations": {
+    "primary_acoustic_actuation_recommendation": "Hybrid Semantic-to-Grapheme Rewrite + Boundary-Aligned Regeneration. Phonetic text substitution reliably instructs F5-TTS to produce correct target phonemes (62.5% - 87.5% depending on vocabulary mapping), whereas continuous text embedding replacement fails (0.0% accuracy) due to DiT character-position misalignment and ConvNeXt receptive field distortion. However, phonetic text substitution causes non-zero acoustic drift and temporal displacement on surrounding words. Therefore, the recommended production architecture is: (1) CPA + Hopfield memory selects canonical homophone; (2) Target word is synthesized under phonetic conditioning; (3) Acoustic regeneration splices the target phoneme patch into the baseline carrier with raised-cosine crossfade, guaranteeing zero non-target drift."
+  }
+}

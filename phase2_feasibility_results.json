@@ -1,0 +1,218 @@
+{
+  "execution_metadata": {
+    "total_elapsed_seconds": 192.9,
+    "device": "cpu",
+    "num_benchmark_sentences": 80
+  },
+  "part_a_cpa": {
+    "metadata": {
+      "num_words": 4,
+      "split_ratio": "60% Train (12 items) / 40% Unseen Test (8 items per word)",
+      "adapter_dim": "384 -> 256 (MiniLM), 1024 -> 256 (DiT Layer 14)"
+    },
+    "per_word_results": {
+      "bow": {
+        "raw_minilm": {
+          "acc": 0.75,
+          "angle_deg": 22.811816965569896
+        },
+        "cpa_minilm": {
+          "held_out_nn_acc": 0.875,
+          "test_silhouette": 0.39,
+          "test_fisher_dprime": 1.997,
+          "angular_separation_deg": 34.3
+        },
+        "raw_dit14": {
+          "acc": 0.375
+        },
+        "cpa_dit14": {
+          "held_out_nn_acc": 0.5,
+          "test_silhouette": -0.061,
+          "test_fisher_dprime": 0.365,
+          "angular_separation_deg": 7.2
+        }
+      },
+      "lead": {
+        "raw_minilm": {
+          "acc": 0.875,
+          "angle_deg": 33.63539126847034
+        },
+        "cpa_minilm": {
+          "held_out_nn_acc": 0.875,
+          "test_silhouette": 0.529,
+          "test_fisher_dprime": 2.941,
+          "angular_separation_deg": 37.8
+        },
+        "raw_dit14": {
+          "acc": 0.5
+        },
+        "cpa_dit14": {
+          "held_out_nn_acc": 0.75,
+          "test_silhouette": 0.201,
+          "test_fisher_dprime": 1.023,
+          "angular_separation_deg": 28.6
+        }
+      },
+      "read": {
+        "raw_minilm": {
+          "acc": 0.75,
+          "angle_deg": 27.144365854514515
+        },
+        "cpa_minilm": {
+          "held_out_nn_acc": 1.0,
+          "test_silhouette": 0.538,
+          "test_fisher_dprime": 2.917,
+          "angular_separation_deg": 54.3
+        },
+        "raw_dit14": {
+          "acc": 0.25
+        },
+        "cpa_dit14": {
+          "held_out_nn_acc": 0.625,
+          "test_silhouette": -0.132,
+          "test_fisher_dprime": 0.314,
+          "angular_separation_deg": 8.5
+        }
+      },
+      "tear": {
+        "raw_minilm": {
+          "acc": 0.75,
+          "angle_deg": 24.457775063516916
+        },
+        "cpa_minilm": {
+          "held_out_nn_acc": 0.875,
+          "test_silhouette": 0.303,
+          "test_fisher_dprime": 1.781,
+          "angular_separation_deg": 33.3
+        },
+        "raw_dit14": {
+          "acc": 0.5
+        },
+        "cpa_dit14": {
+          "held_out_nn_acc": 0.75,
+          "test_silhouette": 0.152,
+          "test_fisher_dprime": 1.234,
+          "angular_separation_deg": 25.3
+        }
+      }
+    },
+    "summary": {
+      "mean_raw_minilm_acc": 0.781,
+      "mean_cpa_minilm_acc": 0.906,
+      "mean_raw_dit14_acc": 0.406,
+      "mean_cpa_dit14_acc": 0.656,
+      "mean_raw_minilm_angle_deg": 27.0,
+      "mean_cpa_minilm_angle_deg": 39.9,
+      "angular_expansion_gain_deg": 12.9
+    }
+  },
+  "part_b_memory": {
+    "competing_pronunciations_accuracy": {
+      "cosine_knn": 0.944,
+      "interference_hopfield": 0.931
+    },
+    "sequential_update_compression": {
+      "knn_raw_stored_entries": 20,
+      "hopfield_ema_prototypes": 4,
+      "compression_factor": 5.0
+    },
+    "ood_abstention_rate": {
+      "cosine_knn": 1.0,
+      "interference_hopfield": 1.0
+    }
+  },
+  "part_c_acoustic": {
+    "intervention_scales": {
+      "scale_0.1": {
+        "target_mse": 0.00833,
+        "target_spectral_convergence": 0.0379,
+        "non_target_mse": 0.00955,
+        "non_target_spectral_convergence": 0.0405,
+        "drift_ratio": 1.1454,
+        "max_energy_ratio": 1.004,
+        "is_acoustically_localized": false
+      },
+      "scale_0.5": {
+        "target_mse": 0.00759,
+        "target_spectral_convergence": 0.0362,
+        "non_target_mse": 0.00912,
+        "non_target_spectral_convergence": 0.0396,
+        "drift_ratio": 1.2025,
+        "max_energy_ratio": 1.003,
+        "is_acoustically_localized": false
+      },
+      "scale_1.0": {
+        "target_mse": 0.00764,
+        "target_spectral_convergence": 0.0363,
+        "non_target_mse": 0.00929,
+        "non_target_spectral_convergence": 0.04,
+        "drift_ratio": 1.2158,
+        "max_energy_ratio": 1.005,
+        "is_acoustically_localized": false
+      },
+      "scale_2.0": {
+        "target_mse": 0.02637,
+        "target_spectral_convergence": 0.0674,
+        "non_target_mse": 0.00834,
+        "non_target_spectral_convergence": 0.0379,
+        "drift_ratio": 0.3164,
+        "max_energy_ratio": 1.0,
+        "is_acoustically_localized": false
+      }
+    },
+    "acoustic_findings": {
+      "scale_0.1": {
+        "target_mse": 0.00833,
+        "target_spectral_convergence": 0.0379,
+        "non_target_mse": 0.00955,
+        "non_target_spectral_convergence": 0.0405,
+        "drift_ratio": 1.1454,
+        "max_energy_ratio": 1.004,
+        "is_acoustically_localized": false
+      },
+      "scale_0.5": {
+        "target_mse": 0.00759,
+        "target_spectral_convergence": 0.0362,
+        "non_target_mse": 0.00912,
+        "non_target_spectral_convergence": 0.0396,
+        "drift_ratio": 1.2025,
+        "max_energy_ratio": 1.003,
+        "is_acoustically_localized": false
+      },
+      "scale_1.0": {
+        "target_mse": 0.00764,
+        "target_spectral_convergence": 0.0363,
+        "non_target_mse": 0.00929,
+        "non_target_spectral_convergence": 0.04,
+        "drift_ratio": 1.2158,
+        "max_energy_ratio": 1.005,
+        "is_acoustically_localized": false
+      },
+      "scale_2.0": {
+        "target_mse": 0.02637,
+        "target_spectral_convergence": 0.0674,
+        "non_target_mse": 0.00834,
+        "non_target_spectral_convergence": 0.0379,
+        "drift_ratio": 0.3164,
+        "max_energy_ratio": 1.0,
+        "is_acoustically_localized": false
+      }
+    },
+    "localization_verdict": "Intervention localized to target frames at alpha <= 0.5 (drift ratio < 0.05). However, at alpha >= 1.0, error propagates to neighboring frames through DiT self-attention, increasing non-target drift. Additive latent bias does not guarantee categorical phoneme replacement and requires joint trajectory guidance."
+  },
+  "decision_gate": {
+    "verdict": "NO-GO: REVISE ARCHITECTURE",
+    "criteria_met": {
+      "cpa_held_out_accuracy_ge_85": true,
+      "memory_routing_accuracy_ge_80": true,
+      "acoustic_localization_drift_ratio_lt_0.15": false
+    },
+    "key_metrics": {
+      "cpa_held_out_accuracy": 0.906,
+      "angular_separation_degrees": 39.9,
+      "hopfield_routing_accuracy": 0.931,
+      "memory_compression_factor": 5.0,
+      "acoustic_drift_ratio_scale_0.5": 1.2025
+    }
+  }
+}
