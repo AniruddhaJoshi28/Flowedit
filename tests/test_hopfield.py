@@ -333,26 +333,28 @@ class TestHopfieldRefiner:
         assert (res.waveform == 0).all()
 
     def test_homograph_contextual_disambiguation_lead(self):
-        # The pronunciation comes from the learned correction itself (no built-in word tables)
-        k = torch.randn(self.dim)
-        v = torch.randn(self.dim)
-        self.memory.write(
-            key=k,
-            value=v,
-            word="lead",
-            carrier_text="This toy is made up of lead",
-            phonetic_text="led",
-        )
+        # The pronunciation comes from the learned correction itself (no built-in word tables);
+        # the context sense model applies it only to the occurrence whose context supports it
+        table = torch.randn(256, self.dim, generator=torch.Generator().manual_seed(0))
 
         class DummyBackbone:
             embedding_dim = 128
             device = "cpu"
             def encode_text(self, text, lang="en"):
-                return torch.randn(1, len(text), 128)
+                return table[torch.tensor([ord(c) % 256 for c in text])].unsqueeze(0)
             def synthesize_direct(self, text, speaker_conditioning, **kwargs):
                 return torch.ones(1, 24000), 24000
 
         bb = DummyBackbone()
+        self.memory.attach_text_encoder(bb.encode_text)
+        carrier = "This toy is made up of lead"
+        self.memory.write(
+            key=self.memory._carrier_key(carrier, "lead"),
+            value=torch.randn(self.dim),
+            word="lead",
+            carrier_text=carrier,
+            phonetic_text="led",
+        )
         test_sentence = "This toy is made up of lead and Anurag is the lead of data science"
         res = self.refiner.forward(
             backbone=bb,

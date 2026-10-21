@@ -1,0 +1,51 @@
+[
+  {
+    "carrier": "This toy is made up of lead.",
+    "ref_clip": {
+      "path": "../out/ref_lead_metal.wav",
+      "t0": 4.14,
+      "t1": 8.23,
+      "transcript": "this toy is made up of lead"
+    },
+    "phonetic_hint": "led",
+    "success": true,
+    "error": null,
+    "memory_index": 3,
+    "seconds": 372.4,
+    "token_indices": [
+      23,
+      24,
+      25,
+      26
+    ],
+    "initial_loss": 7.817538738250732,
+    "final_loss": 4.528316728770733,
+    "word_delta_norm": 34.89106369018555
+  },
+  {
+    "carrier": "She is the lead of data science.",
+    "ref_clip": {
+      "path": "../out/ref_lead_leader.wav",
+      "t0": 11.32,
+      "t1": 16.23,
+      "transcript": "is the lead of data science"
+    },
+    "phonetic_hint": "leed",
+    "success": true,
+    "error": null,
+    "memory_index": 4,
+    "seconds": 372.4,
+    "token_indices": [
+      11,
+      12,
+      13,
+      14
+    ],
+    "initial_loss": 10.440325736999512,
+    "final_loss": 7.972681924700737,
+    "word_delta_norm": 34.981754302978516
+  },
+  {
+    "pre_existing_entries_unchanged": false
+  }
+]

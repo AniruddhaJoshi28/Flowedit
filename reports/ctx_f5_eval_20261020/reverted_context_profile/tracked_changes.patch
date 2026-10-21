@@ -1,0 +1,338 @@
+diff --git a/flowedit/config.py b/flowedit/config.py
+index de256ec..2149576 100644
+--- a/flowedit/config.py
++++ b/flowedit/config.py
+@@ -182,6 +182,16 @@ class MemoryConfig:
+     # LRU pruning access age threshold
+     lru_max_age: int = 1000
+ 
++    # ─── Context-Robust Hopfield Retrieval (word-level multi-scale context + same-word competition) ───
++    # "baseline": original retrieval, bit-identical (default)
++    # "shadow":   original retrieval drives synthesis; the contextual reranking is computed and logged
++    # "active":   contextual reranking selects among competing pronunciations of the same word
++    retrieval_mode: str = field(default_factory=lambda: os.environ.get("FLOWEDIT_RETRIEVAL_MODE", "baseline"))
++    # Word radii of the left/right context profiles (plus one sentence-level profile)
++    context_word_radii: Tuple[int, ...] = (1, 2, 4)
++    # η: weight of the group-centred contextual similarity added to the original score
++    sense_eta: float = 1.0
++
+ 
+ 
+ @dataclass
+diff --git a/flowedit/memory/hopfield_memory.py b/flowedit/memory/hopfield_memory.py
+index f5d2631..a71839e 100644
+--- a/flowedit/memory/hopfield_memory.py
++++ b/flowedit/memory/hopfield_memory.py
+@@ -39,9 +39,12 @@ import torch.nn as nn
+ import torch.nn.functional as F
+ 
+ from flowedit.config import MemoryConfig
++from flowedit.memory import context_profile as cp
+ 
+ logger = logging.getLogger(__name__)
+ 
++RETRIEVAL_MODES = ("baseline", "shadow", "active")
++
+ GRAMMAR_STOPWORDS = {
+     'a', 'an', 'the',
+     'is', 'are', 'am', 'was', 'were', 'be', 'been', 'being',
+@@ -161,6 +164,7 @@ class MemoryEntry:
+     sense_prototype: Optional[torch.Tensor] = None          # EMA of contextual occurrence embeddings (backbone-independent)
+     space_data: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+     delta_space: Optional[str] = None
++    context_profile: Optional[Dict[str, torch.Tensor]] = None  # word-level multi-scale context (backbone space)
+ 
+ 
+ @dataclass
+@@ -247,6 +251,14 @@ class HopfieldMemory(nn.Module):
+         self._sense_lexicon_spec = sense_lexicon
+         self._rekey_cache: Dict[Tuple[str, str, Tuple[int, int]], torch.Tensor] = {}
+ 
++        # Context-robust retrieval
++        mode = (getattr(self.config, "retrieval_mode", "baseline") or "baseline").strip().lower()
++        if mode not in RETRIEVAL_MODES:
++            raise ValueError(f"retrieval_mode must be one of {RETRIEVAL_MODES}, got '{mode}'")
++        self.retrieval_mode = mode
++        self._tokenizer: Any = None
++        self.last_retrieval_diagnostics: List[Dict[str, Any]] = []
++
+     @property
+     def num_entries(self) -> int:
+         return len(self.entries)
+@@ -310,6 +322,126 @@ class HopfieldMemory(nn.Module):
+             if entry.space_data.get(self.space) is None:
+                 self._localize(entry)
+ 
++    def attach_tokenizer(self, tokenizer: Any) -> None:
++        """Attach the backbone tokenizer so word alignment follows its real preprocessing."""
++        self._tokenizer = tokenizer
++
++    # ─────────────────────────────────────────────────────────────────────────
++    # Word-level context profiles (context-robust retrieval)
++    # ─────────────────────────────────────────────────────────────────────────
++
++    def _token_chars(self, text: str, n_tok: int, tokenizer: Any = None) -> Optional[List[int]]:
++        """Token → text-character map following the backbone tokenizer (None = unknown)."""
++        tok = tokenizer if tokenizer is not None else self._tokenizer
++        if tok is not None and hasattr(tok, "encode"):
++            try:
++                ids = tok.encode(text, lang="en")
++                if isinstance(ids, list) and ids and isinstance(ids[0], list):
++                    ids = ids[0]
++                id_to_char = getattr(tok, "id_to_char", None)
++                if id_to_char:
++                    chars = [id_to_char.get(int(i), "") for i in ids]
++                elif hasattr(tok, "decode"):
++                    chars = [tok.decode([int(i)]) for i in ids]
++                else:
++                    chars = None
++                if chars is not None and len(chars) == n_tok:
++                    return cp.align_tokens_to_chars(text, chars)
++            except Exception as e:
++                logger.debug(f"Tokenizer alignment failed: {e}")
++        if n_tok == len(text):
++            return list(range(n_tok))
++        return None
++
++    def compute_context_profile(
++        self,
++        embeddings: torch.Tensor,
++        text: str,
++        char_span: Tuple[int, int],
++        tokenizer: Any = None,
++    ) -> Optional[Dict[str, torch.Tensor]]:
++        """Word-level multi-scale context profile of one occurrence (existing backbone embeddings)."""
++        n_tok = embeddings.shape[1] if embeddings.dim() == 3 else embeddings.shape[0]
++        return cp.profile_from_embeddings(
++            embeddings, text, char_span,
++            token_chars=self._token_chars(text, n_tok, tokenizer),
++            radii=tuple(getattr(self.config, "context_word_radii", (1, 2, 4))),
++        )
++
++    def _profile_for_carrier(self, carrier: str, word: str, char_span=None) -> Optional[Dict[str, torch.Tensor]]:
++        if self._text_encoder is None or not carrier or self._is_unconditional(word, carrier):
++            return None
++        span = self._pick_span(carrier, word, char_span=char_span)
++        if span is None:
++            return None
++        try:
++            with torch.no_grad():
++                emb = self._text_encoder(carrier, "en")
++            return self.compute_context_profile(emb, carrier, span)
++        except Exception as e:
++            logger.warning(f"Context profile failed for '{word}' in '{carrier[:60]}': {e}")
++            return None
++
++    def _entry_context_profile(self, entry: MemoryEntry) -> Optional[Dict[str, torch.Tensor]]:
++        """Stored profile, or rebuilt (EMA over carriers) from the entry's existing carrier texts."""
++        if entry.context_profile:
++            return entry.context_profile
++        carriers = [c for c in (entry.carrier_texts or [entry.carrier_text]) if c]
++        prof = None
++        for i, c in enumerate(carriers):
++            p = self._profile_for_carrier(c, entry.word, entry.metadata.get("char_span") if i == 0 else None)
++            prof = cp.ema_profile(prof, p, self.dedup_ema) if prof is not None else p
++        entry.context_profile = prof
++        return prof
++
++    def _contextual_rerank(
++        self,
++        contextual: List[Tuple[int, MemoryEntry]],
++        base_sims: List[float],
++        base_j: int,
++        occ_profile_fn: Callable[[], Optional[Dict[str, torch.Tensor]]],
++        full_scores_fn: Callable[[], torch.Tensor],
++    ) -> Tuple[int, Dict[str, Any]]:
++        """Same-word pronunciation competition with group-mass-preserving attention.
++
++            S_i^new = S_i^orig + η (ctx_i − mean_G ctx)
++            a_i^new = A_G^base · softmax_G(β S^new)_i       (other groups keep a^base)
++        """
++        diag: Dict[str, Any] = {"applied": False, "baseline_choice": contextual[base_j][0]}
++        classes = {_norm_pron(e.word, e.phonetic_text) or f"#{i}" for i, e in contextual}
++        if len(contextual) < 2 or len(classes) < 2:
++            return base_j, diag
++        q = occ_profile_fn()
++        profs = [self._entry_context_profile(e) for _, e in contextual]
++        if not q or any(not p for p in profs):
++            diag["reason"] = "missing_profile"
++            return base_j, diag
++        ctx = torch.tensor([cp.profile_similarity(q, p) for p in profs])
++        eta = float(getattr(self.config, "sense_eta", 1.0))
++        s_orig = torch.tensor(base_sims, dtype=torch.float32)
++        s_new = s_orig + eta * (ctx - ctx.mean())
++        beta = float(self.config.retrieval_score_scale) if self.beta < 1.0 else float(self.beta)
++
++        full = full_scores_fn().detach().cpu().float()   # β·cos over all memory entries
++        group = [m for m, _ in contextual]
++        a_base, a_new = cp.group_preserving_attention(full, group, beta * s_new)
++        new_j = int(torch.argmax(a_new[torch.tensor(group)]).item())
++        diag.update({
++            "applied": True,
++            "group": group,
++            "labels": [_norm_pron(e.word, e.phonetic_text) for _, e in contextual],
++            "ctx_sims": ctx.tolist(),
++            "orig_sims": base_sims,
++            "new_scores": s_new.tolist(),
++            "attn_base": a_base[torch.tensor(group)].tolist(),
++            "attn_new": a_new[torch.tensor(group)].tolist(),
++            "group_mass": float(a_base[torch.tensor(group)].sum()),
++            "new_choice": contextual[new_j][0],
++            "max_other_attn_change": 0.0 if len(group) == len(full) else float(
++                (a_new - a_base)[[k for k in range(len(full)) if k not in group]].abs().max()),
++        })
++        return new_j, diag
++
+     def _occurrence_vectors(self, text: str, spans: List[Tuple[int, int]]) -> Optional[torch.Tensor]:
+         enc = self.sense_encoder
+         if enc is None or not text or not spans:
+@@ -654,6 +786,12 @@ class HopfieldMemory(nn.Module):
+             vec = self._occurrence_vectors(carrier_text, [occ_span])
+             proto = vec[0] if vec is not None else None
+ 
++        # Word-level context profile, stored incrementally (only when the new retrieval is enabled;
++        # baseline mode never computes it and legacy entries rebuild it lazily from their carriers)
++        new_profile = None
++        if self.retrieval_mode != "baseline" and occ_span is not None:
++            new_profile = self._profile_for_carrier(carrier_text, word, char_span=occ_span)
++
+         pron = _norm_pron(word, phonetic_text)
+ 
+         # Homographs known to the sense lexicon: a spelling that denotes one of its senses is a
+@@ -708,6 +846,11 @@ class HopfieldMemory(nn.Module):
+                     else:
+                         matched.sense_prototype = proto
+ 
++                # 5. Word-level context profile EMA (rebuilt from earlier carriers if missing)
++                if new_profile is not None:
++                    old_prof = self._entry_context_profile(matched)
++                    matched.context_profile = cp.ema_profile(old_prof, new_profile, decay)
++
+                 matched.access_count += 1
+                 matched.last_access_step = self.current_step
+                 meta.pop("char_span", None)
+@@ -759,6 +902,7 @@ class HopfieldMemory(nn.Module):
+             phonetic_text=phonetic_text,
+             sense_prototype=proto,
+             delta_space=self.space if cur_word_delta is not None else None,
++            context_profile=new_profile,
+         )
+         self._store_local(entry)
+         self.entries.append(entry)
+@@ -850,6 +994,9 @@ class HopfieldMemory(nn.Module):
+         candidates: List[Tuple[int, MemoryEntry]],
+         occ_vec: Optional[torch.Tensor],
+         occ_key_fn: Callable[[], torch.Tensor],
++        occ_profile_fn: Optional[Callable[[], Optional[Dict[str, torch.Tensor]]]] = None,
++        all_keys: Optional[torch.Tensor] = None,
++        diag_sink: Optional[Dict[str, Any]] = None,
+     ) -> Optional[Tuple[int, MemoryEntry, float]]:
+         """Assign one occurrence to a sense cluster of its word.
+ 
+@@ -884,6 +1031,19 @@ class HopfieldMemory(nn.Module):
+                 threshold = multi_thr if len(classes) > 1 else single_thr
+                 j = max(range(len(sims)), key=lambda k: sims[k])
+                 if sims[j] >= threshold:
++                    # Context-robust retrieval: the original score still decides WHETHER a learned
++                    # sense applies (gate input unchanged); the rerank only decides WHICH one.
++                    if (self.retrieval_mode != "baseline" and not use_protos and occ_profile_fn is not None
++                            and all_keys is not None):
++                        beta = float(self.config.retrieval_score_scale) if self.beta < 1.0 else float(self.beta)
++                        full_fn = lambda: beta * torch.matmul(
++                            F.normalize(all_keys.to(occ_key), p=2, dim=-1), occ_key)
++                        new_j, diag = self._contextual_rerank(contextual, sims, j, occ_profile_fn, full_fn)
++                        diag["mode"] = self.retrieval_mode
++                        if diag_sink is not None:
++                            diag_sink.update(diag)
++                        if self.retrieval_mode == "active":
++                            j = new_j
+                     m_idx, entry = contextual[j]
+                     return m_idx, entry, sims[j]
+ 
+@@ -921,6 +1081,7 @@ class HopfieldMemory(nn.Module):
+         """
+         device = query_embeddings.device
+         dtype = query_embeddings.dtype
++        self.last_retrieval_diagnostics = []
+         if query_embeddings.dim() == 3:
+             Q = query_embeddings[0]  # [S, d]
+         else:
+@@ -1094,11 +1255,26 @@ class HopfieldMemory(nn.Module):
+                     continue
+ 
+                 occ_vec = occ_vecs[o_idx] if occ_vecs is not None else None
+-                chosen = self._select_sense(
+-                    word_to_entries[w_norm],
+-                    occ_vec,
+-                    lambda s=span_start, e=span_end: self.compute_context_key(Q, list(range(s, e))),
+-                )
++                diag: Dict[str, Any] = {}
++                if self.retrieval_mode == "baseline":
++                    chosen = self._select_sense(
++                        word_to_entries[w_norm],
++                        occ_vec,
++                        lambda s=span_start, e=span_end: self.compute_context_key(Q, list(range(s, e))),
++                    )
++                else:
++                    chosen = self._select_sense(
++                        word_to_entries[w_norm],
++                        occ_vec,
++                        lambda s=span_start, e=span_end: self.compute_context_key(Q, list(range(s, e))),
++                        occ_profile_fn=lambda cs=c_start, ce=c_end: self.compute_context_profile(Q, text, (cs, ce), tokenizer),
++                        all_keys=K,
++                        diag_sink=diag,
++                    )
++                    diag.update({"word": w_norm, "char_start": c_start, "text": text,
++                                 "mode": self.retrieval_mode,
++                                 "final_choice": chosen[0] if chosen is not None else None})
++                    self.last_retrieval_diagnostics.append(diag)
+                 if chosen is None:
+                     logger.info(f"[Hopfield Retrieve] '{text[c_start:c_end]}' @{c_start}: no learned sense matches this context")
+                     continue
+@@ -1233,6 +1409,11 @@ class HopfieldMemory(nn.Module):
+                 "space_data": e.space_data,
+                 "sense_prototype": e.sense_prototype.cpu() if e.sense_prototype is not None else None,
+             })
++            if e.context_profile:
++                entries[-1]["context_profile"] = {
++                    "space": self.space,
++                    "profile": {k: v.detach().cpu().float() for k, v in e.context_profile.items()},
++                }
+         data = {
+             "entries": entries,
+             "current_step": self.current_step,
+@@ -1294,6 +1475,9 @@ class HopfieldMemory(nn.Module):
+                 sense_prototype=item.get("sense_prototype") if same_encoder else None,
+                 space_data=space_data,
+             )
++            stored_prof = item.get("context_profile")
++            if isinstance(stored_prof, dict) and stored_prof.get("space") == self.space:
++                entry.context_profile = stored_prof.get("profile") or None
+             self._localize(entry)
+             loaded_entries.append(entry)
+         self.entries = loaded_entries
+diff --git a/flowedit/pipeline/correction_loop.py b/flowedit/pipeline/correction_loop.py
+index c0e2f0b..ec3b475 100644
+--- a/flowedit/pipeline/correction_loop.py
++++ b/flowedit/pipeline/correction_loop.py
+@@ -88,6 +88,7 @@ class CorrectionLoop:
+             embedding_space=self.backbone.embedding_space,
+             text_encoder=self.backbone.encode_text,
+         )
++        self.memory.attach_tokenizer(getattr(self.backbone, "tokenizer_instance", None))
+         # Load the shared contextual sense encoder now rather than on the first request
+         self.memory.sense_encoder
+         self.memory.sense_lexicon
+diff --git a/flowedit/pipeline/inference.py b/flowedit/pipeline/inference.py
+index 084a01a..ff8851f 100644
+--- a/flowedit/pipeline/inference.py
++++ b/flowedit/pipeline/inference.py
+@@ -65,6 +65,8 @@ class FlowEditInference:
+                 text_encoder=self.backbone.encode_text,
+             )
+ 
++        if hasattr(self.memory, "attach_tokenizer"):
++            self.memory.attach_tokenizer(getattr(self.backbone, "tokenizer_instance", None))
+         self.refiner = HopfieldRefiner(memory=self.memory, config=self.config.memory)
+         self.memory.sense_encoder  # warm the shared contextual sense encoder
+         self.memory.sense_lexicon  # and the pretrained homograph sense lexicon

@@ -74,24 +74,24 @@ def test_backbone_speaker_embedding(sample_wav):
 def test_homograph_sense_alignment_with_carrier_variation():
     """Verify that homograph 'lead' matches the metal occurrence ('led') and preserves the leader occurrence."""
     dim = 128
+    table = torch.randn(256, dim, generator=torch.Generator().manual_seed(0))
+    encode = lambda text, lang="en": table[torch.tensor([ord(c) % 256 for c in text])].unsqueeze(0)  # noqa: E731
     config = MemoryConfig(gate_threshold_init=0.0)
-    memory = HopfieldMemory(config=config, embedding_dim=dim)
+    memory = HopfieldMemory(config=config, embedding_dim=dim, text_encoder=encode)
 
     # Register 'lead' (metal sense) with carrier text "This toy is made up of lead"
-    key = torch.randn(dim)
-    key = torch.nn.functional.normalize(key, p=2, dim=-1)
-    val = torch.ones(dim) * 0.4
+    carrier = "This toy is made up of lead"
     memory.write(
-        key=key,
-        value=val,
+        key=memory._carrier_key(carrier, "lead"),
+        value=torch.ones(dim) * 0.4,
         word="lead",
-        carrier_text="This toy is made up of lead",
+        carrier_text=carrier,
         phonetic_text="led",
     )
 
-    # Test sentence with slight typo/carrier variation: "The toy is made up lead and Anurag is the lead of data science"
-    test_text = "The toy is made up lead and Anurag is the lead of data science"
-    query_emb = torch.randn(1, len(test_text.split()), dim)
+    # Carrier variation around the corrected phrase, plus a second 'lead' in another context
+    test_text = "The toy is made up of lead and Anurag is the lead of data science"
+    query_emb = encode(test_text)
 
     retrieval = memory.retrieve(query_emb, text=test_text)
     assert retrieval.is_active, "Memory should be active for the metal sense of lead"
@@ -99,8 +99,7 @@ def test_homograph_sense_alignment_with_carrier_variation():
     matched = retrieval.matched_spans[0]
     assert matched.word == "lead"
     assert matched.phonetic_text == "led"
-    # Occurrence 1 character span starts around character 19
-    assert matched.char_start == 19
+    assert matched.char_start == test_text.index("lead")
 
 
 def test_f5tts_seed_and_parameter_handling():

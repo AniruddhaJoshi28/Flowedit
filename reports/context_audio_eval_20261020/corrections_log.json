@@ -1,0 +1,200 @@
+[
+  {
+    "word": "lead",
+    "expected_vowel": "EH",
+    "carrier": "This toy is made up of lead.",
+    "hint": "led",
+    "reference": "refs/human_metal.wav",
+    "source": "human",
+    "reference_check": {
+      "verdict": "MANUAL",
+      "vowel": null,
+      "window": "\u025b d",
+      "reason": "no onset+vowel in word window"
+    },
+    "success": false,
+    "error": "reference does not carry the intended vowel; skipped"
+  },
+  {
+    "word": "lead",
+    "carrier": "The old pipes were full of lead.",
+    "reused": true
+  },
+  {
+    "word": "lead",
+    "carrier": "Lead paint is dangerous for children.",
+    "reused": true
+  },
+  {
+    "word": "lead",
+    "expected_vowel": "IY",
+    "carrier": "She is the lead of data science.",
+    "hint": "leed",
+    "reference": "refs/human_leader.wav",
+    "source": "human",
+    "reference_check": {
+      "verdict": "MANUAL",
+      "vowel": null,
+      "window": "i\u02d0 d",
+      "reason": "no onset+vowel in word window"
+    },
+    "success": false,
+    "error": "reference does not carry the intended vowel; skipped"
+  },
+  {
+    "word": "lead",
+    "carrier": "He will lead the team next year.",
+    "reused": true
+  },
+  {
+    "word": "lead",
+    "carrier": "Our team lead approved the plan.",
+    "reused": true
+  },
+  {
+    "word": "read",
+    "carrier": "Yesterday she read the whole book.",
+    "reused": true
+  },
+  {
+    "word": "read",
+    "carrier": "I have already read that report.",
+    "reused": true
+  },
+  {
+    "word": "read",
+    "carrier": "He read the letter twice last night.",
+    "reused": true
+  },
+  {
+    "word": "read",
+    "carrier": "Please read the instructions carefully.",
+    "reused": true
+  },
+  {
+    "word": "read",
+    "carrier": "I like to read before bed.",
+    "reused": true
+  },
+  {
+    "word": "read",
+    "carrier": "Can you read this sentence aloud?",
+    "reused": true
+  },
+  {
+    "word": "wound",
+    "expected_vowel": "UW",
+    "carrier": "The nurse cleaned the wound carefully.",
+    "hint": "woond",
+    "reference": "refs/f5_12_woond.wav",
+    "source": "f5:The nurse cleaned the woond carefully.",
+    "reference_check": {
+      "verdict": "MANUAL",
+      "vowel": null,
+      "window": "u\u02d0 n d k",
+      "reason": "no onset+vowel in word window"
+    },
+    "success": false,
+    "error": "reference does not carry the intended vowel; skipped"
+  },
+  {
+    "word": "wound",
+    "expected_vowel": "UW",
+    "carrier": "The soldier had a deep wound in his leg.",
+    "hint": "woond",
+    "reference": "refs/f5_13_woond.wav",
+    "source": "f5:The soldier had a deep woond in his leg.",
+    "reference_check": {
+      "verdict": "UW",
+      "vowel": "u\u02d0",
+      "window": "w u\u02d0 n d \u026a",
+      "reason": ""
+    },
+    "success": true,
+    "error": null,
+    "memory_index": 7,
+    "seconds": 297.5,
+    "align_conf": 0.676,
+    "initial_loss": 11.973133087158203,
+    "final_loss": 8.538557328283787
+  },
+  {
+    "word": "wound",
+    "expected_vowel": "UW",
+    "carrier": "Words can wound people deeply.",
+    "hint": "woond",
+    "reference": "refs/f5_14_woond.wav",
+    "source": "f5:Words can woond people deeply.",
+    "reference_check": {
+      "verdict": "UW",
+      "vowel": "u\u02d0",
+      "window": "w u\u02d0 n d p i\u02d0",
+      "reason": ""
+    },
+    "success": true,
+    "error": null,
+    "memory_index": 7,
+    "seconds": 298.4,
+    "align_conf": 0.739,
+    "initial_loss": 11.245924949645996,
+    "final_loss": 8.064423575997353
+  },
+  {
+    "word": "wound",
+    "expected_vowel": "AW",
+    "carrier": "She wound the clock before bed.",
+    "hint": "wownd",
+    "reference": "refs/f5_15_wownd.wav",
+    "source": "f5:She wownd the clock before bed.",
+    "reference_check": {
+      "verdict": "AW",
+      "vowel": "a\u028a",
+      "window": "w a\u028a n d \u00f0 \u0259",
+      "reason": ""
+    },
+    "success": true,
+    "error": null,
+    "memory_index": 8,
+    "seconds": 313.0,
+    "align_conf": 0.756,
+    "initial_loss": 9.151751518249512,
+    "final_loss": 6.96231535077095
+  },
+  {
+    "word": "wound",
+    "expected_vowel": "AW",
+    "carrier": "He wound the rope around the post.",
+    "hint": "wownd",
+    "reference": "refs/f5_16_wownd.wav",
+    "source": "f5:He wownd the rope around the post.",
+    "reference_check": {
+      "verdict": "MANUAL",
+      "vowel": null,
+      "window": "a\u028a n d \u00f0 \u0259",
+      "reason": "no onset+vowel in word window"
+    },
+    "success": false,
+    "error": "reference does not carry the intended vowel; skipped"
+  },
+  {
+    "word": "wound",
+    "expected_vowel": "AW",
+    "carrier": "The path wound through the hills.",
+    "hint": "wownd",
+    "reference": "refs/f5_17_wownd.wav",
+    "source": "f5:The path wownd through the hills.",
+    "reference_check": {
+      "verdict": "AW",
+      "vowel": "a\u028a",
+      "window": "\u03b8 w a\u028a n d \u03b8",
+      "reason": ""
+    },
+    "success": true,
+    "error": null,
+    "memory_index": 8,
+    "seconds": 316.1,
+    "align_conf": 0.839,
+    "initial_loss": 11.958582878112793,
+    "final_loss": 7.706977754831314
+  }
+]

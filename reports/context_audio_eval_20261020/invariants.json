@@ -1,0 +1,256 @@
+{
+  "gates_identical": [
+    {
+      "id": "L01",
+      "identical": true
+    },
+    {
+      "id": "L02",
+      "identical": true
+    },
+    {
+      "id": "L03",
+      "identical": true
+    },
+    {
+      "id": "L04",
+      "identical": true
+    },
+    {
+      "id": "L05",
+      "identical": true
+    },
+    {
+      "id": "L06",
+      "identical": true
+    },
+    {
+      "id": "L07",
+      "identical": true
+    },
+    {
+      "id": "L08",
+      "identical": true
+    },
+    {
+      "id": "L09",
+      "identical": true
+    },
+    {
+      "id": "L10",
+      "identical": true
+    },
+    {
+      "id": "L11",
+      "identical": true
+    },
+    {
+      "id": "L12",
+      "identical": true
+    },
+    {
+      "id": "L13",
+      "identical": true
+    },
+    {
+      "id": "L14",
+      "identical": true
+    },
+    {
+      "id": "L15",
+      "identical": true
+    },
+    {
+      "id": "L16",
+      "identical": true
+    },
+    {
+      "id": "L17",
+      "identical": true
+    },
+    {
+      "id": "L18",
+      "identical": true
+    },
+    {
+      "id": "L19",
+      "identical": true
+    },
+    {
+      "id": "L20",
+      "identical": true
+    },
+    {
+      "id": "R01",
+      "identical": true
+    },
+    {
+      "id": "R02",
+      "identical": true
+    },
+    {
+      "id": "R03",
+      "identical": true
+    },
+    {
+      "id": "R04",
+      "identical": true
+    },
+    {
+      "id": "R05",
+      "identical": true
+    },
+    {
+      "id": "R06",
+      "identical": true
+    },
+    {
+      "id": "R07",
+      "identical": true
+    },
+    {
+      "id": "R08",
+      "identical": true
+    },
+    {
+      "id": "R09",
+      "identical": true
+    },
+    {
+      "id": "R10",
+      "identical": true
+    },
+    {
+      "id": "R11",
+      "identical": true
+    },
+    {
+      "id": "R12",
+      "identical": true
+    },
+    {
+      "id": "R13",
+      "identical": true
+    },
+    {
+      "id": "R14",
+      "identical": true
+    },
+    {
+      "id": "R15",
+      "identical": true
+    },
+    {
+      "id": "R16",
+      "identical": true
+    },
+    {
+      "id": "R17",
+      "identical": true
+    },
+    {
+      "id": "R18",
+      "identical": true
+    },
+    {
+      "id": "R19",
+      "identical": true
+    },
+    {
+      "id": "R20",
+      "identical": true
+    },
+    {
+      "id": "X01",
+      "identical": true
+    },
+    {
+      "id": "X02",
+      "identical": true
+    },
+    {
+      "id": "X03",
+      "identical": true
+    },
+    {
+      "id": "X04",
+      "identical": true
+    },
+    {
+      "id": "M01",
+      "identical": true
+    },
+    {
+      "id": "M02",
+      "identical": true
+    },
+    {
+      "id": "M03",
+      "identical": true
+    },
+    {
+      "id": "M04",
+      "identical": true
+    },
+    {
+      "id": "W01",
+      "identical": true
+    },
+    {
+      "id": "W02",
+      "identical": true
+    },
+    {
+      "id": "W03",
+      "identical": true
+    },
+    {
+      "id": "W04",
+      "identical": true
+    },
+    {
+      "id": "W05",
+      "identical": true
+    },
+    {
+      "id": "W06",
+      "identical": true
+    },
+    {
+      "id": "W07",
+      "identical": true
+    },
+    {
+      "id": "W08",
+      "identical": true
+    },
+    {
+      "id": "W09",
+      "identical": true
+    },
+    {
+      "id": "W10",
+      "identical": true
+    },
+    {
+      "id": "C01",
+      "identical": true
+    },
+    {
+      "id": "C02",
+      "identical": true
+    }
+  ],
+  "single_sense_identical": [
+    {
+      "id": "C01",
+      "identical": true
+    },
+    {
+      "id": "C02",
+      "identical": true
+    }
+  ],
+  "stored_vectors_unchanged": true,
+  "source_memory_md5_unchanged": true
+}

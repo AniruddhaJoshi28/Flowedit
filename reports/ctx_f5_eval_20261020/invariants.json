@@ -1,0 +1,351 @@
+{
+  "baseline_vs_shadow": [
+    {
+      "id": "A1",
+      "identical": true,
+      "max_abs_diff": 0.0,
+      "synth_text_equal": true
+    },
+    {
+      "id": "A2",
+      "identical": true,
+      "max_abs_diff": 0.0,
+      "synth_text_equal": true
+    },
+    {
+      "id": "A3",
+      "identical": true,
+      "max_abs_diff": 0.0,
+      "synth_text_equal": true
+    },
+    {
+      "id": "A4",
+      "identical": true,
+      "max_abs_diff": 0.0,
+      "synth_text_equal": true
+    },
+    {
+      "id": "A5",
+      "identical": true,
+      "max_abs_diff": 0.0,
+      "synth_text_equal": true
+    },
+    {
+      "id": "A6",
+      "identical": true,
+      "max_abs_diff": 0.0,
+      "synth_text_equal": true
+    },
+    {
+      "id": "B1",
+      "identical": true,
+      "max_abs_diff": 0.0,
+      "synth_text_equal": true
+    },
+    {
+      "id": "B2",
+      "identical": true,
+      "max_abs_diff": 0.0,
+      "synth_text_equal": true
+    },
+    {
+      "id": "B3",
+      "identical": true,
+      "max_abs_diff": 0.0,
+      "synth_text_equal": true
+    },
+    {
+      "id": "B4",
+      "identical": true,
+      "max_abs_diff": 0.0,
+      "synth_text_equal": true
+    },
+    {
+      "id": "C1",
+      "identical": true,
+      "max_abs_diff": 0.0,
+      "synth_text_equal": true
+    },
+    {
+      "id": "C2",
+      "identical": true,
+      "max_abs_diff": 0.0,
+      "synth_text_equal": true
+    },
+    {
+      "id": "C3",
+      "identical": true,
+      "max_abs_diff": 0.0,
+      "synth_text_equal": true
+    },
+    {
+      "id": "D1",
+      "identical": true,
+      "max_abs_diff": 0.0,
+      "synth_text_equal": true
+    },
+    {
+      "id": "D2",
+      "identical": true,
+      "max_abs_diff": 0.0,
+      "synth_text_equal": true
+    },
+    {
+      "id": "D3",
+      "identical": true,
+      "max_abs_diff": 0.0,
+      "synth_text_equal": true
+    },
+    {
+      "id": "E1",
+      "identical": true,
+      "max_abs_diff": 0.0,
+      "synth_text_equal": true
+    },
+    {
+      "id": "E2",
+      "identical": true,
+      "max_abs_diff": 0.0,
+      "synth_text_equal": true
+    },
+    {
+      "id": "E3",
+      "identical": true,
+      "max_abs_diff": 0.0,
+      "synth_text_equal": true
+    }
+  ],
+  "gates_identical": [
+    {
+      "id": "A1",
+      "identical": true
+    },
+    {
+      "id": "A2",
+      "identical": true
+    },
+    {
+      "id": "A3",
+      "identical": true
+    },
+    {
+      "id": "A4",
+      "identical": true
+    },
+    {
+      "id": "A5",
+      "identical": true
+    },
+    {
+      "id": "A6",
+      "identical": true
+    },
+    {
+      "id": "B1",
+      "identical": true
+    },
+    {
+      "id": "B2",
+      "identical": true
+    },
+    {
+      "id": "B3",
+      "identical": true
+    },
+    {
+      "id": "B4",
+      "identical": true
+    },
+    {
+      "id": "C1",
+      "identical": true
+    },
+    {
+      "id": "C2",
+      "identical": true
+    },
+    {
+      "id": "C3",
+      "identical": true
+    },
+    {
+      "id": "D1",
+      "identical": true
+    },
+    {
+      "id": "D2",
+      "identical": true
+    },
+    {
+      "id": "D3",
+      "identical": true
+    },
+    {
+      "id": "E1",
+      "identical": true
+    },
+    {
+      "id": "E2",
+      "identical": true
+    },
+    {
+      "id": "E3",
+      "identical": true
+    }
+  ],
+  "unrelated_attention": [
+    {
+      "id": "A1",
+      "char_start": 13,
+      "max_other_attn_change": 0.0,
+      "group_mass": 0.8368971347808838,
+      "group_mass_new": 0.8368971422314644
+    },
+    {
+      "id": "A2",
+      "char_start": 17,
+      "max_other_attn_change": 0.0,
+      "group_mass": 0.7937792539596558,
+      "group_mass_new": 0.7937793135643005
+    },
+    {
+      "id": "A3",
+      "char_start": 4,
+      "max_other_attn_change": 0.0,
+      "group_mass": 0.5169649720191956,
+      "group_mass_new": 0.5169649720191956
+    },
+    {
+      "id": "A4",
+      "char_start": 46,
+      "max_other_attn_change": 0.0,
+      "group_mass": 0.5576871037483215,
+      "group_mass_new": 0.5576871186494827
+    },
+    {
+      "id": "A5",
+      "char_start": 20,
+      "max_other_attn_change": 0.0,
+      "group_mass": 0.7845163345336914,
+      "group_mass_new": 0.7845163643360138
+    },
+    {
+      "id": "A6",
+      "char_start": 41,
+      "max_other_attn_change": 0.0,
+      "group_mass": 0.6084378361701965,
+      "group_mass_new": 0.6084378212690353
+    },
+    {
+      "id": "B1",
+      "char_start": 19,
+      "max_other_attn_change": 0.0,
+      "group_mass": 0.7841016054153442,
+      "group_mass_new": 0.7841015532612801
+    },
+    {
+      "id": "B2",
+      "char_start": 11,
+      "max_other_attn_change": 0.0,
+      "group_mass": 0.8305580615997314,
+      "group_mass_new": 0.8305580876767635
+    },
+    {
+      "id": "B3",
+      "char_start": 0,
+      "max_other_attn_change": 0.0,
+      "group_mass": 0.2602533996105194,
+      "group_mass_new": 0.2602534219622612
+    },
+    {
+      "id": "B4",
+      "char_start": 0,
+      "max_other_attn_change": 0.0,
+      "group_mass": 0.42585763335227966,
+      "group_mass_new": 0.42585761845111847
+    },
+    {
+      "id": "C1",
+      "char_start": 134,
+      "max_other_attn_change": 0.0,
+      "group_mass": 0.5575300455093384,
+      "group_mass_new": 0.5575300306081772
+    },
+    {
+      "id": "C2",
+      "char_start": 125,
+      "max_other_attn_change": 0.0,
+      "group_mass": 0.5393638610839844,
+      "group_mass_new": 0.5393638610839844
+    },
+    {
+      "id": "C3",
+      "char_start": 97,
+      "max_other_attn_change": 0.0,
+      "group_mass": 0.5017549991607666,
+      "group_mass_new": 0.5017549693584442
+    },
+    {
+      "id": "D1",
+      "char_start": 4,
+      "max_other_attn_change": 0.0,
+      "group_mass": 0.5141649842262268,
+      "group_mass_new": 0.5141649693250656
+    },
+    {
+      "id": "D1",
+      "char_start": 26,
+      "max_other_attn_change": 0.0,
+      "group_mass": 0.7617582082748413,
+      "group_mass_new": 0.7617582082748413
+    },
+    {
+      "id": "D2",
+      "char_start": 9,
+      "max_other_attn_change": 0.0,
+      "group_mass": 0.6810617446899414,
+      "group_mass_new": 0.6810618117451668
+    },
+    {
+      "id": "D2",
+      "char_start": 38,
+      "max_other_attn_change": 0.0,
+      "group_mass": 0.6276460289955139,
+      "group_mass_new": 0.6276460438966751
+    },
+    {
+      "id": "D3",
+      "char_start": 20,
+      "max_other_attn_change": 0.0,
+      "group_mass": 0.788407564163208,
+      "group_mass_new": 0.7884075865149498
+    },
+    {
+      "id": "D3",
+      "char_start": 41,
+      "max_other_attn_change": 0.0,
+      "group_mass": 0.6764740943908691,
+      "group_mass_new": 0.6764741241931915
+    }
+  ],
+  "single_sense_baseline_path": [
+    {
+      "id": "E1",
+      "identical_to_baseline": true,
+      "rerank_applied": false
+    },
+    {
+      "id": "E2",
+      "identical_to_baseline": true,
+      "rerank_applied": false
+    },
+    {
+      "id": "E3",
+      "identical_to_baseline": true,
+      "rerank_applied": false
+    }
+  ],
+  "stored_vectors_unchanged": true,
+  "source_memory_md5_unchanged": true,
+  "phoneme_model": "facebook/wav2vec2-lv-60-espeak-cv-ft"
+}

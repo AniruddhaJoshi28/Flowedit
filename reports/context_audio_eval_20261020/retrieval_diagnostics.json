@@ -1,0 +1,6453 @@
+[
+ {
+  "id": "L01",
+  "mode": "pooled",
+  "text": "The pipes in the basement are made of lead.",
+  "synth_text": "The pipes in the basement are made of leed.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 38,
+    "end": 42,
+    "score": 8.15625,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 38,
+    "sense_similarity": 0.81982421875,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "L01",
+  "mode": "context",
+  "text": "The pipes in the basement are made of lead.",
+  "synth_text": "The pipes in the basement are made of led.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 38,
+    "end": 42,
+    "score": 7.85546875,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 38,
+    "sense_similarity": 0.7998046875,
+    "has_delta": true,
+    "entry_carriers": [
+     "this toy is made of lead",
+     "The old pipes were full of lead.",
+     "Lead paint is dangerous for children."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     3,
+     4
+    ],
+    "choice": 3,
+    "lambda": {
+     "-1": 0.16478846776466263,
+     "1": 0.11156151932053483,
+     "-2": 0.058823529411764705,
+     "2": 0.11095615632204267,
+     "-3": 0.4760862297187754,
+     "3": 0.11095615632204267
+    },
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "log_lik": [
+     -17.249167689591204,
+     -23.841626123537615
+    ],
+    "log_lik_default": -23.294142932615166,
+    "matched": [
+     [
+      [
+       -2,
+       "made"
+      ],
+      [
+       -1,
+       "of"
+      ],
+      [
+       1,
+       "."
+      ],
+      [
+       2,
+       "</s>"
+      ],
+      [
+       3,
+       "</s>"
+      ]
+     ],
+     []
+    ],
+    "posterior": [
+     0.9986312100280402,
+     0.0013687899719604518
+    ]
+   }
+  ]
+ },
+ {
+  "id": "L02",
+  "mode": "pooled",
+  "text": "Lead is a soft and heavy metal.",
+  "synth_text": "Led is a soft and heavy metal.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 0,
+    "end": 4,
+    "score": 9.5703125,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 0,
+    "sense_similarity": 0.96337890625,
+    "has_delta": true,
+    "entry_carriers": [
+     "this toy is made of lead",
+     "The old pipes were full of lead.",
+     "Lead paint is dangerous for children."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "L02",
+  "mode": "context",
+  "text": "Lead is a soft and heavy metal.",
+  "synth_text": "Led is a soft and heavy metal.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 0,
+    "end": 4,
+    "score": 9.5703125,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 0,
+    "sense_similarity": 0.96337890625,
+    "has_delta": true,
+    "entry_carriers": [
+     "this toy is made of lead",
+     "The old pipes were full of lead.",
+     "Lead paint is dangerous for children."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     3,
+     4
+    ],
+    "choice": 3,
+    "lambda": {
+     "-1": 0.16491746167008206,
+     "1": 0.11203055156515113,
+     "-2": 0.058823529411764705,
+     "2": 0.11082824294948761,
+     "-3": 0.47590702846049865,
+     "3": 0.11082824294948761
+    },
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "log_lik": [
+     -20.513936009513927,
+     -20.811716889294214
+    ],
+    "log_lik_default": -22.79337931127215,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "<s>"
+      ],
+      [
+       -1,
+       "<s>"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.5738999450207926,
+     0.42610005497920833
+    ]
+   }
+  ]
+ },
+ {
+  "id": "L03",
+  "mode": "pooled",
+  "text": "They found lead in the drinking water.",
+  "synth_text": "They found leed in the drinking water.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 11,
+    "end": 15,
+    "score": 9.7734375,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 11,
+    "sense_similarity": 0.96533203125,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "L03",
+  "mode": "context",
+  "text": "They found lead in the drinking water.",
+  "synth_text": "They found leed in the drinking water.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 11,
+    "end": 15,
+    "score": 9.7734375,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 11,
+    "sense_similarity": 0.96533203125,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     3,
+     4
+    ],
+    "choice": 4,
+    "lambda": {
+     "-1": 0.16504364679352598,
+     "1": 0.11188831577982947,
+     "-2": 0.058823529411764705,
+     "2": 0.11070361335541795,
+     "-3": 0.4757317594184619,
+     "3": 0.11070361335541795
+    },
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "log_lik": [
+     -24.454782340078435,
+     -23.315688119009568
+    ],
+    "log_lik_default": -25.88890111559429,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       2,
+       "the"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.24248670191101324,
+     0.7575132980889854
+    ]
+   }
+  ]
+ },
+ {
+  "id": "L04",
+  "mode": "pooled",
+  "text": "The bullet was made of lead and copper.",
+  "synth_text": "The bullet was made of leed and copper.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 23,
+    "end": 27,
+    "score": 8.703125,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 23,
+    "sense_similarity": 0.88134765625,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "L04",
+  "mode": "context",
+  "text": "The bullet was made of lead and copper.",
+  "synth_text": "The bullet was made of led and copper.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 23,
+    "end": 27,
+    "score": 8.015625,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 23,
+    "sense_similarity": 0.806640625,
+    "has_delta": true,
+    "entry_carriers": [
+     "this toy is made of lead",
+     "The old pipes were full of lead.",
+     "Lead paint is dangerous for children."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     3,
+     4
+    ],
+    "choice": 3,
+    "lambda": {
+     "-1": 0.16402223367118882,
+     "1": 0.11179530939998822,
+     "-2": 0.058823529411764705,
+     "2": 0.11062761163522235,
+     "-3": 0.47562455078792354,
+     "3": 0.11062761163522235
+    },
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "log_lik": [
+     -23.50994357074301,
+     -27.98446423587184
+    ],
+    "log_lik_default": -27.439254639592228,
+    "matched": [
+     [
+      [
+       -2,
+       "made"
+      ],
+      [
+       -1,
+       "of"
+      ]
+     ],
+     []
+    ],
+    "posterior": [
+     0.9887327152433077,
+     0.011267284756692116
+    ]
+   }
+  ]
+ },
+ {
+  "id": "L05",
+  "mode": "pooled",
+  "text": "Old paint often contains lead.",
+  "synth_text": "Old paint often contains leed.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 25,
+    "end": 29,
+    "score": 8.1171875,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 25,
+    "sense_similarity": 0.8173828125,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "L05",
+  "mode": "context",
+  "text": "Old paint often contains lead.",
+  "synth_text": "Old paint often contains led.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 25,
+    "end": 29,
+    "score": 8.015625,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 25,
+    "sense_similarity": 0.8154296875,
+    "has_delta": true,
+    "entry_carriers": [
+     "this toy is made of lead",
+     "The old pipes were full of lead.",
+     "Lead paint is dangerous for children."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     3,
+     4
+    ],
+    "choice": 3,
+    "lambda": {
+     "-1": 0.1641284712381431,
+     "1": 0.11215824364025467,
+     "-2": 0.058823529411764705,
+     "2": 0.1104187154967516,
+     "-3": 0.4753285973982826,
+     "3": 0.1104187154967516
+    },
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "log_lik": [
+     -22.823754981942894,
+     -25.10719117628576
+    ],
+    "log_lik_default": -24.562479729650722,
+    "matched": [
+     [
+      [
+       1,
+       "."
+      ],
+      [
+       2,
+       "</s>"
+      ],
+      [
+       3,
+       "</s>"
+      ]
+     ],
+     []
+    ],
+    "posterior": [
+     0.9074959095683562,
+     0.09250409043164275
+    ]
+   }
+  ]
+ },
+ {
+  "id": "L06",
+  "mode": "pooled",
+  "text": "Exposure to lead harms the nervous system.",
+  "synth_text": "Exposure to leed harms the nervous system.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 12,
+    "end": 16,
+    "score": 9.6015625,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 12,
+    "sense_similarity": 0.93701171875,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "L06",
+  "mode": "context",
+  "text": "Exposure to lead harms the nervous system.",
+  "synth_text": "Exposure to leed harms the nervous system.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 12,
+    "end": 16,
+    "score": 9.6015625,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 12,
+    "sense_similarity": 0.93701171875,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     3,
+     4
+    ],
+    "choice": 4,
+    "lambda": {
+     "-1": 0.16425875427044592,
+     "1": 0.11201863828994443,
+     "-2": 0.058823529411764705,
+     "2": 0.11030371947026342,
+     "-3": 0.47516486739282515,
+     "3": 0.11030371947026342
+    },
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "log_lik": [
+     -25.594314322277672,
+     -24.457155958166197
+    ],
+    "log_lik_default": -27.021696614213354,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       2,
+       "the"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.24284247071970702,
+     0.7571575292802923
+    ]
+   }
+  ]
+ },
+ {
+  "id": "L07",
+  "mode": "pooled",
+  "text": "The fishing weights were cast from solid lead.",
+  "synth_text": "The fishing weights were cast from solid leed.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 41,
+    "end": 45,
+    "score": 8.046875,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 41,
+    "sense_similarity": 0.80712890625,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "L07",
+  "mode": "context",
+  "text": "The fishing weights were cast from solid lead.",
+  "synth_text": "The fishing weights were cast from solid led.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 41,
+    "end": 45,
+    "score": 7.7578125,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 41,
+    "sense_similarity": 0.791015625,
+    "has_delta": true,
+    "entry_carriers": [
+     "this toy is made of lead",
+     "The old pipes were full of lead.",
+     "Lead paint is dangerous for children."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     3,
+     4
+    ],
+    "choice": 3,
+    "lambda": {
+     "-1": 0.16439893629965746,
+     "1": 0.11192668048614918,
+     "-2": 0.058823529411764705,
+     "2": 0.11023554432000082,
+     "-3": 0.4750675267936914,
+     "3": 0.11023554432000082
+    },
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "log_lik": [
+     -23.10410903706712,
+     -25.37792696675502
+    ],
+    "log_lik_default": -24.834061914024304,
+    "matched": [
+     [
+      [
+       1,
+       "."
+      ],
+      [
+       2,
+       "</s>"
+      ],
+      [
+       3,
+       "</s>"
+      ]
+     ],
+     []
+    ],
+    "posterior": [
+     0.9066853134964559,
+     0.09331468650354353
+    ]
+   }
+  ]
+ },
+ {
+  "id": "L08",
+  "mode": "pooled",
+  "text": "A thin sheet of lead blocks the radiation.",
+  "synth_text": "A thin sheet of leed blocks the radiation.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 16,
+    "end": 20,
+    "score": 8.9296875,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 16,
+    "sense_similarity": 0.888671875,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "L08",
+  "mode": "context",
+  "text": "A thin sheet of lead blocks the radiation.",
+  "synth_text": "A thin sheet of led blocks the radiation.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 16,
+    "end": 20,
+    "score": 8.265625,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 16,
+    "sense_similarity": 0.83544921875,
+    "has_delta": true,
+    "entry_carriers": [
+     "this toy is made of lead",
+     "The old pipes were full of lead.",
+     "Lead paint is dangerous for children."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     3,
+     4
+    ],
+    "choice": 3,
+    "lambda": {
+     "-1": 0.16343127498974538,
+     "1": 0.11183707432662686,
+     "-2": 0.058823529411764705,
+     "2": 0.11016907897506133,
+     "-3": 0.4749724303650049,
+     "3": 0.11016907897506133
+    },
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "log_lik": [
+     -28.390349164510713,
+     -30.663741268829366
+    ],
+    "log_lik_default": -30.71283759692293,
+    "matched": [
+     [
+      [
+       -1,
+       "of"
+      ]
+     ],
+     [
+      [
+       2,
+       "the"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.9066492794259616,
+     0.09335072057403994
+    ]
+   }
+  ]
+ },
+ {
+  "id": "L09",
+  "mode": "pooled",
+  "text": "The miners extracted lead and zinc from the ore.",
+  "synth_text": "The miners extracted leed and zinc from the ore.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 21,
+    "end": 25,
+    "score": 8.765625,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 21,
+    "sense_similarity": 0.88427734375,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "L09",
+  "mode": "context",
+  "text": "The miners extracted lead and zinc from the ore.",
+  "synth_text": "The miners extracted led and zinc from the ore.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 21,
+    "end": 25,
+    "score": 8.1015625,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 21,
+    "sense_similarity": 0.958984375,
+    "has_delta": true,
+    "entry_carriers": [
+     "this toy is made of lead",
+     "The old pipes were full of lead.",
+     "Lead paint is dangerous for children."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "undecided",
+    "senses": [
+     3,
+     4
+    ],
+    "choice": null,
+    "lambda": {
+     "-1": 0.1635902718506282,
+     "1": 0.11123627854425976,
+     "-2": 0.058823529411764705,
+     "2": 0.11014719844506488,
+     "-3": 0.47494108171023924,
+     "3": 0.11014719844506488
+    },
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "log_lik": [
+     -30.200106175737506,
+     -30.605571283845666
+    ],
+    "log_lik_default": -30.063890062871963,
+    "matched": [
+     [],
+     []
+    ],
+    "posterior": [
+     0.5999999999999991,
+     0.4000000000000011
+    ]
+   },
+   {
+    "method": "exemplar_keys",
+    "senses": [
+     3,
+     4
+    ],
+    "pooled_sims": [
+     0.814453125,
+     0.88427734375
+    ],
+    "exemplar_sims": [
+     0.958984375,
+     0.8818359375
+    ],
+    "choice": 3
+   }
+  ]
+ },
+ {
+  "id": "L10",
+  "mode": "pooled",
+  "text": "Children should never play with lead toys.",
+  "synth_text": "Children should never play with leed toys.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 32,
+    "end": 36,
+    "score": 8.3125,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 32,
+    "sense_similarity": 0.84423828125,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "L10",
+  "mode": "context",
+  "text": "Children should never play with lead toys.",
+  "synth_text": "Children should never play with led toys.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 32,
+    "end": 36,
+    "score": 7.9609375,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 32,
+    "sense_similarity": 0.80517578125,
+    "has_delta": true,
+    "entry_carriers": [
+     "this toy is made of lead",
+     "The old pipes were full of lead.",
+     "Lead paint is dangerous for children."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     3,
+     4
+    ],
+    "choice": 3,
+    "lambda": {
+     "-1": 0.16371984874619155,
+     "1": 0.11166456644175984,
+     "-2": 0.058823529411764705,
+     "2": 0.11004102727256963,
+     "-3": 0.47478866661835906,
+     "3": 0.11004102727256963
+    },
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "log_lik": [
+     -28.372333977292282,
+     -29.484849675499866
+    ],
+    "log_lik_default": -28.94306036617376,
+    "matched": [
+     [
+      [
+       3,
+       "</s>"
+      ]
+     ],
+     []
+    ],
+    "posterior": [
+     0.7525978178100032,
+     0.247402182189998
+    ]
+   }
+  ]
+ },
+ {
+  "id": "L11",
+  "mode": "pooled",
+  "text": "She will lead the meeting tomorrow.",
+  "synth_text": "She will leed the meeting tomorrow.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 9,
+    "end": 13,
+    "score": 9.8359375,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 9,
+    "sense_similarity": 0.98681640625,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "L11",
+  "mode": "context",
+  "text": "She will lead the meeting tomorrow.",
+  "synth_text": "She will leed the meeting tomorrow.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 9,
+    "end": 13,
+    "score": 9.8359375,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 9,
+    "sense_similarity": 0.98681640625,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     3,
+     4
+    ],
+    "choice": 4,
+    "lambda": {
+     "-1": 0.16383426751293798,
+     "1": 0.1114971449005157,
+     "-2": 0.058823529411764705,
+     "2": 0.1098952970339639,
+     "-3": 0.47457864304168046,
+     "3": 0.1098952970339639
+    },
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "log_lik": [
+     -24.386866304297264,
+     -20.566927290501624
+    ],
+    "log_lik_default": -25.807658336126128,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -1,
+       "will"
+      ],
+      [
+       1,
+       "the"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.021458570274650757,
+     0.9785414297253475
+    ]
+   }
+  ]
+ },
+ {
+  "id": "L12",
+  "mode": "pooled",
+  "text": "He was asked to lead the project.",
+  "synth_text": "He was asked to leed the project.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 16,
+    "end": 20,
+    "score": 8.7890625,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 16,
+    "sense_similarity": 0.8837890625,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "L12",
+  "mode": "context",
+  "text": "He was asked to lead the project.",
+  "synth_text": "He was asked to leed the project.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 16,
+    "end": 20,
+    "score": 8.7890625,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 16,
+    "sense_similarity": 0.8837890625,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     3,
+     4
+    ],
+    "choice": 4,
+    "lambda": {
+     "-1": 0.16395902397370996,
+     "1": 0.11137529241687018,
+     "-2": 0.058823529411764705,
+     "2": 0.10979442619518782,
+     "-3": 0.4744327108487507,
+     "3": 0.10979442619518782
+    },
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "log_lik": [
+     -26.108001692063496,
+     -25.921632042532824
+    ],
+    "log_lik_default": -25.972948651151906,
+    "matched": [
+     [],
+     [
+      [
+       1,
+       "the"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.4535419812028986,
+     0.5464580187970999
+    ]
+   }
+  ]
+ },
+ {
+  "id": "L13",
+  "mode": "pooled",
+  "text": "Who will lead the team after she retires?",
+  "synth_text": "Who will leed the team after she retires?",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 9,
+    "end": 13,
+    "score": 9.796875,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 9,
+    "sense_similarity": 0.98291015625,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "L13",
+  "mode": "context",
+  "text": "Who will lead the team after she retires?",
+  "synth_text": "Who will leed the team after she retires?",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 9,
+    "end": 13,
+    "score": 9.796875,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 9,
+    "sense_similarity": 0.98291015625,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     3,
+     4
+    ],
+    "choice": 4,
+    "lambda": {
+     "-1": 0.1640934519243114,
+     "1": 0.11129759562356059,
+     "-2": 0.058823529411764705,
+     "2": 0.1097370151206551,
+     "-3": 0.47434925292922214,
+     "3": 0.1097370151206551
+    },
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "log_lik": [
+     -24.7769907950188,
+     -18.644023673649446
+    ],
+    "log_lik_default": -26.194719882112807,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -1,
+       "will"
+      ],
+      [
+       1,
+       "the"
+      ],
+      [
+       2,
+       "team"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.0021654330760916213,
+     0.9978345669239082
+    ]
+   }
+  ]
+ },
+ {
+  "id": "L14",
+  "mode": "pooled",
+  "text": "The lead singer walked onto the stage.",
+  "synth_text": "The led singer walked onto the stage.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 4,
+    "end": 8,
+    "score": 9.3828125,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 4,
+    "sense_similarity": 0.90283203125,
+    "has_delta": true,
+    "entry_carriers": [
+     "this toy is made of lead",
+     "The old pipes were full of lead.",
+     "Lead paint is dangerous for children."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "L14",
+  "mode": "context",
+  "text": "The lead singer walked onto the stage.",
+  "synth_text": "The leed singer walked onto the stage.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 4,
+    "end": 8,
+    "score": 9.1328125,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 4,
+    "sense_similarity": 0.8916015625,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     3,
+     4
+    ],
+    "choice": 4,
+    "lambda": {
+     "-1": 0.16421318577116056,
+     "1": 0.11066018361362435,
+     "-2": 0.058823529411764705,
+     "2": 0.10964024123297665,
+     "-3": 0.4742085581243337,
+     "3": 0.10964024123297665
+    },
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "log_lik": [
+     -23.577660340687117,
+     -23.265991750168425
+    ],
+    "log_lik_default": -25.22309797608148,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "<s>"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.42270750718803907,
+     0.5772924928119593
+    ]
+   }
+  ]
+ },
+ {
+  "id": "L15",
+  "mode": "pooled",
+  "text": "Our team lead scheduled a review.",
+  "synth_text": "Our team leed scheduled a review.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 9,
+    "end": 13,
+    "score": 9.609375,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 9,
+    "sense_similarity": 0.9599609375,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "L15",
+  "mode": "context",
+  "text": "Our team lead scheduled a review.",
+  "synth_text": "Our team leed scheduled a review.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 9,
+    "end": 13,
+    "score": 9.609375,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 9,
+    "sense_similarity": 0.9599609375,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     3,
+     4
+    ],
+    "choice": 4,
+    "lambda": {
+     "-1": 0.16431898970172792,
+     "1": 0.11102630075069454,
+     "-2": 0.058823529411764705,
+     "2": 0.1095052973535265,
+     "-3": 0.47401165429703895,
+     "3": 0.1095052973535265
+    },
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "log_lik": [
+     -28.127459069101523,
+     -22.412842553981875
+    ],
+    "log_lik_default": -29.540865890208057,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "our"
+      ],
+      [
+       -1,
+       "team"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.003286577578431966,
+     0.9967134224215677
+    ]
+   }
+  ]
+ },
+ {
+  "id": "L16",
+  "mode": "pooled",
+  "text": "The guide will lead us through the forest.",
+  "synth_text": "The guide will leed us through the forest.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 15,
+    "end": 19,
+    "score": 8.96875,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 15,
+    "sense_similarity": 0.89404296875,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "L16",
+  "mode": "context",
+  "text": "The guide will lead us through the forest.",
+  "synth_text": "The guide will leed us through the forest.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 15,
+    "end": 19,
+    "score": 8.96875,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 15,
+    "sense_similarity": 0.89404296875,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     3,
+     4
+    ],
+    "choice": 4,
+    "lambda": {
+     "-1": 0.16444585958218438,
+     "1": 0.11044770859789059,
+     "-2": 0.058823529411764705,
+     "2": 0.10945308921118548,
+     "-3": 0.47393524967567524,
+     "3": 0.10945308921118548
+    },
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "log_lik": [
+     -27.519034399733716,
+     -25.421125467914305
+    ],
+    "log_lik_default": -27.386154976055874,
+    "matched": [
+     [],
+     [
+      [
+       -1,
+       "will"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.10930022814192102,
+     0.890699771858078
+    ]
+   }
+  ]
+ },
+ {
+  "id": "L17",
+  "mode": "pooled",
+  "text": "She took the lead in the final lap.",
+  "synth_text": "She took the leed in the final lap.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 13,
+    "end": 17,
+    "score": 9.421875,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 13,
+    "sense_similarity": 0.92431640625,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "L17",
+  "mode": "context",
+  "text": "She took the lead in the final lap.",
+  "synth_text": "She took the leed in the final lap.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 13,
+    "end": 17,
+    "score": 9.421875,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 13,
+    "sense_similarity": 0.92431640625,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     3,
+     4
+    ],
+    "choice": 4,
+    "lambda": {
+     "-1": 0.16457011660868862,
+     "1": 0.10989000892801404,
+     "-2": 0.058823529411764705,
+     "2": 0.10940206168549303,
+     "-3": 0.47386045096345153,
+     "3": 0.10940206168549303
+    },
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "log_lik": [
+     -25.988867084337265,
+     -25.827224682425346
+    ],
+    "log_lik_default": -25.85672245541455,
+    "matched": [
+     [],
+     [
+      [
+       2,
+       "the"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.45967715847375823,
+     0.5403228415262424
+    ]
+   }
+  ]
+ },
+ {
+  "id": "L18",
+  "mode": "pooled",
+  "text": "Priya is the lead engineer on this product.",
+  "synth_text": "Priya is the leed engineer on this product.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 13,
+    "end": 17,
+    "score": 9.359375,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 13,
+    "sense_similarity": 0.92431640625,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "L18",
+  "mode": "context",
+  "text": "Priya is the lead engineer on this product.",
+  "synth_text": "Priya is the leed engineer on this product.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 13,
+    "end": 17,
+    "score": 9.359375,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 13,
+    "sense_similarity": 0.92236328125,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "undecided",
+    "senses": [
+     3,
+     4
+    ],
+    "choice": null,
+    "lambda": {
+     "-1": 0.16469184038619109,
+     "1": 0.10983429650916243,
+     "-2": 0.058823529411764705,
+     "2": 0.10935217524451425,
+     "-3": 0.47378720806090313,
+     "3": 0.10935217524451425
+    },
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "log_lik": [
+     -30.859335574685815,
+     -31.264800682793982
+    ],
+    "log_lik_default": -30.72735904610935,
+    "matched": [
+     [],
+     []
+    ],
+    "posterior": [
+     0.6000000000000012,
+     0.39999999999999963
+    ]
+   },
+   {
+    "method": "exemplar_keys",
+    "senses": [
+     3,
+     4
+    ],
+    "pooled_sims": [
+     0.8310546875,
+     0.92431640625
+    ],
+    "exemplar_sims": [
+     0.89208984375,
+     0.92236328125
+    ],
+    "choice": 4
+   }
+  ]
+ },
+ {
+  "id": "L19",
+  "mode": "pooled",
+  "text": "These roads lead to the old city.",
+  "synth_text": "These roads leed to the old city.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 12,
+    "end": 16,
+    "score": 9.5390625,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 12,
+    "sense_similarity": 0.92578125,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "L19",
+  "mode": "context",
+  "text": "These roads lead to the old city.",
+  "synth_text": "These roads leed to the old city.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 12,
+    "end": 16,
+    "score": 9.5390625,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 12,
+    "sense_similarity": 0.92578125,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     3,
+     4
+    ],
+    "choice": 4,
+    "lambda": {
+     "-1": 0.1648003644524115,
+     "1": 0.10974110525463579,
+     "-2": 0.058823529411764705,
+     "2": 0.1092647369496104,
+     "-3": 0.4736585519900672,
+     "3": 0.1092647369496104
+    },
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "log_lik": [
+     -24.91815505636951,
+     -23.814085259138505
+    ],
+    "log_lik_default": -26.327907418525566,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       2,
+       "the"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.2489781139188207,
+     0.7510218860811795
+    ]
+   }
+  ]
+ },
+ {
+  "id": "L20",
+  "mode": "pooled",
+  "text": "Let me lead the discussion today.",
+  "synth_text": "Let me leed the discussion today.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 7,
+    "end": 11,
+    "score": 9.71875,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 7,
+    "sense_similarity": 0.96826171875,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "L20",
+  "mode": "context",
+  "text": "Let me lead the discussion today.",
+  "synth_text": "Let me leed the discussion today.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 7,
+    "end": 11,
+    "score": 9.71875,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 7,
+    "sense_similarity": 0.96826171875,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     3,
+     4
+    ],
+    "choice": 4,
+    "lambda": {
+     "-1": 0.16489634580817678,
+     "1": 0.10961151534163645,
+     "-2": 0.058823529411764705,
+     "2": 0.10914083159037148,
+     "-3": 0.47347562492699485,
+     "3": 0.10914083159037148
+    },
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "log_lik": [
+     -27.834048632876293,
+     -26.730300432386354
+    ],
+    "log_lik_default": -29.241502335818655,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       1,
+       "the"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.24903825350874553,
+     0.7509617464912531
+    ]
+   }
+  ]
+ },
+ {
+  "id": "R01",
+  "mode": "pooled",
+  "text": "She read the report last night.",
+  "synth_text": "She red the report last night.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 4,
+    "end": 8,
+    "score": 9.8046875,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 4,
+    "sense_similarity": 0.986328125,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "R01",
+  "mode": "context",
+  "text": "She read the report last night.",
+  "synth_text": "She red the report last night.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 4,
+    "end": 8,
+    "score": 9.8046875,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 4,
+    "sense_similarity": 0.986328125,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     5,
+     6
+    ],
+    "choice": 5,
+    "lambda": {
+     "-1": 0.16499076619331995,
+     "1": 0.10948454523753244,
+     "-2": 0.058823529411764705,
+     "2": 0.10901941860058245,
+     "-3": 0.47329567458958316,
+     "3": 0.10901941860058245
+    },
+    "labels": [
+     "red",
+     "reed"
+    ],
+    "log_lik": [
+     -15.629272621308118,
+     -20.23420971644056
+    ],
+    "log_lik_default": -22.852756044436795,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "<s>"
+      ],
+      [
+       -1,
+       "she"
+      ],
+      [
+       1,
+       "the"
+      ],
+      [
+       2,
+       "report"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "<s>"
+      ],
+      [
+       1,
+       "the"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.9900967246594902,
+     0.00990327534050951
+    ]
+   }
+  ]
+ },
+ {
+  "id": "R02",
+  "mode": "pooled",
+  "text": "I read that book when I was a child.",
+  "synth_text": "I red that book when I was a child.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 2,
+    "end": 6,
+    "score": 9.8125,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 2,
+    "sense_similarity": 0.98046875,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "R02",
+  "mode": "context",
+  "text": "I read that book when I was a child.",
+  "synth_text": "I red that book when I was a child.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 2,
+    "end": 6,
+    "score": 9.8125,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 2,
+    "sense_similarity": 0.98046875,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     5,
+     6
+    ],
+    "choice": 5,
+    "lambda": {
+     "-1": 0.1651142967581232,
+     "1": 0.10993900941097413,
+     "-2": 0.058823529411764705,
+     "2": 0.10901326354895546,
+     "-3": 0.47328653334926496,
+     "3": 0.10901326354895546
+    },
+    "labels": [
+     "red",
+     "reed"
+    ],
+    "log_lik": [
+     -21.576810410435463,
+     -24.345571682846483
+    ],
+    "log_lik_default": -26.555039765776097,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "<s>"
+      ],
+      [
+       1,
+       "that"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "<s>"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.9409642120951984,
+     0.05903578790480149
+    ]
+   }
+  ]
+ },
+ {
+  "id": "R03",
+  "mode": "pooled",
+  "text": "He had already read the email before the meeting.",
+  "synth_text": "He had already red the email before the meeting.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 15,
+    "end": 19,
+    "score": 9.109375,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 15,
+    "sense_similarity": 0.91552734375,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "R03",
+  "mode": "context",
+  "text": "He had already read the email before the meeting.",
+  "synth_text": "He had already red the email before the meeting.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 15,
+    "end": 19,
+    "score": 9.109375,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 15,
+    "sense_similarity": 0.91552734375,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     5,
+     6
+    ],
+    "choice": 5,
+    "lambda": {
+     "-1": 0.16523520500122396,
+     "1": 0.10946200525600214,
+     "-2": 0.058823529411764705,
+     "2": 0.10900724376587755,
+     "-3": 0.4732775912607691,
+     "3": 0.10900724376587755
+    },
+    "labels": [
+     "red",
+     "reed"
+    ],
+    "log_lik": [
+     -26.73318849989873,
+     -30.249132852835515
+    ],
+    "log_lik_default": -30.526660273864056,
+    "matched": [
+     [
+      [
+       -1,
+       "already"
+      ],
+      [
+       1,
+       "the"
+      ]
+     ],
+     [
+      [
+       1,
+       "the"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.9711380455255797,
+     0.028861954474419856
+    ]
+   }
+  ]
+ },
+ {
+  "id": "R04",
+  "mode": "pooled",
+  "text": "Yesterday we read three chapters together.",
+  "synth_text": "Yesterday we red three chapters together.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 13,
+    "end": 17,
+    "score": 9.1875,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 13,
+    "sense_similarity": 0.9248046875,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "R04",
+  "mode": "context",
+  "text": "Yesterday we read three chapters together.",
+  "synth_text": "Yesterday we red three chapters together.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 13,
+    "end": 17,
+    "score": 9.1875,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 13,
+    "sense_similarity": 0.9248046875,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     5,
+     6
+    ],
+    "choice": 5,
+    "lambda": {
+     "-1": 0.1653242149602896,
+     "1": 0.10979582094589109,
+     "-2": 0.058823529411764705,
+     "2": 0.10889095791806097,
+     "-3": 0.47310451511119117,
+     "3": 0.10889095791806097
+    },
+    "labels": [
+     "red",
+     "reed"
+    ],
+    "log_lik": [
+     -27.68327027152531,
+     -29.59704762393215
+    ],
+    "log_lik_default": -31.57793329181457,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "yesterday"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.8714429193170407,
+     0.1285570806829594
+    ]
+   }
+  ]
+ },
+ {
+  "id": "R05",
+  "mode": "pooled",
+  "text": "Have you read the new policy?",
+  "synth_text": "Have you reed the new policy?",
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 9,
+    "end": 13,
+    "score": 9.9296875,
+    "gate": 1.0,
+    "phonetic_text": "reed",
+    "char_start": 9,
+    "sense_similarity": 0.99267578125,
+    "has_delta": true,
+    "entry_carriers": [
+     "Please read the instructions carefully.",
+     "I like to read before bed.",
+     "Can you read this sentence aloud?"
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "R05",
+  "mode": "context",
+  "text": "Have you read the new policy?",
+  "synth_text": "Have you reed the new policy?",
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 9,
+    "end": 13,
+    "score": 9.9296875,
+    "gate": 1.0,
+    "phonetic_text": "reed",
+    "char_start": 9,
+    "sense_similarity": 0.99267578125,
+    "has_delta": true,
+    "entry_carriers": [
+     "Please read the instructions carefully.",
+     "I like to read before bed.",
+     "Can you read this sentence aloud?"
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     5,
+     6
+    ],
+    "choice": 6,
+    "lambda": {
+     "-1": 0.1654118297441483,
+     "1": 0.10967150358497729,
+     "-2": 0.058823529411764705,
+     "2": 0.10877691736507418,
+     "-3": 0.4729341509830815,
+     "3": 0.10877691736507418
+    },
+    "labels": [
+     "red",
+     "reed"
+    ],
+    "log_lik": [
+     -23.918344820475006,
+     -23.41048273853088
+    ],
+    "log_lik_default": -28.768416076820536,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "have"
+      ],
+      [
+       1,
+       "the"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -1,
+       "you"
+      ],
+      [
+       1,
+       "the"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.3756948370032763,
+     0.6243051629967243
+    ]
+   }
+  ]
+ },
+ {
+  "id": "R06",
+  "mode": "pooled",
+  "text": "They read the results and smiled.",
+  "synth_text": "They red the results and smiled.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 5,
+    "end": 9,
+    "score": 9.78125,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 5,
+    "sense_similarity": 0.97802734375,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "R06",
+  "mode": "context",
+  "text": "They read the results and smiled.",
+  "synth_text": "They red the results and smiled.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 5,
+    "end": 9,
+    "score": 9.78125,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 5,
+    "sense_similarity": 0.97802734375,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     5,
+     6
+    ],
+    "choice": 5,
+    "lambda": {
+     "-1": 0.16549808180056125,
+     "1": 0.109549587462547,
+     "-2": 0.058823529411764705,
+     "2": 0.10866505846353341,
+     "-3": 0.47276643568335724,
+     "3": 0.10866505846353341
+    },
+    "labels": [
+     "red",
+     "reed"
+    ],
+    "log_lik": [
+     -20.108734640335737,
+     -20.398185572248032
+    ],
+    "log_lik_default": -23.007374402624077,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "<s>"
+      ],
+      [
+       1,
+       "the"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "<s>"
+      ],
+      [
+       1,
+       "the"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.5718617066622169,
+     0.4281382933377838
+    ]
+   }
+  ]
+ },
+ {
+  "id": "R07",
+  "mode": "pooled",
+  "text": "The letter was read aloud at the ceremony.",
+  "synth_text": "The letter was red aloud at the ceremony.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 15,
+    "end": 19,
+    "score": 9.015625,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 15,
+    "sense_similarity": 0.9072265625,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "R07",
+  "mode": "context",
+  "text": "The letter was read aloud at the ceremony.",
+  "synth_text": "The letter was red aloud at the ceremony.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 15,
+    "end": 19,
+    "score": 9.015625,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 15,
+    "sense_similarity": 0.97802734375,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "undecided",
+    "senses": [
+     5,
+     6
+    ],
+    "choice": null,
+    "lambda": {
+     "-1": 0.16560169616236353,
+     "1": 0.10906185845865184,
+     "-2": 0.058823529411764705,
+     "2": 0.10862709970780106,
+     "-3": 0.47270938420745134,
+     "3": 0.10862709970780106
+    },
+    "labels": [
+     "red",
+     "reed"
+    ],
+    "log_lik": [
+     -27.765993149221774,
+     -27.765993149221774
+    ],
+    "log_lik_default": -27.63746785842474,
+    "matched": [
+     [],
+     []
+    ],
+    "posterior": [
+     0.5000000000000009,
+     0.5000000000000009
+    ]
+   },
+   {
+    "method": "exemplar_keys",
+    "senses": [
+     5,
+     6
+    ],
+    "pooled_sims": [
+     0.9072265625,
+     0.88427734375
+    ],
+    "exemplar_sims": [
+     0.97802734375,
+     0.912109375
+    ],
+    "choice": 5
+   }
+  ]
+ },
+ {
+  "id": "R08",
+  "mode": "pooled",
+  "text": "I read about the accident in the newspaper last week.",
+  "synth_text": "I red about the accident in the newspaper last week.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 2,
+    "end": 6,
+    "score": 9.734375,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 2,
+    "sense_similarity": 0.974609375,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "R08",
+  "mode": "context",
+  "text": "I read about the accident in the newspaper last week.",
+  "synth_text": "I red about the accident in the newspaper last week.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 2,
+    "end": 6,
+    "score": 9.734375,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 2,
+    "sense_similarity": 0.974609375,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     5,
+     6
+    ],
+    "choice": 5,
+    "lambda": {
+     "-1": 0.16572166123737636,
+     "1": 0.10866088642062634,
+     "-2": 0.058823529411764705,
+     "2": 0.10866088642062634,
+     "-3": 0.4727601685939127,
+     "3": 0.10866088642062634
+    },
+    "labels": [
+     "red",
+     "reed"
+    ],
+    "log_lik": [
+     -21.504856738235553,
+     -21.504856738235553
+    ],
+    "log_lik_default": -23.705651848809662,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "<s>"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "<s>"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.5000000000000009,
+     0.5000000000000009
+    ]
+   }
+  ]
+ },
+ {
+  "id": "R09",
+  "mode": "pooled",
+  "text": "She read every page twice before signing.",
+  "synth_text": "She red every page twice before signing.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 4,
+    "end": 8,
+    "score": 9.78125,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 4,
+    "sense_similarity": 0.9814453125,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "R09",
+  "mode": "context",
+  "text": "She read every page twice before signing.",
+  "synth_text": "She red every page twice before signing.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 4,
+    "end": 8,
+    "score": 9.78125,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 4,
+    "sense_similarity": 0.9814453125,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     5,
+     6
+    ],
+    "choice": 5,
+    "lambda": {
+     "-1": 0.1658121599784843,
+     "1": 0.10901424703168283,
+     "-2": 0.058823529411764705,
+     "2": 0.10858861939982013,
+     "-3": 0.47265147711202077,
+     "3": 0.10858861939982013
+    },
+    "labels": [
+     "red",
+     "reed"
+    ],
+    "log_lik": [
+     -19.645002244385246,
+     -24.30339827208824
+    ],
+    "log_lik_default": -26.501764606061844,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "<s>"
+      ],
+      [
+       -1,
+       "she"
+      ],
+      [
+       3,
+       "twice"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "<s>"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.9906073989072817,
+     0.009392601092718859
+    ]
+   }
+  ]
+ },
+ {
+  "id": "R10",
+  "mode": "pooled",
+  "text": "Last year he read over fifty novels.",
+  "synth_text": "Last year he red over fifty novels.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 13,
+    "end": 17,
+    "score": 9.09375,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 13,
+    "sense_similarity": 0.916015625,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "R10",
+  "mode": "context",
+  "text": "Last year he read over fifty novels.",
+  "synth_text": "Last year he red over fifty novels.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 13,
+    "end": 17,
+    "score": 9.09375,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 13,
+    "sense_similarity": 0.916015625,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     5,
+     6
+    ],
+    "choice": 5,
+    "lambda": {
+     "-1": 0.16590115153941157,
+     "1": 0.10936505448728397,
+     "-2": 0.058823529411764705,
+     "2": 0.10851773194338185,
+     "-3": 0.4725446124451056,
+     "3": 0.10851773194338185
+    },
+    "labels": [
+     "red",
+     "reed"
+    ],
+    "log_lik": [
+     -32.28686526648534,
+     -34.716610690292356
+    ],
+    "log_lik_default": -34.58794389379895,
+    "matched": [
+     [
+      [
+       -1,
+       "he"
+      ]
+     ],
+     []
+    ],
+    "posterior": [
+     0.9190675988297198,
+     0.0809324011702814
+    ]
+   }
+  ]
+ },
+ {
+  "id": "R11",
+  "mode": "pooled",
+  "text": "I read the news every morning.",
+  "synth_text": "I red the news every morning.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 2,
+    "end": 6,
+    "score": 9.8125,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 2,
+    "sense_similarity": 0.97998046875,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "R11",
+  "mode": "context",
+  "text": "I read the news every morning.",
+  "synth_text": "I red the news every morning.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 2,
+    "end": 6,
+    "score": 9.8125,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 2,
+    "sense_similarity": 0.97998046875,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     5,
+     6
+    ],
+    "choice": 5,
+    "lambda": {
+     "-1": 0.165979986106866,
+     "1": 0.1092519118004683,
+     "-2": 0.058823529411764705,
+     "2": 0.10841364085678099,
+     "-3": 0.47238724480890376,
+     "3": 0.10841364085678099
+    },
+    "labels": [
+     "red",
+     "reed"
+    ],
+    "log_lik": [
+     -19.946259435366787,
+     -20.233988161408348
+    ],
+    "log_lik_default": -22.83278675817542,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "<s>"
+      ],
+      [
+       1,
+       "the"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "<s>"
+      ],
+      [
+       1,
+       "the"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.5714399967594209,
+     0.4285600032405785
+    ]
+   }
+  ]
+ },
+ {
+  "id": "R12",
+  "mode": "pooled",
+  "text": "Please read the label before use.",
+  "synth_text": "Please reed the label before use.",
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 7,
+    "end": 11,
+    "score": 9.7890625,
+    "gate": 1.0,
+    "phonetic_text": "reed",
+    "char_start": 7,
+    "sense_similarity": 0.97509765625,
+    "has_delta": true,
+    "entry_carriers": [
+     "Please read the instructions carefully.",
+     "I like to read before bed.",
+     "Can you read this sentence aloud?"
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "R12",
+  "mode": "context",
+  "text": "Please read the label before use.",
+  "synth_text": "Please reed the label before use.",
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 7,
+    "end": 11,
+    "score": 9.7890625,
+    "gate": 1.0,
+    "phonetic_text": "reed",
+    "char_start": 7,
+    "sense_similarity": 0.97509765625,
+    "has_delta": true,
+    "entry_carriers": [
+     "Please read the instructions carefully.",
+     "I like to read before bed.",
+     "Can you read this sentence aloud?"
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     5,
+     6
+    ],
+    "choice": 6,
+    "lambda": {
+     "-1": 0.1660576563398463,
+     "1": 0.10914083159037148,
+     "-2": 0.058823529411764705,
+     "2": 0.10831142979461539,
+     "-3": 0.4722321981024225,
+     "3": 0.10831142979461539
+    },
+    "labels": [
+     "red",
+     "reed"
+    ],
+    "log_lik": [
+     -21.271774269981687,
+     -18.526886252683514
+    ],
+    "log_lik_default": -24.15368542052464,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "<s>"
+      ],
+      [
+       1,
+       "the"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "<s>"
+      ],
+      [
+       -1,
+       "please"
+      ],
+      [
+       1,
+       "the"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.06037600584110889,
+     0.9396239941588919
+    ]
+   }
+  ]
+ },
+ {
+  "id": "R13",
+  "mode": "pooled",
+  "text": "Children love to read comic books.",
+  "synth_text": "Children love to red comic books.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 17,
+    "end": 21,
+    "score": 8.9375,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 17,
+    "sense_similarity": 0.896484375,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "R13",
+  "mode": "context",
+  "text": "Children love to read comic books.",
+  "synth_text": "Children love to reed comic books.",
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 17,
+    "end": 21,
+    "score": 8.8125,
+    "gate": 1.0,
+    "phonetic_text": "reed",
+    "char_start": 17,
+    "sense_similarity": 0.88671875,
+    "has_delta": true,
+    "entry_carriers": [
+     "Please read the instructions carefully.",
+     "I like to read before bed.",
+     "Can you read this sentence aloud?"
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     5,
+     6
+    ],
+    "choice": 6,
+    "lambda": {
+     "-1": 0.1661341877753555,
+     "1": 0.10944940571331807,
+     "-2": 0.058823529411764705,
+     "2": 0.10821104883529785,
+     "-3": 0.4720794213984161,
+     "3": 0.10821104883529785
+    },
+    "labels": [
+     "red",
+     "reed"
+    ],
+    "log_lik": [
+     -30.51324667455677,
+     -28.775944725038883
+    ],
+    "log_lik_default": -30.80347143483921,
+    "matched": [
+     [
+      [
+       3,
+       "."
+      ]
+     ],
+     [
+      [
+       -1,
+       "to"
+      ],
+      [
+       3,
+       "."
+      ]
+     ]
+    ],
+    "posterior": [
+     0.14965596143170745,
+     0.8503440385682929
+    ]
+   }
+  ]
+ },
+ {
+  "id": "R14",
+  "mode": "pooled",
+  "text": "Can you read the second paragraph?",
+  "synth_text": "Can you reed the second paragraph?",
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 8,
+    "end": 12,
+    "score": 9.9375,
+    "gate": 1.0,
+    "phonetic_text": "reed",
+    "char_start": 8,
+    "sense_similarity": 0.99853515625,
+    "has_delta": true,
+    "entry_carriers": [
+     "Please read the instructions carefully.",
+     "I like to read before bed.",
+     "Can you read this sentence aloud?"
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "R14",
+  "mode": "context",
+  "text": "Can you read the second paragraph?",
+  "synth_text": "Can you reed the second paragraph?",
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 8,
+    "end": 12,
+    "score": 9.9375,
+    "gate": 1.0,
+    "phonetic_text": "reed",
+    "char_start": 8,
+    "sense_similarity": 0.99853515625,
+    "has_delta": true,
+    "entry_carriers": [
+     "Please read the instructions carefully.",
+     "I like to read before bed.",
+     "Can you read this sentence aloud?"
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     5,
+     6
+    ],
+    "choice": 6,
+    "lambda": {
+     "-1": 0.16620960521112002,
+     "1": 0.10933790036864666,
+     "-2": 0.058823529411764705,
+     "2": 0.10811244979057022,
+     "-3": 0.47192886524761946,
+     "3": 0.10811244979057022
+    },
+    "labels": [
+     "red",
+     "reed"
+    ],
+    "log_lik": [
+     -25.76342048483155,
+     -21.33007419427343
+    ],
+    "log_lik_default": -28.421632193541797,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       1,
+       "the"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "can"
+      ],
+      [
+       -1,
+       "you"
+      ],
+      [
+       1,
+       "the"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.011735333549070649,
+     0.9882646664509288
+    ]
+   }
+  ]
+ },
+ {
+  "id": "R15",
+  "mode": "pooled",
+  "text": "I will read your proposal tomorrow.",
+  "synth_text": "I will reed your proposal tomorrow.",
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 7,
+    "end": 11,
+    "score": 9.765625,
+    "gate": 1.0,
+    "phonetic_text": "reed",
+    "char_start": 7,
+    "sense_similarity": 0.974609375,
+    "has_delta": true,
+    "entry_carriers": [
+     "Please read the instructions carefully.",
+     "I like to read before bed.",
+     "Can you read this sentence aloud?"
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "R15",
+  "mode": "context",
+  "text": "I will read your proposal tomorrow.",
+  "synth_text": "I will red your proposal tomorrow.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 7,
+    "end": 11,
+    "score": 9.421875,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 7,
+    "sense_similarity": 0.93896484375,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     5,
+     6
+    ],
+    "choice": 5,
+    "lambda": {
+     "-1": 0.16628393273206954,
+     "1": 0.10964210158973098,
+     "-2": 0.058823529411764705,
+     "2": 0.10801558613169579,
+     "-3": 0.471780481625559,
+     "3": 0.10801558613169579
+    },
+    "labels": [
+     "red",
+     "reed"
+    ],
+    "log_lik": [
+     -27.530198091497596,
+     -27.530198091497596
+    ],
+    "log_lik_default": -29.491091340314902,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.5000000000000009,
+     0.5000000000000009
+    ]
+   }
+  ]
+ },
+ {
+  "id": "R16",
+  "mode": "pooled",
+  "text": "She likes to read in the garden.",
+  "synth_text": "She likes to red in the garden.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 13,
+    "end": 17,
+    "score": 9.125,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 13,
+    "sense_similarity": 0.919921875,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "R16",
+  "mode": "context",
+  "text": "She likes to read in the garden.",
+  "synth_text": "She likes to reed in the garden.",
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 13,
+    "end": 17,
+    "score": 9.234375,
+    "gate": 1.0,
+    "phonetic_text": "reed",
+    "char_start": 13,
+    "sense_similarity": 0.916015625,
+    "has_delta": true,
+    "entry_carriers": [
+     "Please read the instructions carefully.",
+     "I like to read before bed.",
+     "Can you read this sentence aloud?"
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     5,
+     6
+    ],
+    "choice": 6,
+    "lambda": {
+     "-1": 0.16636526900660592,
+     "1": 0.10956364684969871,
+     "-2": 0.058823529411764705,
+     "2": 0.1079536144457107,
+     "-3": 0.4716852988159978,
+     "3": 0.1079536144457107
+    },
+    "labels": [
+     "red",
+     "reed"
+    ],
+    "log_lik": [
+     -27.99328163852093,
+     -26.28259874776068
+    ],
+    "log_lik_default": -27.86672826853184,
+    "matched": [
+     [],
+     [
+      [
+       -1,
+       "to"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.15307516267504473,
+     0.8469248373249539
+    ]
+   }
+  ]
+ },
+ {
+  "id": "R17",
+  "mode": "pooled",
+  "text": "Read the question carefully before answering.",
+  "synth_text": "Red the question carefully before answering.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 0,
+    "end": 4,
+    "score": 9.484375,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 0,
+    "sense_similarity": 0.9150390625,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "R17",
+  "mode": "context",
+  "text": "Read the question carefully before answering.",
+  "synth_text": "Reed the question carefully before answering.",
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 0,
+    "end": 4,
+    "score": 8.8125,
+    "gate": 1.0,
+    "phonetic_text": "reed",
+    "char_start": 0,
+    "sense_similarity": 0.837890625,
+    "has_delta": true,
+    "entry_carriers": [
+     "Please read the instructions carefully.",
+     "I like to read before bed.",
+     "Can you read this sentence aloud?"
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     5,
+     6
+    ],
+    "choice": 6,
+    "lambda": {
+     "-1": 0.1664373716266735,
+     "1": 0.10945348625453803,
+     "-2": 0.058823529411764705,
+     "2": 0.10785983147943234,
+     "-3": 0.4715408844514696,
+     "3": 0.10785983147943234
+    },
+    "labels": [
+     "red",
+     "reed"
+    ],
+    "log_lik": [
+     -19.268254910101163,
+     -16.689427253669827
+    ],
+    "log_lik_default": -22.142764190315997,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "<s>"
+      ],
+      [
+       1,
+       "the"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "<s>"
+      ],
+      [
+       1,
+       "the"
+      ],
+      [
+       3,
+       "carefully"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.07051352922088802,
+     0.9294864707791117
+    ]
+   }
+  ]
+ },
+ {
+  "id": "R18",
+  "mode": "pooled",
+  "text": "We read together every evening.",
+  "synth_text": "We red together every evening.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 3,
+    "end": 7,
+    "score": 9.75,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 3,
+    "sense_similarity": 0.98193359375,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "R18",
+  "mode": "context",
+  "text": "We read together every evening.",
+  "synth_text": "We red together every evening.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 3,
+    "end": 7,
+    "score": 9.75,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 3,
+    "sense_similarity": 0.98193359375,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     5,
+     6
+    ],
+    "choice": 5,
+    "lambda": {
+     "-1": 0.16650060648835244,
+     "1": 0.10971797464726796,
+     "-2": 0.058823529411764705,
+     "2": 0.10773496562763386,
+     "-3": 0.4713479060048533,
+     "3": 0.10773496562763386
+    },
+    "labels": [
+     "red",
+     "reed"
+    ],
+    "log_lik": [
+     -24.88626098313204,
+     -24.88626098313204
+    ],
+    "log_lik_default": -27.060281654133163,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "<s>"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "<s>"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.5000000000000009,
+     0.5000000000000009
+    ]
+   }
+  ]
+ },
+ {
+  "id": "R19",
+  "mode": "pooled",
+  "text": "It is hard to read without my glasses.",
+  "synth_text": "It is hard to red without my glasses.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 14,
+    "end": 18,
+    "score": 9.140625,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 14,
+    "sense_similarity": 0.919921875,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "R19",
+  "mode": "context",
+  "text": "It is hard to read without my glasses.",
+  "synth_text": "It is hard to reed without my glasses.",
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 14,
+    "end": 18,
+    "score": 9.3046875,
+    "gate": 1.0,
+    "phonetic_text": "reed",
+    "char_start": 14,
+    "sense_similarity": 0.90673828125,
+    "has_delta": true,
+    "entry_carriers": [
+     "Please read the instructions carefully.",
+     "I like to read before bed.",
+     "Can you read this sentence aloud?"
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     5,
+     6
+    ],
+    "choice": 6,
+    "lambda": {
+     "-1": 0.16658626704935897,
+     "1": 0.11007924787927192,
+     "-2": 0.058823529411764705,
+     "2": 0.10770947302065116,
+     "-3": 0.4713084087025116,
+     "3": 0.10770947302065116
+    },
+    "labels": [
+     "red",
+     "reed"
+    ],
+    "log_lik": [
+     -33.9721143222841,
+     -32.28586231352308
+    ],
+    "log_lik_default": -33.845977031012325,
+    "matched": [
+     [],
+     [
+      [
+       -1,
+       "to"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.15626937358525214,
+     0.8437306264147466
+    ]
+   }
+  ]
+ },
+ {
+  "id": "R20",
+  "mode": "pooled",
+  "text": "They want to read the contract first.",
+  "synth_text": "They want to reed the contract first.",
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 13,
+    "end": 17,
+    "score": 9.484375,
+    "gate": 1.0,
+    "phonetic_text": "reed",
+    "char_start": 13,
+    "sense_similarity": 0.93017578125,
+    "has_delta": true,
+    "entry_carriers": [
+     "Please read the instructions carefully.",
+     "I like to read before bed.",
+     "Can you read this sentence aloud?"
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "R20",
+  "mode": "context",
+  "text": "They want to read the contract first.",
+  "synth_text": "They want to reed the contract first.",
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 13,
+    "end": 17,
+    "score": 9.484375,
+    "gate": 1.0,
+    "phonetic_text": "reed",
+    "char_start": 13,
+    "sense_similarity": 0.93017578125,
+    "has_delta": true,
+    "entry_carriers": [
+     "Please read the instructions carefully.",
+     "I like to read before bed.",
+     "Can you read this sentence aloud?"
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     5,
+     6
+    ],
+    "choice": 6,
+    "lambda": {
+     "-1": 0.1666628756907021,
+     "1": 0.10999875615620598,
+     "-2": 0.058823529411764705,
+     "2": 0.10765230651666997,
+     "-3": 0.47121971464509765,
+     "3": 0.10765230651666997
+    },
+    "labels": [
+     "red",
+     "reed"
+    ],
+    "log_lik": [
+     -29.8945591407551,
+     -28.53509252436876
+    ],
+    "log_lik_default": -30.475026108459556,
+    "matched": [
+     [
+      [
+       1,
+       "the"
+      ]
+     ],
+     [
+      [
+       -1,
+       "to"
+      ],
+      [
+       1,
+       "the"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.20432700477216084,
+     0.7956729952278391
+    ]
+   }
+  ]
+ },
+ {
+  "id": "X01",
+  "mode": "pooled",
+  "text": "After hours of digging through the ruins of the old factory, the archaeologists finally identified the grey material as lead.",
+  "synth_text": "After hours of digging through the ruins of the old factory, the archaeologists finally identified the grey material as leed.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 120,
+    "end": 124,
+    "score": 7.640625,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 120,
+    "sense_similarity": 0.77490234375,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "X01",
+  "mode": "context",
+  "text": "After hours of digging through the ruins of the old factory, the archaeologists finally identified the grey material as lead.",
+  "synth_text": "After hours of digging through the ruins of the old factory, the archaeologists finally identified the grey material as led.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 120,
+    "end": 124,
+    "score": 7.5546875,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 120,
+    "sense_similarity": 0.7666015625,
+    "has_delta": true,
+    "entry_carriers": [
+     "this toy is made of lead",
+     "The old pipes were full of lead.",
+     "Lead paint is dangerous for children."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     3,
+     4
+    ],
+    "choice": 3,
+    "lambda": {
+     "-1": 0.16520633264926776,
+     "1": 0.10918531411787888,
+     "-2": 0.058823529411764705,
+     "2": 0.10804056917678136,
+     "-3": 0.471818798124745,
+     "3": 0.10804056917678136
+    },
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "log_lik": [
+     -24.594008972315326,
+     -26.765526025860353
+    ],
+    "log_lik_default": -26.234873911471894,
+    "matched": [
+     [
+      [
+       1,
+       "."
+      ],
+      [
+       2,
+       "</s>"
+      ],
+      [
+       3,
+       "</s>"
+      ]
+     ],
+     []
+    ],
+    "posterior": [
+     0.8976624141781394,
+     0.10233758582186127
+    ]
+   }
+  ]
+ },
+ {
+  "id": "X02",
+  "mode": "pooled",
+  "text": "After many years of loyal service and countless successful projects, Maria was chosen to lead the company.",
+  "synth_text": "After many years of loyal service and countless successful projects, Maria was chosen to leed the company.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 89,
+    "end": 93,
+    "score": 7.8984375,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 89,
+    "sense_similarity": 0.8037109375,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "X02",
+  "mode": "context",
+  "text": "After many years of loyal service and countless successful projects, Maria was chosen to lead the company.",
+  "synth_text": "After many years of loyal service and countless successful projects, Maria was chosen to leed the company.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 89,
+    "end": 93,
+    "score": 7.8984375,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 89,
+    "sense_similarity": 0.8037109375,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     3,
+     4
+    ],
+    "choice": 4,
+    "lambda": {
+     "-1": 0.164582055442608,
+     "1": 0.10946095676521429,
+     "-2": 0.058823529411764705,
+     "2": 0.10832551522180128,
+     "-3": 0.4722535954821912,
+     "3": 0.10832551522180128
+    },
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "log_lik": [
+     -26.54040114783174,
+     -26.38301571204247
+    ],
+    "log_lik_default": -26.414189648795546,
+    "matched": [
+     [],
+     [
+      [
+       1,
+       "the"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.4607346583949224,
+     0.5392653416050768
+    ]
+   }
+  ]
+ },
+ {
+  "id": "X03",
+  "mode": "pooled",
+  "text": "When I was a student living in a tiny apartment far from home, I read every book in the library.",
+  "synth_text": "When I was a student living in a tiny apartment far from home, I red every book in the library.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 65,
+    "end": 69,
+    "score": 8.265625,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 65,
+    "sense_similarity": 0.8359375,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "X03",
+  "mode": "context",
+  "text": "When I was a student living in a tiny apartment far from home, I read every book in the library.",
+  "synth_text": "When I was a student living in a tiny apartment far from home, I red every book in the library.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 65,
+    "end": 69,
+    "score": 8.265625,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 65,
+    "sense_similarity": 0.8486328125,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "undecided",
+    "senses": [
+     5,
+     6
+    ],
+    "choice": null,
+    "lambda": {
+     "-1": 0.1647907161168444,
+     "1": 0.109822287448618,
+     "-2": 0.058823529411764705,
+     "2": 0.10869569608143408,
+     "-3": 0.4728124324556532,
+     "3": 0.10869569608143408
+    },
+    "labels": [
+     "red",
+     "reed"
+    ],
+    "log_lik": [
+     -30.452345724946923,
+     -30.452345724946923
+    ],
+    "log_lik_default": -30.32358865026524,
+    "matched": [
+     [],
+     []
+    ],
+    "posterior": [
+     0.5000000000000009,
+     0.5000000000000009
+    ]
+   },
+   {
+    "method": "exemplar_keys",
+    "senses": [
+     5,
+     6
+    ],
+    "pooled_sims": [
+     0.8359375,
+     0.81201171875
+    ],
+    "exemplar_sims": [
+     0.8486328125,
+     0.828125
+    ],
+    "choice": 5
+   }
+  ]
+ },
+ {
+  "id": "X04",
+  "mode": "pooled",
+  "text": "Every night before going to sleep, no matter how tired I am, I like to read a few pages of a novel.",
+  "synth_text": "Every night before going to sleep, no matter how tired I am, I like to red a few pages of a novel.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 71,
+    "end": 75,
+    "score": 8.28125,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 71,
+    "sense_similarity": 0.83740234375,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "X04",
+  "mode": "context",
+  "text": "Every night before going to sleep, no matter how tired I am, I like to read a few pages of a novel.",
+  "synth_text": "Every night before going to sleep, no matter how tired I am, I like to reed a few pages of a novel.",
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 71,
+    "end": 75,
+    "score": 8.09375,
+    "gate": 1.0,
+    "phonetic_text": "reed",
+    "char_start": 71,
+    "sense_similarity": 0.81787109375,
+    "has_delta": true,
+    "entry_carriers": [
+     "Please read the instructions carefully.",
+     "I like to read before bed.",
+     "Can you read this sentence aloud?"
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     5,
+     6
+    ],
+    "choice": 6,
+    "lambda": {
+     "-1": 0.1642475160911747,
+     "1": 0.11064536364127221,
+     "-2": 0.058823529411764705,
+     "2": 0.10914684667798225,
+     "-3": 0.4734845219606137,
+     "3": 0.10914684667798225
+    },
+    "labels": [
+     "red",
+     "reed"
+    ],
+    "log_lik": [
+     -28.300335300210268,
+     -24.369814643699005
+    ],
+    "log_lik_default": -31.16317217230663,
+    "matched": [
+     [
+      [
+       -3,
+       "i"
+      ]
+     ],
+     [
+      [
+       -3,
+       "i"
+      ],
+      [
+       -2,
+       "like"
+      ],
+      [
+       -1,
+       "to"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.019255397765888946,
+     0.9807446022341124
+    ]
+   }
+  ]
+ },
+ {
+  "id": "M01",
+  "mode": "pooled",
+  "text": "Yesterday I read the report about lead in the water.",
+  "synth_text": "Yesterday I reed the report about leed in the water.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 12,
+    "end": 16,
+    "score": 9.3828125,
+    "gate": 1.0,
+    "phonetic_text": "reed",
+    "char_start": 12,
+    "sense_similarity": 0.9287109375,
+    "has_delta": true,
+    "entry_carriers": [
+     "Please read the instructions carefully.",
+     "I like to read before bed.",
+     "Can you read this sentence aloud?"
+    ]
+   },
+   {
+    "word": "lead",
+    "start": 34,
+    "end": 38,
+    "score": 8.484375,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 34,
+    "sense_similarity": 0.85791015625,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "M01",
+  "mode": "context",
+  "text": "Yesterday I read the report about lead in the water.",
+  "synth_text": "Yesterday I red the report about leed in the water.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 12,
+    "end": 16,
+    "score": 9.1796875,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 12,
+    "sense_similarity": 0.921875,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   },
+   {
+    "word": "lead",
+    "start": 34,
+    "end": 38,
+    "score": 8.484375,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 34,
+    "sense_similarity": 0.85791015625,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     5,
+     6
+    ],
+    "choice": 5,
+    "lambda": {
+     "-1": 0.16436020595175335,
+     "1": 0.11027870814380802,
+     "-2": 0.058823529411764705,
+     "2": 0.1091706323536692,
+     "-3": 0.4735196871029942,
+     "3": 0.1091706323536692
+    },
+    "labels": [
+     "red",
+     "reed"
+    ],
+    "log_lik": [
+     -18.9878623784779,
+     -23.690247567698727
+    ],
+    "log_lik_default": -26.09535873145609,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "yesterday"
+      ],
+      [
+       1,
+       "the"
+      ],
+      [
+       2,
+       "report"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       1,
+       "the"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.9910079810675504,
+     0.008992018932450158
+    ]
+   },
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     3,
+     4
+    ],
+    "choice": 4,
+    "lambda": {
+     "-1": 0.16436020595175335,
+     "1": 0.11027870814380802,
+     "-2": 0.058823529411764705,
+     "2": 0.1091706323536692,
+     "-3": 0.4735196871029942,
+     "3": 0.1091706323536692
+    },
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "log_lik": [
+     -26.554655570761753,
+     -26.389936939828566
+    ],
+    "log_lik_default": -26.423492496627933,
+    "matched": [
+     [],
+     [
+      [
+       2,
+       "the"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.4589131983220859,
+     0.5410868016779127
+    ]
+   }
+  ]
+ },
+ {
+  "id": "M02",
+  "mode": "pooled",
+  "text": "She will lead the team and read the results to everyone.",
+  "synth_text": "She will leed the team and red the results to everyone.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 9,
+    "end": 13,
+    "score": 9.78125,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 9,
+    "sense_similarity": 0.97998046875,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   },
+   {
+    "word": "read",
+    "start": 27,
+    "end": 31,
+    "score": 8.7265625,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 27,
+    "sense_similarity": 0.880859375,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "M02",
+  "mode": "context",
+  "text": "She will lead the team and read the results to everyone.",
+  "synth_text": "She will leed the team and red the results to everyone.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 9,
+    "end": 13,
+    "score": 9.78125,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 9,
+    "sense_similarity": 0.97998046875,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   },
+   {
+    "word": "read",
+    "start": 27,
+    "end": 31,
+    "score": 8.7265625,
+    "gate": 1.0,
+    "phonetic_text": "red",
+    "char_start": 27,
+    "sense_similarity": 0.880859375,
+    "has_delta": true,
+    "entry_carriers": [
+     "Yesterday she read the whole book.",
+     "I have already read that report.",
+     "He read the letter twice last night."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     3,
+     4
+    ],
+    "choice": 4,
+    "lambda": {
+     "-1": 0.16447927133299697,
+     "1": 0.10995202178350383,
+     "-2": 0.058823529411764705,
+     "2": 0.10922349326835488,
+     "-3": 0.47359774219118206,
+     "3": 0.10922349326835488
+    },
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "log_lik": [
+     -22.673214329688484,
+     -16.5137649877349
+    ],
+    "log_lik_default": -24.08233876507278,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -1,
+       "will"
+      ],
+      [
+       1,
+       "the"
+      ],
+      [
+       2,
+       "team"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.002108959610788912,
+     0.99789104038921
+    ]
+   },
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     5,
+     6
+    ],
+    "choice": 5,
+    "lambda": {
+     "-1": 0.16447927133299697,
+     "1": 0.10995202178350383,
+     "-2": 0.058823529411764705,
+     "2": 0.10922349326835488,
+     "-3": 0.47359774219118206,
+     "3": 0.10922349326835488
+    },
+    "labels": [
+     "red",
+     "reed"
+    ],
+    "log_lik": [
+     -24.044955462690005,
+     -24.336735361632734
+    ],
+    "log_lik_default": -24.619241437674752,
+    "matched": [
+     [
+      [
+       1,
+       "the"
+      ]
+     ],
+     [
+      [
+       1,
+       "the"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.5724318257149635,
+     0.42756817428503696
+    ]
+   }
+  ]
+ },
+ {
+  "id": "M03",
+  "mode": "pooled",
+  "text": "The lead researcher found lead in the old pipes.",
+  "synth_text": "The leed researcher found leed in the old pipes.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 4,
+    "end": 8,
+    "score": 9.3671875,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 4,
+    "sense_similarity": 0.92236328125,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   },
+   {
+    "word": "lead",
+    "start": 26,
+    "end": 30,
+    "score": 8.6796875,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 26,
+    "sense_similarity": 0.87548828125,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "M03",
+  "mode": "context",
+  "text": "The lead researcher found lead in the old pipes.",
+  "synth_text": "The leed researcher found leed in the old pipes.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 4,
+    "end": 8,
+    "score": 9.3671875,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 4,
+    "sense_similarity": 0.92236328125,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   },
+   {
+    "word": "lead",
+    "start": 26,
+    "end": 30,
+    "score": 8.6796875,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 26,
+    "sense_similarity": 0.87548828125,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     3,
+     4
+    ],
+    "choice": 4,
+    "lambda": {
+     "-1": 0.1645794858280753,
+     "1": 0.10957615516006303,
+     "-2": 0.058823529411764705,
+     "2": 0.10921692367617458,
+     "-3": 0.47358804859746895,
+     "3": 0.10921692367617458
+    },
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "log_lik": [
+     -21.159508940933932,
+     -20.847406228202885
+    ],
+    "log_lik_default": -22.795660604020178,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "<s>"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.4226015736934399,
+     0.5773984263065597
+    ]
+   },
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     3,
+     4
+    ],
+    "choice": 4,
+    "lambda": {
+     "-1": 0.1645794858280753,
+     "1": 0.10957615516006303,
+     "-2": 0.058823529411764705,
+     "2": 0.10921692367617458,
+     "-3": 0.47358804859746895,
+     "3": 0.10921692367617458
+    },
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "log_lik": [
+     -27.240041190159015,
+     -27.082524075866605
+    ],
+    "log_lik_default": -27.109171207102847,
+    "matched": [
+     [],
+     [
+      [
+       2,
+       "the"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.4607019419559186,
+     0.5392980580440798
+    ]
+   }
+  ]
+ },
+ {
+  "id": "M04",
+  "mode": "pooled",
+  "text": "Please read the warning: this paint contains lead.",
+  "synth_text": "Please reed the warning: this paint contains leed.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 7,
+    "end": 11,
+    "score": 9.7734375,
+    "gate": 1.0,
+    "phonetic_text": "reed",
+    "char_start": 7,
+    "sense_similarity": 0.97509765625,
+    "has_delta": true,
+    "entry_carriers": [
+     "Please read the instructions carefully.",
+     "I like to read before bed.",
+     "Can you read this sentence aloud?"
+    ]
+   },
+   {
+    "word": "lead",
+    "start": 45,
+    "end": 49,
+    "score": 7.796875,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 45,
+    "sense_similarity": 0.779296875,
+    "has_delta": true,
+    "entry_carriers": [
+     "He will lead the team next year.",
+     "Our team lead approved the plan."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "M04",
+  "mode": "context",
+  "text": "Please read the warning: this paint contains lead.",
+  "synth_text": "Please reed the warning: this paint contains led.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "read",
+    "start": 7,
+    "end": 11,
+    "score": 9.7734375,
+    "gate": 1.0,
+    "phonetic_text": "reed",
+    "char_start": 7,
+    "sense_similarity": 0.97509765625,
+    "has_delta": true,
+    "entry_carriers": [
+     "Please read the instructions carefully.",
+     "I like to read before bed.",
+     "Can you read this sentence aloud?"
+    ]
+   },
+   {
+    "word": "lead",
+    "start": 45,
+    "end": 49,
+    "score": 7.6171875,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 45,
+    "sense_similarity": 0.77734375,
+    "has_delta": true,
+    "entry_carriers": [
+     "this toy is made of lead",
+     "The old pipes were full of lead.",
+     "Lead paint is dangerous for children."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     5,
+     6
+    ],
+    "choice": 6,
+    "lambda": {
+     "-1": 0.16467804473376504,
+     "1": 0.10956656457126855,
+     "-2": 0.058823529411764705,
+     "2": 0.1092104669707431,
+     "-3": 0.4735785195956176,
+     "3": 0.1092104669707431
+    },
+    "labels": [
+     "red",
+     "reed"
+    ],
+    "log_lik": [
+     -22.91889683983813,
+     -20.235410604461617
+    ],
+    "log_lik_default": -25.833314227060864,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "<s>"
+      ],
+      [
+       1,
+       "the"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "<s>"
+      ],
+      [
+       -1,
+       "please"
+      ],
+      [
+       1,
+       "the"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.06395485667297234,
+     0.9360451433270293
+    ]
+   },
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     3,
+     4
+    ],
+    "choice": 3,
+    "lambda": {
+     "-1": 0.16467804473376504,
+     "1": 0.10956656457126855,
+     "-2": 0.058823529411764705,
+     "2": 0.1092104669707431,
+     "-3": 0.4735785195956176,
+     "3": 0.1092104669707431
+    },
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "log_lik": [
+     -22.748109565454204,
+     -24.969552504529283
+    ],
+    "log_lik_default": -24.433142800231423,
+    "matched": [
+     [
+      [
+       1,
+       "."
+      ],
+      [
+       2,
+       "</s>"
+      ],
+      [
+       3,
+       "</s>"
+      ]
+     ],
+     []
+    ],
+    "posterior": [
+     0.9021586356018405,
+     0.09784136439815816
+    ]
+   }
+  ]
+ },
+ {
+  "id": "W01",
+  "mode": "pooled",
+  "text": "The wound healed after two weeks.",
+  "synth_text": "The wownd healed after two weeks.",
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "matched_spans": [
+   {
+    "word": "wound",
+    "start": 4,
+    "end": 9,
+    "score": 9.515625,
+    "gate": 1.0,
+    "phonetic_text": "wownd",
+    "char_start": 4,
+    "sense_similarity": 0.95947265625,
+    "has_delta": true,
+    "entry_carriers": [
+     "She wound the clock before bed.",
+     "The path wound through the hills."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "W01",
+  "mode": "context",
+  "text": "The wound healed after two weeks.",
+  "synth_text": "The wownd healed after two weeks.",
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "matched_spans": [
+   {
+    "word": "wound",
+    "start": 4,
+    "end": 9,
+    "score": 9.515625,
+    "gate": 1.0,
+    "phonetic_text": "wownd",
+    "char_start": 4,
+    "sense_similarity": 0.95947265625,
+    "has_delta": true,
+    "entry_carriers": [
+     "She wound the clock before bed.",
+     "The path wound through the hills."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     7,
+     8
+    ],
+    "choice": 8,
+    "lambda": {
+     "-1": 0.16475090187306798,
+     "1": 0.1094707054801734,
+     "-2": 0.058823529411764705,
+     "2": 0.10911779695312367,
+     "-3": 0.4734415381477152,
+     "3": 0.10911779695312367
+    },
+    "labels": [
+     "woond",
+     "wownd"
+    ],
+    "log_lik": [
+     -23.981842564971014,
+     -23.046141542050812
+    ],
+    "log_lik_default": -25.314884504547518,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "<s>"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.28176953327692117,
+     0.7182304667230803
+    ]
+   }
+  ]
+ },
+ {
+  "id": "W02",
+  "mode": "pooled",
+  "text": "She pressed a bandage on the wound.",
+  "synth_text": "She pressed a bandage on the woond.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "wound",
+    "start": 29,
+    "end": 34,
+    "score": 8.953125,
+    "gate": 1.0,
+    "phonetic_text": "woond",
+    "char_start": 29,
+    "sense_similarity": 0.8828125,
+    "has_delta": true,
+    "entry_carriers": [
+     "The soldier had a deep wound in his leg.",
+     "Words can wound people deeply."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "W02",
+  "mode": "context",
+  "text": "She pressed a bandage on the wound.",
+  "synth_text": "She pressed a bandage on the woond.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "wound",
+    "start": 29,
+    "end": 34,
+    "score": 8.953125,
+    "gate": 1.0,
+    "phonetic_text": "woond",
+    "char_start": 29,
+    "sense_similarity": 0.90234375,
+    "has_delta": true,
+    "entry_carriers": [
+     "The soldier had a deep wound in his leg.",
+     "Words can wound people deeply."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "undecided",
+    "senses": [
+     7,
+     8
+    ],
+    "choice": null,
+    "lambda": {
+     "-1": 0.16483080900225353,
+     "1": 0.10940494159432212,
+     "-2": 0.058823529411764705,
+     "2": 0.10905513139053102,
+     "-3": 0.47334867828121635,
+     "3": 0.10905513139053102
+    },
+    "labels": [
+     "woond",
+     "wownd"
+    ],
+    "log_lik": [
+     -22.723241120146607,
+     -22.723241120146607
+    ],
+    "log_lik_default": -22.18761525685982,
+    "matched": [
+     [],
+     []
+    ],
+    "posterior": [
+     0.5000000000000009,
+     0.5000000000000009
+    ]
+   },
+   {
+    "method": "exemplar_keys",
+    "senses": [
+     7,
+     8
+    ],
+    "pooled_sims": [
+     0.8828125,
+     0.85009765625
+    ],
+    "exemplar_sims": [
+     0.90234375,
+     0.84716796875
+    ],
+    "choice": 7
+   }
+  ]
+ },
+ {
+  "id": "W03",
+  "mode": "pooled",
+  "text": "A small wound can still get infected.",
+  "synth_text": "A small wownd can still get infected.",
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "matched_spans": [
+   {
+    "word": "wound",
+    "start": 8,
+    "end": 13,
+    "score": 9.8046875,
+    "gate": 1.0,
+    "phonetic_text": "wownd",
+    "char_start": 8,
+    "sense_similarity": 0.98583984375,
+    "has_delta": true,
+    "entry_carriers": [
+     "She wound the clock before bed.",
+     "The path wound through the hills."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "W03",
+  "mode": "context",
+  "text": "A small wound can still get infected.",
+  "synth_text": "A small woond can still get infected.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "wound",
+    "start": 8,
+    "end": 13,
+    "score": 9.7578125,
+    "gate": 1.0,
+    "phonetic_text": "woond",
+    "char_start": 8,
+    "sense_similarity": 0.978515625,
+    "has_delta": true,
+    "entry_carriers": [
+     "The soldier had a deep wound in his leg.",
+     "Words can wound people deeply."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     7,
+     8
+    ],
+    "choice": 7,
+    "lambda": {
+     "-1": 0.16490963733324995,
+     "1": 0.1096903743836702,
+     "-2": 0.058823529411764705,
+     "2": 0.10899344441014053,
+     "-3": 0.47325708649338527,
+     "3": 0.10899344441014053
+    },
+    "labels": [
+     "woond",
+     "wownd"
+    ],
+    "log_lik": [
+     -28.87297580196762,
+     -29.374259263944428
+    ],
+    "log_lik_default": -31.316897625353107,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "a"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.6227609020910072,
+     0.3772390979089911
+    ]
+   }
+  ]
+ },
+ {
+  "id": "W04",
+  "mode": "pooled",
+  "text": "The doctor stitched the open wound.",
+  "synth_text": "The doctor stitched the open woond.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "wound",
+    "start": 29,
+    "end": 34,
+    "score": 8.8203125,
+    "gate": 1.0,
+    "phonetic_text": "woond",
+    "char_start": 29,
+    "sense_similarity": 0.87109375,
+    "has_delta": true,
+    "entry_carriers": [
+     "The soldier had a deep wound in his leg.",
+     "Words can wound people deeply."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "W04",
+  "mode": "context",
+  "text": "The doctor stitched the open wound.",
+  "synth_text": "The doctor stitched the open wownd.",
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "matched_spans": [
+   {
+    "word": "wound",
+    "start": 29,
+    "end": 34,
+    "score": 8.3828125,
+    "gate": 1.0,
+    "phonetic_text": "wownd",
+    "char_start": 29,
+    "sense_similarity": 0.8349609375,
+    "has_delta": true,
+    "entry_carriers": [
+     "She wound the clock before bed.",
+     "The path wound through the hills."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     7,
+     8
+    ],
+    "choice": 8,
+    "lambda": {
+     "-1": 0.16497967834477123,
+     "1": 0.10924825421422558,
+     "-2": 0.058823529411764705,
+     "2": 0.10890452081278695,
+     "-3": 0.4731247350064352,
+     "3": 0.10890452081278695
+    },
+    "labels": [
+     "woond",
+     "wownd"
+    ],
+    "log_lik": [
+     -23.320556947782947,
+     -22.996842815265232
+    ],
+    "log_lik_default": -22.785691932203463,
+    "matched": [
+     [],
+     [
+      [
+       -2,
+       "the"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.4197708529362928,
+     0.5802291470637074
+    ]
+   }
+  ]
+ },
+ {
+  "id": "W05",
+  "mode": "pooled",
+  "text": "Keep the wound clean and dry.",
+  "synth_text": "Keep the wownd clean and dry.",
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "matched_spans": [
+   {
+    "word": "wound",
+    "start": 9,
+    "end": 14,
+    "score": 9.84375,
+    "gate": 1.0,
+    "phonetic_text": "wownd",
+    "char_start": 9,
+    "sense_similarity": 0.98828125,
+    "has_delta": true,
+    "entry_carriers": [
+     "She wound the clock before bed.",
+     "The path wound through the hills."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "W05",
+  "mode": "context",
+  "text": "Keep the wound clean and dry.",
+  "synth_text": "Keep the wownd clean and dry.",
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "matched_spans": [
+   {
+    "word": "wound",
+    "start": 9,
+    "end": 14,
+    "score": 9.84375,
+    "gate": 1.0,
+    "phonetic_text": "wownd",
+    "char_start": 9,
+    "sense_similarity": 0.98828125,
+    "has_delta": true,
+    "entry_carriers": [
+     "She wound the clock before bed.",
+     "The path wound through the hills."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     7,
+     8
+    ],
+    "choice": 8,
+    "lambda": {
+     "-1": 0.16504887842315116,
+     "1": 0.10915766691692769,
+     "-2": 0.058823529411764705,
+     "2": 0.1088169146297657,
+     "-3": 0.4729939738253549,
+     "3": 0.1088169146297657
+    },
+    "labels": [
+     "woond",
+     "wownd"
+    ],
+    "log_lik": [
+     -27.386170672329037,
+     -26.77395257310902
+    ],
+    "log_lik_default": -28.71299576649539,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.35155338568894284,
+     0.6484466143110582
+    ]
+   }
+  ]
+ },
+ {
+  "id": "W06",
+  "mode": "pooled",
+  "text": "They wound the cable onto the spool.",
+  "synth_text": "They wownd the cable onto the spool.",
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "matched_spans": [
+   {
+    "word": "wound",
+    "start": 5,
+    "end": 10,
+    "score": 9.6484375,
+    "gate": 1.0,
+    "phonetic_text": "wownd",
+    "char_start": 5,
+    "sense_similarity": 0.96923828125,
+    "has_delta": true,
+    "entry_carriers": [
+     "She wound the clock before bed.",
+     "The path wound through the hills."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "W06",
+  "mode": "context",
+  "text": "They wound the cable onto the spool.",
+  "synth_text": "They wownd the cable onto the spool.",
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "matched_spans": [
+   {
+    "word": "wound",
+    "start": 5,
+    "end": 10,
+    "score": 9.6484375,
+    "gate": 1.0,
+    "phonetic_text": "wownd",
+    "char_start": 5,
+    "sense_similarity": 0.96923828125,
+    "has_delta": true,
+    "entry_carriers": [
+     "She wound the clock before bed.",
+     "The path wound through the hills."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     7,
+     8
+    ],
+    "choice": 8,
+    "lambda": {
+     "-1": 0.16512479935708319,
+     "1": 0.10875842460697539,
+     "-2": 0.058823529411764705,
+     "2": 0.10875842460697539,
+     "-3": 0.4729064657438529,
+     "3": 0.10875842460697539
+    },
+    "labels": [
+     "woond",
+     "wownd"
+    ],
+    "log_lik": [
+     -23.4658291427677,
+     -21.980901108839138
+    ],
+    "log_lik_default": -24.791803423343538,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "<s>"
+      ],
+      [
+       1,
+       "the"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.184684222511347,
+     0.815315777488654
+    ]
+   }
+  ]
+ },
+ {
+  "id": "W07",
+  "mode": "pooled",
+  "text": "I wound the string around my finger.",
+  "synth_text": "I wownd the string around my finger.",
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "matched_spans": [
+   {
+    "word": "wound",
+    "start": 2,
+    "end": 7,
+    "score": 9.171875,
+    "gate": 1.0,
+    "phonetic_text": "wownd",
+    "char_start": 2,
+    "sense_similarity": 0.92626953125,
+    "has_delta": true,
+    "entry_carriers": [
+     "She wound the clock before bed.",
+     "The path wound through the hills."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "W07",
+  "mode": "context",
+  "text": "I wound the string around my finger.",
+  "synth_text": "I wownd the string around my finger.",
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "matched_spans": [
+   {
+    "word": "wound",
+    "start": 2,
+    "end": 7,
+    "score": 9.171875,
+    "gate": 1.0,
+    "phonetic_text": "wownd",
+    "char_start": 2,
+    "sense_similarity": 0.92626953125,
+    "has_delta": true,
+    "entry_carriers": [
+     "She wound the clock before bed.",
+     "The path wound through the hills."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     7,
+     8
+    ],
+    "choice": 8,
+    "lambda": {
+     "-1": 0.16519972068849964,
+     "1": 0.10870082132730172,
+     "-2": 0.058823529411764705,
+     "2": 0.10870082132730172,
+     "-3": 0.47282012262085615,
+     "3": 0.10870082132730172
+    },
+    "labels": [
+     "woond",
+     "wownd"
+    ],
+    "log_lik": [
+     -23.054025678017823,
+     -21.570459700026436
+    ],
+    "log_lik_default": -24.378785060902423,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "<s>"
+      ],
+      [
+       1,
+       "the"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.18488940348123192,
+     0.8151105965187677
+    ]
+   }
+  ]
+ },
+ {
+  "id": "W08",
+  "mode": "pooled",
+  "text": "The river wound slowly to the sea.",
+  "synth_text": "The river woond slowly to the sea.",
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "matched_spans": [
+   {
+    "word": "wound",
+    "start": 10,
+    "end": 15,
+    "score": 9.78125,
+    "gate": 1.0,
+    "phonetic_text": "woond",
+    "char_start": 10,
+    "sense_similarity": 0.97900390625,
+    "has_delta": true,
+    "entry_carriers": [
+     "The soldier had a deep wound in his leg.",
+     "Words can wound people deeply."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "W08",
+  "mode": "context",
+  "text": "The river wound slowly to the sea.",
+  "synth_text": "The river wownd slowly to the sea.",
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "matched_spans": [
+   {
+    "word": "wound",
+    "start": 10,
+    "end": 15,
+    "score": 9.8046875,
+    "gate": 1.0,
+    "phonetic_text": "wownd",
+    "char_start": 10,
+    "sense_similarity": 0.97607421875,
+    "has_delta": true,
+    "entry_carriers": [
+     "She wound the clock before bed.",
+     "The path wound through the hills."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     7,
+     8
+    ],
+    "choice": 8,
+    "lambda": {
+     "-1": 0.1652736619669628,
+     "1": 0.10831500903976128,
+     "-2": 0.058823529411764705,
+     "2": 0.10864408487644651,
+     "-3": 0.4727349213545371,
+     "3": 0.10864408487644651
+    },
+    "labels": [
+     "woond",
+     "wownd"
+    ],
+    "log_lik": [
+     -22.992903663114607,
+     -22.063612285359593
+    ],
+    "log_lik_default": -24.31683520624092,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "the"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.28306850070971484,
+     0.7169314992902868
+    ]
+   }
+  ]
+ },
+ {
+  "id": "W09",
+  "mode": "pooled",
+  "text": "We wound the yarn into a ball.",
+  "synth_text": "We wownd the yarn into a ball.",
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "matched_spans": [
+   {
+    "word": "wound",
+    "start": 3,
+    "end": 8,
+    "score": 9.453125,
+    "gate": 1.0,
+    "phonetic_text": "wownd",
+    "char_start": 3,
+    "sense_similarity": 0.94580078125,
+    "has_delta": true,
+    "entry_carriers": [
+     "She wound the clock before bed.",
+     "The path wound through the hills."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "W09",
+  "mode": "context",
+  "text": "We wound the yarn into a ball.",
+  "synth_text": "We wownd the yarn into a ball.",
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "matched_spans": [
+   {
+    "word": "wound",
+    "start": 3,
+    "end": 8,
+    "score": 9.453125,
+    "gate": 1.0,
+    "phonetic_text": "wownd",
+    "char_start": 3,
+    "sense_similarity": 0.94580078125,
+    "has_delta": true,
+    "entry_carriers": [
+     "She wound the clock before bed.",
+     "The path wound through the hills."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     7,
+     8
+    ],
+    "choice": 8,
+    "lambda": {
+     "-1": 0.165346642237287,
+     "1": 0.10826182975232691,
+     "-2": 0.058823529411764705,
+     "2": 0.1085881959291522,
+     "-3": 0.47265083944970326,
+     "3": 0.1085881959291522
+    },
+    "labels": [
+     "woond",
+     "wownd"
+    ],
+    "log_lik": [
+     -24.36526942109001,
+     -22.889160561647195
+    ],
+    "log_lik_default": -25.68801848950904,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "<s>"
+      ],
+      [
+       1,
+       "the"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.18601587263476826,
+     0.8139841273652307
+    ]
+   }
+  ]
+ },
+ {
+  "id": "W10",
+  "mode": "pooled",
+  "text": "Grandpa wound his watch every morning.",
+  "synth_text": "Grandpa wownd his watch every morning.",
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "matched_spans": [
+   {
+    "word": "wound",
+    "start": 8,
+    "end": 13,
+    "score": 9.8203125,
+    "gate": 1.0,
+    "phonetic_text": "wownd",
+    "char_start": 8,
+    "sense_similarity": 0.986328125,
+    "has_delta": true,
+    "entry_carriers": [
+     "She wound the clock before bed.",
+     "The path wound through the hills."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "W10",
+  "mode": "context",
+  "text": "Grandpa wound his watch every morning.",
+  "synth_text": "Grandpa wownd his watch every morning.",
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "matched_spans": [
+   {
+    "word": "wound",
+    "start": 8,
+    "end": 13,
+    "score": 9.8203125,
+    "gate": 1.0,
+    "phonetic_text": "wownd",
+    "char_start": 8,
+    "sense_similarity": 0.986328125,
+    "has_delta": true,
+    "entry_carriers": [
+     "She wound the clock before bed.",
+     "The path wound through the hills."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     7,
+     8
+    ],
+    "choice": 8,
+    "lambda": {
+     "-1": 0.16541151816515734,
+     "1": 0.10850607183390905,
+     "-2": 0.058823529411764705,
+     "2": 0.10850607183390905,
+     "-3": 0.4725270109207569,
+     "3": 0.10850607183390905
+    },
+    "labels": [
+     "woond",
+     "wownd"
+    ],
+    "log_lik": [
+     -27.46701323372116,
+     -26.536747474067035
+    ],
+    "log_lik_default": -28.78771365773969,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ]
+     ],
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "<s>"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.2828708007453552,
+     0.7171291992546455
+    ]
+   }
+  ]
+ },
+ {
+  "id": "C01",
+  "mode": "pooled",
+  "text": "Bispecific antibodies are becoming an important approach in cancer treatment.",
+  "synth_text": "By specific antibodies are becoming an important approach in cancer treatment.",
+  "gate_max": 0.0,
+  "delta_norm": 0.0,
+  "matched_spans": [
+   {
+    "word": "Bispecific",
+    "start": 0,
+    "end": 10,
+    "score": 9.625,
+    "gate": 1.0,
+    "phonetic_text": "By specific",
+    "char_start": 0,
+    "sense_similarity": 1.0,
+    "has_delta": false,
+    "entry_carriers": [
+     "Bispecific antibodies are becoming an important approach in cancer treatment."
+    ]
+   }
+  ],
+  "sense_decisions": []
+ },
+ {
+  "id": "C01",
+  "mode": "context",
+  "text": "Bispecific antibodies are becoming an important approach in cancer treatment.",
+  "synth_text": "By specific antibodies are becoming an important approach in cancer treatment.",
+  "gate_max": 0.0,
+  "delta_norm": 0.0,
+  "matched_spans": [
+   {
+    "word": "Bispecific",
+    "start": 0,
+    "end": 10,
+    "score": 9.625,
+    "gate": 1.0,
+    "phonetic_text": "By specific",
+    "char_start": 0,
+    "sense_similarity": 1.0,
+    "has_delta": false,
+    "entry_carriers": [
+     "Bispecific antibodies are becoming an important approach in cancer treatment."
+    ]
+   }
+  ],
+  "sense_decisions": [
+   {
+    "method": "context",
+    "verdict": "choose",
+    "senses": [
+     1
+    ],
+    "choice": 1,
+    "lambda": {
+     "-1": 0.1655039068297129,
+     "1": 0.10885674717714791,
+     "-2": 0.058823529411764705,
+     "2": 0.1085326010116512,
+     "-3": 0.47256704836768,
+     "3": 0.1085326010116512
+    },
+    "labels": [
+     "by specific"
+    ],
+    "log_lik": [
+     -10.712398061498503
+    ],
+    "log_lik_default": -26.66745139596201,
+    "matched": [
+     [
+      [
+       -3,
+       "<s>"
+      ],
+      [
+       -2,
+       "<s>"
+      ],
+      [
+       -1,
+       "<s>"
+      ],
+      [
+       1,
+       "antibodies"
+      ],
+      [
+       2,
+       "are"
+      ],
+      [
+       3,
+       "becoming"
+      ]
+     ]
+    ],
+    "posterior": [
+     0.999999882291364,
+     1.1770863602560587e-07
+    ]
+   }
+  ]
+ },
+ {
+  "id": "C02",
+  "mode": "pooled",
+  "text": "The weather is pleasant today.",
+  "synth_text": "The weather is pleasant today.",
+  "gate_max": 0.0,
+  "delta_norm": null,
+  "matched_spans": [],
+  "sense_decisions": []
+ },
+ {
+  "id": "C02",
+  "mode": "context",
+  "text": "The weather is pleasant today.",
+  "synth_text": "The weather is pleasant today.",
+  "gate_max": 0.0,
+  "delta_norm": null,
+  "matched_spans": [],
+  "sense_decisions": []
+ }
+]

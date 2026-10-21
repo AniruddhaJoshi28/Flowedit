@@ -1,0 +1,2598 @@
+{
+  "with_prototypes": [
+    {
+      "mode": "baseline",
+      "text": "The pipe in the basement contains lead.",
+      "word": "lead",
+      "expected": "led",
+      "got": "led",
+      "correct": true,
+      "score": 9.678278923034668,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9621626734733582,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "baseline",
+      "text": "She will lead the entire research group.",
+      "word": "lead",
+      "expected": "leed",
+      "got": "leed",
+      "correct": true,
+      "score": 9.827461242675781,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9537111520767212,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "baseline",
+      "text": "The old plumbing has dangerous lead inside.",
+      "word": "lead",
+      "expected": "led",
+      "got": "led",
+      "correct": true,
+      "score": 9.342637062072754,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9583956003189087,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "baseline",
+      "text": "They asked her to lead the discussion today.",
+      "word": "lead",
+      "expected": "leed",
+      "got": "leed",
+      "correct": true,
+      "score": 9.784109115600586,
+      "gate_value": 1.0,
+      "sense_similarity": 0.951772928237915,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "baseline",
+      "text": "Yesterday she read the entire manuscript.",
+      "word": "read",
+      "expected": "red",
+      "got": "red",
+      "correct": true,
+      "score": 9.763772964477539,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9562512636184692,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "baseline",
+      "text": "I read scientific papers every single morning.",
+      "word": "read",
+      "expected": "reed",
+      "got": "red",
+      "correct": false,
+      "score": 9.552628517150879,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9000536799430847,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "baseline",
+      "text": "He already read the instructions carefully.",
+      "word": "read",
+      "expected": "red",
+      "got": "reed",
+      "correct": false,
+      "score": 9.822084426879883,
+      "gate_value": 1.0,
+      "sense_similarity": 0.8804649114608765,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "baseline",
+      "text": "They always read the news before breakfast.",
+      "word": "read",
+      "expected": "reed",
+      "got": "reed",
+      "correct": true,
+      "score": 9.66688346862793,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9567302465438843,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "baseline",
+      "text": "The strong wind battered the coastal houses.",
+      "word": "wind",
+      "expected": "wind",
+      "got": "wind",
+      "correct": true,
+      "score": 9.493903160095215,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9683724641799927,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "baseline",
+      "text": "She had to wind the vintage music box.",
+      "word": "wind",
+      "expected": "wynd",
+      "got": "wynd",
+      "correct": true,
+      "score": 9.765667915344238,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9902351498603821,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "baseline",
+      "text": "A powerful wind swept across the open plain.",
+      "word": "wind",
+      "expected": "wind",
+      "got": "wind",
+      "correct": true,
+      "score": 9.578295707702637,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9575715065002441,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "baseline",
+      "text": "He helped wind the fishing line onto the reel.",
+      "word": "wind",
+      "expected": "wynd",
+      "got": "wynd",
+      "correct": true,
+      "score": 9.871313095092773,
+      "gate_value": 1.0,
+      "sense_similarity": 0.973816990852356,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "baseline",
+      "text": "She will lead the team into the wind.",
+      "word": "lead",
+      "expected": "leed",
+      "got": "leed",
+      "correct": true,
+      "score": 9.827461242675781,
+      "gate_value": 1.0,
+      "sense_similarity": 0.920967698097229,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "baseline",
+      "text": "She will lead the team into the wind.",
+      "word": "wind",
+      "expected": "wind",
+      "got": "wind",
+      "correct": true,
+      "score": 9.543281555175781,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9223191738128662,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "baseline",
+      "text": "Yesterday I read about the lead contamination.",
+      "word": "read",
+      "expected": "red",
+      "got": "red",
+      "correct": true,
+      "score": 9.543253898620605,
+      "gate_value": 1.0,
+      "sense_similarity": 0.8281404972076416,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "baseline",
+      "text": "Yesterday I read about the lead contamination.",
+      "word": "lead",
+      "expected": "led",
+      "got": "led",
+      "correct": true,
+      "score": 9.374752044677734,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9373278617858887,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "shadow",
+      "text": "The pipe in the basement contains lead.",
+      "word": "lead",
+      "expected": "led",
+      "got": "led",
+      "correct": true,
+      "score": 9.678278923034668,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9621626734733582,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "shadow",
+      "text": "She will lead the entire research group.",
+      "word": "lead",
+      "expected": "leed",
+      "got": "leed",
+      "correct": true,
+      "score": 9.827461242675781,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9537111520767212,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "shadow",
+      "text": "The old plumbing has dangerous lead inside.",
+      "word": "lead",
+      "expected": "led",
+      "got": "led",
+      "correct": true,
+      "score": 9.342637062072754,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9583956003189087,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "shadow",
+      "text": "They asked her to lead the discussion today.",
+      "word": "lead",
+      "expected": "leed",
+      "got": "leed",
+      "correct": true,
+      "score": 9.784109115600586,
+      "gate_value": 1.0,
+      "sense_similarity": 0.951772928237915,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "shadow",
+      "text": "Yesterday she read the entire manuscript.",
+      "word": "read",
+      "expected": "red",
+      "got": "red",
+      "correct": true,
+      "score": 9.763772964477539,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9562512636184692,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "shadow",
+      "text": "I read scientific papers every single morning.",
+      "word": "read",
+      "expected": "reed",
+      "got": "red",
+      "correct": false,
+      "score": 9.552628517150879,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9000536799430847,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "shadow",
+      "text": "He already read the instructions carefully.",
+      "word": "read",
+      "expected": "red",
+      "got": "reed",
+      "correct": false,
+      "score": 9.822084426879883,
+      "gate_value": 1.0,
+      "sense_similarity": 0.8804649114608765,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "shadow",
+      "text": "They always read the news before breakfast.",
+      "word": "read",
+      "expected": "reed",
+      "got": "reed",
+      "correct": true,
+      "score": 9.66688346862793,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9567302465438843,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "shadow",
+      "text": "The strong wind battered the coastal houses.",
+      "word": "wind",
+      "expected": "wind",
+      "got": "wind",
+      "correct": true,
+      "score": 9.493903160095215,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9683724641799927,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "shadow",
+      "text": "She had to wind the vintage music box.",
+      "word": "wind",
+      "expected": "wynd",
+      "got": "wynd",
+      "correct": true,
+      "score": 9.765667915344238,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9902351498603821,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "shadow",
+      "text": "A powerful wind swept across the open plain.",
+      "word": "wind",
+      "expected": "wind",
+      "got": "wind",
+      "correct": true,
+      "score": 9.578295707702637,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9575715065002441,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "shadow",
+      "text": "He helped wind the fishing line onto the reel.",
+      "word": "wind",
+      "expected": "wynd",
+      "got": "wynd",
+      "correct": true,
+      "score": 9.871313095092773,
+      "gate_value": 1.0,
+      "sense_similarity": 0.973816990852356,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "shadow",
+      "text": "She will lead the team into the wind.",
+      "word": "lead",
+      "expected": "leed",
+      "got": "leed",
+      "correct": true,
+      "score": 9.827461242675781,
+      "gate_value": 1.0,
+      "sense_similarity": 0.920967698097229,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "shadow",
+      "text": "She will lead the team into the wind.",
+      "word": "wind",
+      "expected": "wind",
+      "got": "wind",
+      "correct": true,
+      "score": 9.543281555175781,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9223191738128662,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "shadow",
+      "text": "Yesterday I read about the lead contamination.",
+      "word": "read",
+      "expected": "red",
+      "got": "red",
+      "correct": true,
+      "score": 9.543253898620605,
+      "gate_value": 1.0,
+      "sense_similarity": 0.8281404972076416,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "shadow",
+      "text": "Yesterday I read about the lead contamination.",
+      "word": "lead",
+      "expected": "led",
+      "got": "led",
+      "correct": true,
+      "score": 9.374752044677734,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9373278617858887,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "active",
+      "text": "The pipe in the basement contains lead.",
+      "word": "lead",
+      "expected": "led",
+      "got": "led",
+      "correct": true,
+      "score": 9.678278923034668,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9621626734733582,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "active",
+      "text": "She will lead the entire research group.",
+      "word": "lead",
+      "expected": "leed",
+      "got": "leed",
+      "correct": true,
+      "score": 9.827461242675781,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9537111520767212,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "active",
+      "text": "The old plumbing has dangerous lead inside.",
+      "word": "lead",
+      "expected": "led",
+      "got": "led",
+      "correct": true,
+      "score": 9.342637062072754,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9583956003189087,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "active",
+      "text": "They asked her to lead the discussion today.",
+      "word": "lead",
+      "expected": "leed",
+      "got": "leed",
+      "correct": true,
+      "score": 9.784109115600586,
+      "gate_value": 1.0,
+      "sense_similarity": 0.951772928237915,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "active",
+      "text": "Yesterday she read the entire manuscript.",
+      "word": "read",
+      "expected": "red",
+      "got": "red",
+      "correct": true,
+      "score": 9.763772964477539,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9562512636184692,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "active",
+      "text": "I read scientific papers every single morning.",
+      "word": "read",
+      "expected": "reed",
+      "got": "red",
+      "correct": false,
+      "score": 9.552628517150879,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9000536799430847,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "active",
+      "text": "He already read the instructions carefully.",
+      "word": "read",
+      "expected": "red",
+      "got": "reed",
+      "correct": false,
+      "score": 9.822084426879883,
+      "gate_value": 1.0,
+      "sense_similarity": 0.8804649114608765,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "active",
+      "text": "They always read the news before breakfast.",
+      "word": "read",
+      "expected": "reed",
+      "got": "reed",
+      "correct": true,
+      "score": 9.66688346862793,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9567302465438843,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "active",
+      "text": "The strong wind battered the coastal houses.",
+      "word": "wind",
+      "expected": "wind",
+      "got": "wind",
+      "correct": true,
+      "score": 9.493903160095215,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9683724641799927,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "active",
+      "text": "She had to wind the vintage music box.",
+      "word": "wind",
+      "expected": "wynd",
+      "got": "wynd",
+      "correct": true,
+      "score": 9.765667915344238,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9902351498603821,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "active",
+      "text": "A powerful wind swept across the open plain.",
+      "word": "wind",
+      "expected": "wind",
+      "got": "wind",
+      "correct": true,
+      "score": 9.578295707702637,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9575715065002441,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "active",
+      "text": "He helped wind the fishing line onto the reel.",
+      "word": "wind",
+      "expected": "wynd",
+      "got": "wynd",
+      "correct": true,
+      "score": 9.871313095092773,
+      "gate_value": 1.0,
+      "sense_similarity": 0.973816990852356,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "active",
+      "text": "She will lead the team into the wind.",
+      "word": "lead",
+      "expected": "leed",
+      "got": "leed",
+      "correct": true,
+      "score": 9.827461242675781,
+      "gate_value": 1.0,
+      "sense_similarity": 0.920967698097229,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "active",
+      "text": "She will lead the team into the wind.",
+      "word": "wind",
+      "expected": "wind",
+      "got": "wind",
+      "correct": true,
+      "score": 9.543281555175781,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9223191738128662,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "active",
+      "text": "Yesterday I read about the lead contamination.",
+      "word": "read",
+      "expected": "red",
+      "got": "red",
+      "correct": true,
+      "score": 9.543253898620605,
+      "gate_value": 1.0,
+      "sense_similarity": 0.8281404972076416,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "active",
+      "text": "Yesterday I read about the lead contamination.",
+      "word": "lead",
+      "expected": "led",
+      "got": "led",
+      "correct": true,
+      "score": 9.374752044677734,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9373278617858887,
+      "strip_prototypes": false,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    }
+  ],
+  "without_prototypes": [
+    {
+      "mode": "baseline",
+      "text": "The pipe in the basement contains lead.",
+      "word": "lead",
+      "expected": "led",
+      "got": "led",
+      "correct": true,
+      "score": 9.678278923034668,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9929171204566956,
+      "strip_prototypes": true,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "baseline",
+      "text": "She will lead the entire research group.",
+      "word": "lead",
+      "expected": "leed",
+      "got": "leed",
+      "correct": true,
+      "score": 9.827461242675781,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9922336935997009,
+      "strip_prototypes": true,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "baseline",
+      "text": "The old plumbing has dangerous lead inside.",
+      "word": "lead",
+      "expected": "led",
+      "got": "leed",
+      "correct": false,
+      "score": 9.524643898010254,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9831300377845764,
+      "strip_prototypes": true,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "baseline",
+      "text": "They asked her to lead the discussion today.",
+      "word": "lead",
+      "expected": "leed",
+      "got": "leed",
+      "correct": true,
+      "score": 9.784109115600586,
+      "gate_value": 1.0,
+      "sense_similarity": 0.999526858329773,
+      "strip_prototypes": true,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "baseline",
+      "text": "Yesterday she read the entire manuscript.",
+      "word": "read",
+      "expected": "red",
+      "got": "red",
+      "correct": true,
+      "score": 9.763772964477539,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9983797669410706,
+      "strip_prototypes": true,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "baseline",
+      "text": "I read scientific papers every single morning.",
+      "word": "read",
+      "expected": "reed",
+      "got": "reed",
+      "correct": true,
+      "score": 9.548267364501953,
+      "gate_value": 1.0,
+      "sense_similarity": 0.986069917678833,
+      "strip_prototypes": true,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "baseline",
+      "text": "He already read the instructions carefully.",
+      "word": "read",
+      "expected": "red",
+      "got": "reed",
+      "correct": false,
+      "score": 9.822084426879883,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9984648823738098,
+      "strip_prototypes": true,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "baseline",
+      "text": "They always read the news before breakfast.",
+      "word": "read",
+      "expected": "reed",
+      "got": "reed",
+      "correct": true,
+      "score": 9.66688346862793,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9961046576499939,
+      "strip_prototypes": true,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "baseline",
+      "text": "The strong wind battered the coastal houses.",
+      "word": "wind",
+      "expected": "wind",
+      "got": "wynd",
+      "correct": false,
+      "score": 9.529508590698242,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9891170859336853,
+      "strip_prototypes": true,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "baseline",
+      "text": "She had to wind the vintage music box.",
+      "word": "wind",
+      "expected": "wynd",
+      "got": "wynd",
+      "correct": true,
+      "score": 9.765667915344238,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9997565150260925,
+      "strip_prototypes": true,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "baseline",
+      "text": "A powerful wind swept across the open plain.",
+      "word": "wind",
+      "expected": "wind",
+      "got": "wind",
+      "correct": true,
+      "score": 9.578295707702637,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9855382442474365,
+      "strip_prototypes": true,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "baseline",
+      "text": "He helped wind the fishing line onto the reel.",
+      "word": "wind",
+      "expected": "wynd",
+      "got": "wind",
+      "correct": false,
+      "score": 9.82467269897461,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9940142631530762,
+      "strip_prototypes": true,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "baseline",
+      "text": "She will lead the team into the wind.",
+      "word": "lead",
+      "expected": "leed",
+      "got": "leed",
+      "correct": true,
+      "score": 9.827461242675781,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9929630160331726,
+      "strip_prototypes": true,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "baseline",
+      "text": "She will lead the team into the wind.",
+      "word": "wind",
+      "expected": "wind",
+      "got": "wind",
+      "correct": true,
+      "score": 9.543281555175781,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9762140512466431,
+      "strip_prototypes": true,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "baseline",
+      "text": "Yesterday I read about the lead contamination.",
+      "word": "read",
+      "expected": "red",
+      "got": "red",
+      "correct": true,
+      "score": 9.543253898620605,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9891273975372314,
+      "strip_prototypes": true,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "baseline",
+      "text": "Yesterday I read about the lead contamination.",
+      "word": "lead",
+      "expected": "led",
+      "got": "leed",
+      "correct": false,
+      "score": 9.618356704711914,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9915444850921631,
+      "strip_prototypes": true,
+      "rerank_applied": false,
+      "ctx_sims": null,
+      "orig_sims": null,
+      "new_scores": null,
+      "attn_base": null,
+      "attn_new": null,
+      "group_mass": null,
+      "max_other_attn_change": null,
+      "baseline_choice": null,
+      "new_choice": null
+    },
+    {
+      "mode": "shadow",
+      "text": "The pipe in the basement contains lead.",
+      "word": "lead",
+      "expected": "led",
+      "got": "led",
+      "correct": true,
+      "score": 9.678278923034668,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9929171204566956,
+      "strip_prototypes": true,
+      "rerank_applied": true,
+      "ctx_sims": [
+        0.883469820022583,
+        0.4822266101837158
+      ],
+      "orig_sims": [
+        0.9929171204566956,
+        0.9671730399131775
+      ],
+      "new_scores": [
+        1.1935386657714844,
+        0.7665514349937439
+      ],
+      "attn_base": [
+        0.4932901859283447,
+        0.3813265562057495
+      ],
+      "attn_new": [
+        0.8625550866127014,
+        0.012061599642038345
+      ],
+      "group_mass": 0.8746167421340942,
+      "max_other_attn_change": 0.0,
+      "baseline_choice": 0,
+      "new_choice": 0
+    },
+    {
+      "mode": "shadow",
+      "text": "She will lead the entire research group.",
+      "word": "lead",
+      "expected": "leed",
+      "got": "leed",
+      "correct": true,
+      "score": 9.827461242675781,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9922336935997009,
+      "strip_prototypes": true,
+      "rerank_applied": true,
+      "ctx_sims": [
+        0.3568507432937622,
+        0.9328852891921997
+      ],
+      "orig_sims": [
+        0.969635009765625,
+        0.9922336935997009
+      ],
+      "new_scores": [
+        0.6816177368164062,
+        1.2802510261535645
+      ],
+      "attn_base": [
+        0.38675567507743835,
+        0.48482051491737366
+      ],
+      "attn_new": [
+        0.002184661105275154,
+        0.8693915605545044
+      ],
+      "group_mass": 0.871576189994812,
+      "max_other_attn_change": 0.0,
+      "baseline_choice": 1,
+      "new_choice": 1
+    },
+    {
+      "mode": "shadow",
+      "text": "The old plumbing has dangerous lead inside.",
+      "word": "lead",
+      "expected": "led",
+      "got": "leed",
+      "correct": false,
+      "score": 9.524643898010254,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9831300377845764,
+      "strip_prototypes": true,
+      "rerank_applied": true,
+      "ctx_sims": [
+        0.6660143733024597,
+        0.3327857553958893
+      ],
+      "orig_sims": [
+        0.9735472202301025,
+        0.9831300377845764
+      ],
+      "new_scores": [
+        1.1401615142822266,
+        0.8165156841278076
+      ],
+      "attn_base": [
+        0.40407973527908325,
+        0.4447183907032013
+      ],
+      "attn_new": [
+        0.8166995644569397,
+        0.03209863603115082
+      ],
+      "group_mass": 0.8487981557846069,
+      "max_other_attn_change": 0.0,
+      "baseline_choice": 1,
+      "new_choice": 0
+    },
+    {
+      "mode": "shadow",
+      "text": "They asked her to lead the discussion today.",
+      "word": "lead",
+      "expected": "leed",
+      "got": "leed",
+      "correct": true,
+      "score": 9.784109115600586,
+      "gate_value": 1.0,
+      "sense_similarity": 0.999526858329773,
+      "strip_prototypes": true,
+      "rerank_applied": true,
+      "ctx_sims": [
+        0.5993234515190125,
+        0.7578915357589722
+      ],
+      "orig_sims": [
+        0.970434308052063,
+        0.999526858329773
+      ],
+      "new_scores": [
+        0.8911502957344055,
+        1.0788109302520752
+      ],
+      "attn_base": [
+        0.3631562888622284,
+        0.4857812225818634
+      ],
+      "attn_new": [
+        0.11272124946117401,
+        0.7362163066864014
+      ],
+      "group_mass": 0.8489375114440918,
+      "max_other_attn_change": 0.0,
+      "baseline_choice": 1,
+      "new_choice": 1
+    },
+    {
+      "mode": "shadow",
+      "text": "Yesterday she read the entire manuscript.",
+      "word": "read",
+      "expected": "red",
+      "got": "red",
+      "correct": true,
+      "score": 9.763772964477539,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9983797669410706,
+      "strip_prototypes": true,
+      "rerank_applied": true,
+      "ctx_sims": [
+        0.6855064034461975,
+        0.4867618680000305
+      ],
+      "orig_sims": [
+        0.9983797669410706,
+        0.996676504611969
+      ],
+      "new_scores": [
+        1.0977520942687988,
+        0.8973042368888855
+      ],
+      "attn_base": [
+        0.4462670683860779,
+        0.4387299120426178
+      ],
+      "attn_new": [
+        0.7799181938171387,
+        0.1050788089632988
+      ],
+      "group_mass": 0.8849970102310181,
+      "max_other_attn_change": 0.0,
+      "baseline_choice": 2,
+      "new_choice": 2
+    },
+    {
+      "mode": "shadow",
+      "text": "I read scientific papers every single morning.",
+      "word": "read",
+      "expected": "reed",
+      "got": "reed",
+      "correct": true,
+      "score": 9.548267364501953,
+      "gate_value": 1.0,
+      "sense_similarity": 0.986069917678833,
+      "strip_prototypes": true,
+      "rerank_applied": true,
+      "ctx_sims": [
+        0.6852439045906067,
+        0.6851689219474792
+      ],
+      "orig_sims": [
+        0.9858806133270264,
+        0.986069917678833
+      ],
+      "new_scores": [
+        0.9859181046485901,
+        0.9860324263572693
+      ],
+      "attn_base": [
+        0.44390323758125305,
+        0.44474393129348755
+      ],
+      "attn_new": [
+        0.4440697729587555,
+        0.4445774257183075
+      ],
+      "group_mass": 0.888647198677063,
+      "max_other_attn_change": 0.0,
+      "baseline_choice": 3,
+      "new_choice": 3
+    },
+    {
+      "mode": "shadow",
+      "text": "He already read the instructions carefully.",
+      "word": "read",
+      "expected": "red",
+      "got": "reed",
+      "correct": false,
+      "score": 9.822084426879883,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9984648823738098,
+      "strip_prototypes": true,
+      "rerank_applied": true,
+      "ctx_sims": [
+        0.713253378868103,
+        0.4593421518802643
+      ],
+      "orig_sims": [
+        0.9950453042984009,
+        0.9984648823738098
+      ],
+      "new_scores": [
+        1.1220009326934814,
+        0.871509313583374
+      ],
+      "attn_base": [
+        0.4332379698753357,
+        0.4483095705509186
+      ],
+      "attn_new": [
+        0.8149780631065369,
+        0.06656946241855621
+      ],
+      "group_mass": 0.8815475702285767,
+      "max_other_attn_change": 0.0,
+      "baseline_choice": 3,
+      "new_choice": 2
+    },
+    {
+      "mode": "shadow",
+      "text": "They always read the news before breakfast.",
+      "word": "read",
+      "expected": "reed",
+      "got": "reed",
+      "correct": true,
+      "score": 9.66688346862793,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9961046576499939,
+      "strip_prototypes": true,
+      "rerank_applied": true,
+      "ctx_sims": [
+        0.6203954815864563,
+        0.4578585624694824
+      ],
+      "orig_sims": [
+        0.9953135848045349,
+        0.9961046576499939
+      ],
+      "new_scores": [
+        1.0765820741653442,
+        0.9148362278938293
+      ],
+      "attn_base": [
+        0.43920570611953735,
+        0.44269391894340515
+      ],
+      "attn_new": [
+        0.735896110534668,
+        0.14600349962711334
+      ],
+      "group_mass": 0.8818995952606201,
+      "max_other_attn_change": 0.0,
+      "baseline_choice": 3,
+      "new_choice": 2
+    },
+    {
+      "mode": "shadow",
+      "text": "The strong wind battered the coastal houses.",
+      "word": "wind",
+      "expected": "wind",
+      "got": "wynd",
+      "correct": false,
+      "score": 9.529508590698242,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9891170859336853,
+      "strip_prototypes": true,
+      "rerank_applied": true,
+      "ctx_sims": [
+        0.45226263999938965,
+        0.7201172113418579
+      ],
+      "orig_sims": [
+        0.9880762100219727,
+        0.9891170859336853
+      ],
+      "new_scores": [
+        0.8541489243507385,
+        1.1230443716049194
+      ],
+      "attn_base": [
+        0.49392110109329224,
+        0.4990884065628052
+      ],
+      "attn_new": [
+        0.0631835013628006,
+        0.929826021194458
+      ],
+      "group_mass": 0.9930095076560974,
+      "max_other_attn_change": 0.0,
+      "baseline_choice": 5,
+      "new_choice": 5
+    },
+    {
+      "mode": "shadow",
+      "text": "She had to wind the vintage music box.",
+      "word": "wind",
+      "expected": "wynd",
+      "got": "wynd",
+      "correct": true,
+      "score": 9.765667915344238,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9997565150260925,
+      "strip_prototypes": true,
+      "rerank_applied": true,
+      "ctx_sims": [
+        0.36995556950569153,
+        0.7564370036125183
+      ],
+      "orig_sims": [
+        0.9894601702690125,
+        0.9997565150260925
+      ],
+      "new_scores": [
+        0.7962194681167603,
+        1.1929972171783447
+      ],
+      "attn_base": [
+        0.4712650775909424,
+        0.5223731994628906
+      ],
+      "attn_new": [
+        0.0184461772441864,
+        0.9751920700073242
+      ],
+      "group_mass": 0.993638277053833,
+      "max_other_attn_change": 0.0,
+      "baseline_choice": 5,
+      "new_choice": 5
+    },
+    {
+      "mode": "shadow",
+      "text": "A powerful wind swept across the open plain.",
+      "word": "wind",
+      "expected": "wind",
+      "got": "wind",
+      "correct": true,
+      "score": 9.578295707702637,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9855382442474365,
+      "strip_prototypes": true,
+      "rerank_applied": true,
+      "ctx_sims": [
+        0.4254830479621887,
+        0.4951044023036957
+      ],
+      "orig_sims": [
+        0.9855382442474365,
+        0.9847444295883179
+      ],
+      "new_scores": [
+        0.9507275819778442,
+        1.0195550918579102
+      ],
+      "attn_base": [
+        0.49834296107292175,
+        0.49440258741378784
+      ],
+      "attn_new": [
+        0.3319908082485199,
+        0.6607546806335449
+      ],
+      "group_mass": 0.9927455186843872,
+      "max_other_attn_change": 0.0,
+      "baseline_choice": 4,
+      "new_choice": 5
+    },
+    {
+      "mode": "shadow",
+      "text": "He helped wind the fishing line onto the reel.",
+      "word": "wind",
+      "expected": "wynd",
+      "got": "wind",
+      "correct": false,
+      "score": 9.82467269897461,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9940142631530762,
+      "strip_prototypes": true,
+      "rerank_applied": true,
+      "ctx_sims": [
+        0.5716677904129028,
+        0.7950839400291443
+      ],
+      "orig_sims": [
+        0.9940142631530762,
+        0.9934405088424683
+      ],
+      "new_scores": [
+        0.8823062181472778,
+        1.1051485538482666
+      ],
+      "attn_base": [
+        0.49711376428604126,
+        0.49426937103271484
+      ],
+      "attn_new": [
+        0.09638918191194534,
+        0.8949940204620361
+      ],
+      "group_mass": 0.9913831353187561,
+      "max_other_attn_change": 0.0,
+      "baseline_choice": 4,
+      "new_choice": 5
+    },
+    {
+      "mode": "shadow",
+      "text": "She will lead the team into the wind.",
+      "word": "lead",
+      "expected": "leed",
+      "got": "leed",
+      "correct": true,
+      "score": 9.827461242675781,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9929630160331726,
+      "strip_prototypes": true,
+      "rerank_applied": true,
+      "ctx_sims": [
+        0.35671818256378174,
+        0.950185239315033
+      ],
+      "orig_sims": [
+        0.9688072204589844,
+        0.9929630160331726
+      ],
+      "new_scores": [
+        0.6720737218856812,
+        1.2896965742111206
+      ],
+      "attn_base": [
+        0.3880521059036255,
+        0.4940806031227112
+      ],
+      "attn_new": [
+        0.0018294909968972206,
+        0.880303144454956
+      ],
+      "group_mass": 0.8821327090263367,
+      "max_other_attn_change": 0.0,
+      "baseline_choice": 1,
+      "new_choice": 1
+    },
+    {
+      "mode": "shadow",
+      "text": "She will lead the team into the wind.",
+      "word": "wind",
+      "expected": "wind",
+      "got": "wind",
+      "correct": true,
+      "score": 9.543281555175781,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9762140512466431,
+      "strip_prototypes": true,
+      "rerank_applied": true,
+      "ctx_sims": [
+        0.6340012550354004,
+        0.6865562200546265
+      ],
+      "orig_sims": [
+        0.9762140512466431,
+        0.9669896960258484
+      ],
+      "new_scores": [
+        0.94993656873703,
+        0.9932671785354614
+      ],
+      "attn_base": [
+        0.5178127288818359,
+        0.4721839129924774
+      ],
+      "attn_new": [
+        0.3894025683403015,
+        0.600594162940979
+      ],
+      "group_mass": 0.9899966716766357,
+      "max_other_attn_change": 0.0,
+      "baseline_choice": 4,
+      "new_choice": 5
+    },
+    {
+      "mode": "shadow",
+      "text": "Yesterday I read about the lead contamination.",
+      "word": "read",
+      "expected": "red",
+      "got": "red",
+      "correct": true,
+      "score": 9.543253898620605,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9891273975372314,
+      "strip_prototypes": true,
+      "rerank_applied": true,
+      "ctx_sims": [
+        0.7969587445259094,
+        0.7885007858276367
+      ],
+      "orig_sims": [
+        0.9891273975372314,
+        0.9887465238571167
+      ],
+      "new_scores": [
+        0.9933564066886902,
+        0.9845175743103027
+      ],
+      "attn_base": [
+        0.4383559823036194,
+        0.4366903007030487
+      ],
+      "attn_new": [
+        0.45684656500816345,
+        0.41819968819618225
+      ],
+      "group_mass": 0.8750462532043457,
+      "max_other_attn_change": 0.0,
+      "baseline_choice": 2,
+      "new_choice": 2
+    },
+    {
+      "mode": "shadow",
+      "text": "Yesterday I read about the lead contamination.",
+      "word": "lead",
+      "expected": "led",
+      "got": "leed",
+      "correct": false,
+      "score": 9.618356704711914,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9915444850921631,
+      "strip_prototypes": true,
+      "rerank_applied": true,
+      "ctx_sims": [
+        0.4442383050918579,
+        0.4352652132511139
+      ],
+      "orig_sims": [
+        0.9733332395553589,
+        0.9915444850921631
+      ],
+      "new_scores": [
+        0.9778198003768921,
+        0.9870579242706299
+      ],
+      "attn_base": [
+        0.37732815742492676,
+        0.452699214220047
+      ],
+      "attn_new": [
+        0.39585766196250916,
+        0.43416962027549744
+      ],
+      "group_mass": 0.8300273418426514,
+      "max_other_attn_change": 0.0,
+      "baseline_choice": 1,
+      "new_choice": 1
+    },
+    {
+      "mode": "active",
+      "text": "The pipe in the basement contains lead.",
+      "word": "lead",
+      "expected": "led",
+      "got": "led",
+      "correct": true,
+      "score": 9.678278923034668,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9929171204566956,
+      "strip_prototypes": true,
+      "rerank_applied": true,
+      "ctx_sims": [
+        0.883469820022583,
+        0.4822266101837158
+      ],
+      "orig_sims": [
+        0.9929171204566956,
+        0.9671730399131775
+      ],
+      "new_scores": [
+        1.1935386657714844,
+        0.7665514349937439
+      ],
+      "attn_base": [
+        0.4932901859283447,
+        0.3813265562057495
+      ],
+      "attn_new": [
+        0.8625550866127014,
+        0.012061599642038345
+      ],
+      "group_mass": 0.8746167421340942,
+      "max_other_attn_change": 0.0,
+      "baseline_choice": 0,
+      "new_choice": 0
+    },
+    {
+      "mode": "active",
+      "text": "She will lead the entire research group.",
+      "word": "lead",
+      "expected": "leed",
+      "got": "leed",
+      "correct": true,
+      "score": 9.827461242675781,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9922336935997009,
+      "strip_prototypes": true,
+      "rerank_applied": true,
+      "ctx_sims": [
+        0.3568507432937622,
+        0.9328852891921997
+      ],
+      "orig_sims": [
+        0.969635009765625,
+        0.9922336935997009
+      ],
+      "new_scores": [
+        0.6816177368164062,
+        1.2802510261535645
+      ],
+      "attn_base": [
+        0.38675567507743835,
+        0.48482051491737366
+      ],
+      "attn_new": [
+        0.002184661105275154,
+        0.8693915605545044
+      ],
+      "group_mass": 0.871576189994812,
+      "max_other_attn_change": 0.0,
+      "baseline_choice": 1,
+      "new_choice": 1
+    },
+    {
+      "mode": "active",
+      "text": "The old plumbing has dangerous lead inside.",
+      "word": "lead",
+      "expected": "led",
+      "got": "led",
+      "correct": true,
+      "score": 9.342637062072754,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9735472202301025,
+      "strip_prototypes": true,
+      "rerank_applied": true,
+      "ctx_sims": [
+        0.6660143733024597,
+        0.3327857553958893
+      ],
+      "orig_sims": [
+        0.9735472202301025,
+        0.9831300377845764
+      ],
+      "new_scores": [
+        1.1401615142822266,
+        0.8165156841278076
+      ],
+      "attn_base": [
+        0.40407973527908325,
+        0.4447183907032013
+      ],
+      "attn_new": [
+        0.8166995644569397,
+        0.03209863603115082
+      ],
+      "group_mass": 0.8487981557846069,
+      "max_other_attn_change": 0.0,
+      "baseline_choice": 1,
+      "new_choice": 0
+    },
+    {
+      "mode": "active",
+      "text": "They asked her to lead the discussion today.",
+      "word": "lead",
+      "expected": "leed",
+      "got": "leed",
+      "correct": true,
+      "score": 9.784109115600586,
+      "gate_value": 1.0,
+      "sense_similarity": 0.999526858329773,
+      "strip_prototypes": true,
+      "rerank_applied": true,
+      "ctx_sims": [
+        0.5993234515190125,
+        0.7578915357589722
+      ],
+      "orig_sims": [
+        0.970434308052063,
+        0.999526858329773
+      ],
+      "new_scores": [
+        0.8911502957344055,
+        1.0788109302520752
+      ],
+      "attn_base": [
+        0.3631562888622284,
+        0.4857812225818634
+      ],
+      "attn_new": [
+        0.11272124946117401,
+        0.7362163066864014
+      ],
+      "group_mass": 0.8489375114440918,
+      "max_other_attn_change": 0.0,
+      "baseline_choice": 1,
+      "new_choice": 1
+    },
+    {
+      "mode": "active",
+      "text": "Yesterday she read the entire manuscript.",
+      "word": "read",
+      "expected": "red",
+      "got": "red",
+      "correct": true,
+      "score": 9.763772964477539,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9983797669410706,
+      "strip_prototypes": true,
+      "rerank_applied": true,
+      "ctx_sims": [
+        0.6855064034461975,
+        0.4867618680000305
+      ],
+      "orig_sims": [
+        0.9983797669410706,
+        0.996676504611969
+      ],
+      "new_scores": [
+        1.0977520942687988,
+        0.8973042368888855
+      ],
+      "attn_base": [
+        0.4462670683860779,
+        0.4387299120426178
+      ],
+      "attn_new": [
+        0.7799181938171387,
+        0.1050788089632988
+      ],
+      "group_mass": 0.8849970102310181,
+      "max_other_attn_change": 0.0,
+      "baseline_choice": 2,
+      "new_choice": 2
+    },
+    {
+      "mode": "active",
+      "text": "I read scientific papers every single morning.",
+      "word": "read",
+      "expected": "reed",
+      "got": "reed",
+      "correct": true,
+      "score": 9.548267364501953,
+      "gate_value": 1.0,
+      "sense_similarity": 0.986069917678833,
+      "strip_prototypes": true,
+      "rerank_applied": true,
+      "ctx_sims": [
+        0.6852439045906067,
+        0.6851689219474792
+      ],
+      "orig_sims": [
+        0.9858806133270264,
+        0.986069917678833
+      ],
+      "new_scores": [
+        0.9859181046485901,
+        0.9860324263572693
+      ],
+      "attn_base": [
+        0.44390323758125305,
+        0.44474393129348755
+      ],
+      "attn_new": [
+        0.4440697729587555,
+        0.4445774257183075
+      ],
+      "group_mass": 0.888647198677063,
+      "max_other_attn_change": 0.0,
+      "baseline_choice": 3,
+      "new_choice": 3
+    },
+    {
+      "mode": "active",
+      "text": "He already read the instructions carefully.",
+      "word": "read",
+      "expected": "red",
+      "got": "red",
+      "correct": true,
+      "score": 9.757336616516113,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9950453042984009,
+      "strip_prototypes": true,
+      "rerank_applied": true,
+      "ctx_sims": [
+        0.713253378868103,
+        0.4593421518802643
+      ],
+      "orig_sims": [
+        0.9950453042984009,
+        0.9984648823738098
+      ],
+      "new_scores": [
+        1.1220009326934814,
+        0.871509313583374
+      ],
+      "attn_base": [
+        0.4332379698753357,
+        0.4483095705509186
+      ],
+      "attn_new": [
+        0.8149780631065369,
+        0.06656946241855621
+      ],
+      "group_mass": 0.8815475702285767,
+      "max_other_attn_change": 0.0,
+      "baseline_choice": 3,
+      "new_choice": 2
+    },
+    {
+      "mode": "active",
+      "text": "They always read the news before breakfast.",
+      "word": "read",
+      "expected": "reed",
+      "got": "red",
+      "correct": false,
+      "score": 9.696488380432129,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9953135848045349,
+      "strip_prototypes": true,
+      "rerank_applied": true,
+      "ctx_sims": [
+        0.6203954815864563,
+        0.4578585624694824
+      ],
+      "orig_sims": [
+        0.9953135848045349,
+        0.9961046576499939
+      ],
+      "new_scores": [
+        1.0765820741653442,
+        0.9148362278938293
+      ],
+      "attn_base": [
+        0.43920570611953735,
+        0.44269391894340515
+      ],
+      "attn_new": [
+        0.735896110534668,
+        0.14600349962711334
+      ],
+      "group_mass": 0.8818995952606201,
+      "max_other_attn_change": 0.0,
+      "baseline_choice": 3,
+      "new_choice": 2
+    },
+    {
+      "mode": "active",
+      "text": "The strong wind battered the coastal houses.",
+      "word": "wind",
+      "expected": "wind",
+      "got": "wynd",
+      "correct": false,
+      "score": 9.529508590698242,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9891170859336853,
+      "strip_prototypes": true,
+      "rerank_applied": true,
+      "ctx_sims": [
+        0.45226263999938965,
+        0.7201172113418579
+      ],
+      "orig_sims": [
+        0.9880762100219727,
+        0.9891170859336853
+      ],
+      "new_scores": [
+        0.8541489243507385,
+        1.1230443716049194
+      ],
+      "attn_base": [
+        0.49392110109329224,
+        0.4990884065628052
+      ],
+      "attn_new": [
+        0.0631835013628006,
+        0.929826021194458
+      ],
+      "group_mass": 0.9930095076560974,
+      "max_other_attn_change": 0.0,
+      "baseline_choice": 5,
+      "new_choice": 5
+    },
+    {
+      "mode": "active",
+      "text": "She had to wind the vintage music box.",
+      "word": "wind",
+      "expected": "wynd",
+      "got": "wynd",
+      "correct": true,
+      "score": 9.765667915344238,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9997565150260925,
+      "strip_prototypes": true,
+      "rerank_applied": true,
+      "ctx_sims": [
+        0.36995556950569153,
+        0.7564370036125183
+      ],
+      "orig_sims": [
+        0.9894601702690125,
+        0.9997565150260925
+      ],
+      "new_scores": [
+        0.7962194681167603,
+        1.1929972171783447
+      ],
+      "attn_base": [
+        0.4712650775909424,
+        0.5223731994628906
+      ],
+      "attn_new": [
+        0.0184461772441864,
+        0.9751920700073242
+      ],
+      "group_mass": 0.993638277053833,
+      "max_other_attn_change": 0.0,
+      "baseline_choice": 5,
+      "new_choice": 5
+    },
+    {
+      "mode": "active",
+      "text": "A powerful wind swept across the open plain.",
+      "word": "wind",
+      "expected": "wind",
+      "got": "wynd",
+      "correct": false,
+      "score": 9.626484870910645,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9847444295883179,
+      "strip_prototypes": true,
+      "rerank_applied": true,
+      "ctx_sims": [
+        0.4254830479621887,
+        0.4951044023036957
+      ],
+      "orig_sims": [
+        0.9855382442474365,
+        0.9847444295883179
+      ],
+      "new_scores": [
+        0.9507275819778442,
+        1.0195550918579102
+      ],
+      "attn_base": [
+        0.49834296107292175,
+        0.49440258741378784
+      ],
+      "attn_new": [
+        0.3319908082485199,
+        0.6607546806335449
+      ],
+      "group_mass": 0.9927455186843872,
+      "max_other_attn_change": 0.0,
+      "baseline_choice": 4,
+      "new_choice": 5
+    },
+    {
+      "mode": "active",
+      "text": "He helped wind the fishing line onto the reel.",
+      "word": "wind",
+      "expected": "wynd",
+      "got": "wynd",
+      "correct": true,
+      "score": 9.871313095092773,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9934405088424683,
+      "strip_prototypes": true,
+      "rerank_applied": true,
+      "ctx_sims": [
+        0.5716677904129028,
+        0.7950839400291443
+      ],
+      "orig_sims": [
+        0.9940142631530762,
+        0.9934405088424683
+      ],
+      "new_scores": [
+        0.8823062181472778,
+        1.1051485538482666
+      ],
+      "attn_base": [
+        0.49711376428604126,
+        0.49426937103271484
+      ],
+      "attn_new": [
+        0.09638918191194534,
+        0.8949940204620361
+      ],
+      "group_mass": 0.9913831353187561,
+      "max_other_attn_change": 0.0,
+      "baseline_choice": 4,
+      "new_choice": 5
+    },
+    {
+      "mode": "active",
+      "text": "She will lead the team into the wind.",
+      "word": "lead",
+      "expected": "leed",
+      "got": "leed",
+      "correct": true,
+      "score": 9.827461242675781,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9929630160331726,
+      "strip_prototypes": true,
+      "rerank_applied": true,
+      "ctx_sims": [
+        0.35671818256378174,
+        0.950185239315033
+      ],
+      "orig_sims": [
+        0.9688072204589844,
+        0.9929630160331726
+      ],
+      "new_scores": [
+        0.6720737218856812,
+        1.2896965742111206
+      ],
+      "attn_base": [
+        0.3880521059036255,
+        0.4940806031227112
+      ],
+      "attn_new": [
+        0.0018294909968972206,
+        0.880303144454956
+      ],
+      "group_mass": 0.8821327090263367,
+      "max_other_attn_change": 0.0,
+      "baseline_choice": 1,
+      "new_choice": 1
+    },
+    {
+      "mode": "active",
+      "text": "She will lead the team into the wind.",
+      "word": "wind",
+      "expected": "wind",
+      "got": "wynd",
+      "correct": false,
+      "score": 9.411886215209961,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9669896960258484,
+      "strip_prototypes": true,
+      "rerank_applied": true,
+      "ctx_sims": [
+        0.6340012550354004,
+        0.6865562200546265
+      ],
+      "orig_sims": [
+        0.9762140512466431,
+        0.9669896960258484
+      ],
+      "new_scores": [
+        0.94993656873703,
+        0.9932671785354614
+      ],
+      "attn_base": [
+        0.5178127288818359,
+        0.4721839129924774
+      ],
+      "attn_new": [
+        0.3894025683403015,
+        0.600594162940979
+      ],
+      "group_mass": 0.9899966716766357,
+      "max_other_attn_change": 0.0,
+      "baseline_choice": 4,
+      "new_choice": 5
+    },
+    {
+      "mode": "active",
+      "text": "Yesterday I read about the lead contamination.",
+      "word": "read",
+      "expected": "red",
+      "got": "red",
+      "correct": true,
+      "score": 9.543253898620605,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9891273975372314,
+      "strip_prototypes": true,
+      "rerank_applied": true,
+      "ctx_sims": [
+        0.7969587445259094,
+        0.7885007858276367
+      ],
+      "orig_sims": [
+        0.9891273975372314,
+        0.9887465238571167
+      ],
+      "new_scores": [
+        0.9933564066886902,
+        0.9845175743103027
+      ],
+      "attn_base": [
+        0.4383559823036194,
+        0.4366903007030487
+      ],
+      "attn_new": [
+        0.45684656500816345,
+        0.41819968819618225
+      ],
+      "group_mass": 0.8750462532043457,
+      "max_other_attn_change": 0.0,
+      "baseline_choice": 2,
+      "new_choice": 2
+    },
+    {
+      "mode": "active",
+      "text": "Yesterday I read about the lead contamination.",
+      "word": "lead",
+      "expected": "led",
+      "got": "leed",
+      "correct": false,
+      "score": 9.618356704711914,
+      "gate_value": 1.0,
+      "sense_similarity": 0.9915444850921631,
+      "strip_prototypes": true,
+      "rerank_applied": true,
+      "ctx_sims": [
+        0.4442383050918579,
+        0.4352652132511139
+      ],
+      "orig_sims": [
+        0.9733332395553589,
+        0.9915444850921631
+      ],
+      "new_scores": [
+        0.9778198003768921,
+        0.9870579242706299
+      ],
+      "attn_base": [
+        0.37732815742492676,
+        0.452699214220047
+      ],
+      "attn_new": [
+        0.39585766196250916,
+        0.43416962027549744
+      ],
+      "group_mass": 0.8300273418426514,
+      "max_other_attn_change": 0.0,
+      "baseline_choice": 1,
+      "new_choice": 1
+    }
+  ]
+}

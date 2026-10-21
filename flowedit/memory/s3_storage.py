@@ -386,15 +386,7 @@ class S3SpellingStore:
         # Resolve every occurrence against the original text so each one is disambiguated by its
         # own context ("contains lead, ... the lead researcher" may need two different spellings).
         replacements: List[Tuple[int, int, str, str]] = []
-        try:
-            from flowedit.config import MemoryConfig
-            from flowedit.memory.sense_lexicon import get_sense_lexicon
-            lexicon = get_sense_lexicon(MemoryConfig())
-        except Exception:
-            lexicon = None
         for word_key, word_dict in self._dictionary.items():
-            if lexicon is not None and len(lexicon.labels(word_key)) > 1:
-                continue  # homographs in the sense lexicon are resolved per occurrence by the memory
             pattern = re.compile(r'\b' + re.escape(word_key) + r'\b', re.IGNORECASE)
             for m in pattern.finditer(text):
                 resolved_spell = self.resolve_correction(text, word_key, char_offset=m.start())

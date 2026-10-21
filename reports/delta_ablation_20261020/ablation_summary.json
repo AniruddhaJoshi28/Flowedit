@@ -1,0 +1,1854 @@
+{
+  "checkpoint": {
+    "backbone_class": "F5TTSBackbone",
+    "transformer_class": "f5_tts.model.backbones.dit.DiT",
+    "checkpoint": "/home/rsurya/projects/flow_edit/Flowedit/models/f5tts/f5tts/F5TTS_Base/model_1200000.safetensors",
+    "checkpoint_sha256": "4180310f91d592cee4bc14998cd37c781f779cf105e8ca8744d9bd48ca7046ae",
+    "params_total": 337096804,
+    "text_embed_weight": [
+      2546,
+      512
+    ],
+    "encode_text_shape": [
+      1,
+      17,
+      512
+    ],
+    "embedding_space": "F5TTSBackbone:512",
+    "device": "cuda:0",
+    "dtype": "torch.float16",
+    "gpu": "NVIDIA RTX A6000"
+  },
+  "injection_all_ok": true,
+  "corrections": {
+    "lead|EH": [
+      "this toy is made of lead",
+      "The old pipes were full of lead.",
+      "Lead paint is dangerous for children."
+    ],
+    "lead|IY": [
+      "He will lead the team next year.",
+      "Our team lead approved the plan."
+    ],
+    "read|EH": [
+      "Yesterday she read the whole book.",
+      "I have already read that report.",
+      "He read the letter twice last night."
+    ],
+    "read|IY": [
+      "Please read the instructions carefully.",
+      "I like to read before bed.",
+      "Can you read this sentence aloud?"
+    ],
+    "wound|UW": [
+      "The soldier had a deep wound in his leg.",
+      "Words can wound people deeply."
+    ],
+    "wound|AW": [
+      "She wound the clock before bed.",
+      "The path wound through the hills."
+    ]
+  },
+  "results": {
+    "blessing|correction_sentence": {
+      "conditions": {
+        "A": {
+          "n": 14,
+          "correct": 6,
+          "wrong": 1,
+          "unscorable": 7,
+          "acc_scorable": 0.857,
+          "speaker_sim": 0.7172,
+          "nontarget_dtw_vs_A": 0.0,
+          "nontarget_recovered": 1.0
+        },
+        "B": {
+          "n": 14,
+          "correct": 11,
+          "wrong": 0,
+          "unscorable": 3,
+          "acc_scorable": 1.0,
+          "speaker_sim": 0.7104,
+          "nontarget_dtw_vs_A": 32.482,
+          "nontarget_recovered": 1.0
+        },
+        "C": {
+          "n": 14,
+          "correct": 10,
+          "wrong": 0,
+          "unscorable": 4,
+          "acc_scorable": 1.0,
+          "speaker_sim": 0.7089,
+          "nontarget_dtw_vs_A": 30.917,
+          "nontarget_recovered": 1.0
+        },
+        "D": {
+          "n": 14,
+          "correct": 12,
+          "wrong": 0,
+          "unscorable": 2,
+          "acc_scorable": 1.0,
+          "speaker_sim": 0.7053,
+          "nontarget_dtw_vs_A": 38.318,
+          "nontarget_recovered": 1.0
+        }
+      },
+      "B_vs_D": {
+        "pronunciation_mcnemar": {
+          "x_only": 0,
+          "y_only": 0,
+          "p": 1.0,
+          "n_paired_scorable": 11
+        },
+        "speaker_sim_mean_diff": -0.0051,
+        "nontarget_dtw_mean_diff": 5.836
+      },
+      "A_vs_C": {
+        "pronunciation_mcnemar": {
+          "x_only": 0,
+          "y_only": 1,
+          "p": 1.0,
+          "n_paired_scorable": 5
+        },
+        "speaker_sim_mean_diff": -0.0083,
+        "nontarget_dtw_mean_diff": 30.917
+      },
+      "by_word_pron": {
+        "lead|EH": {
+          "conditions": {
+            "A": {
+              "n": 2,
+              "correct": 1,
+              "wrong": 0,
+              "unscorable": 1,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7219,
+              "nontarget_dtw_vs_A": 0.0,
+              "nontarget_recovered": 1.0
+            },
+            "B": {
+              "n": 2,
+              "correct": 1,
+              "wrong": 0,
+              "unscorable": 1,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7114,
+              "nontarget_dtw_vs_A": 38.169,
+              "nontarget_recovered": 1.0
+            },
+            "C": {
+              "n": 2,
+              "correct": 1,
+              "wrong": 0,
+              "unscorable": 1,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7301,
+              "nontarget_dtw_vs_A": 19.353,
+              "nontarget_recovered": 1.0
+            },
+            "D": {
+              "n": 2,
+              "correct": 1,
+              "wrong": 0,
+              "unscorable": 1,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7192,
+              "nontarget_dtw_vs_A": 36.925,
+              "nontarget_recovered": 1.0
+            }
+          },
+          "B_vs_D": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 1
+            },
+            "speaker_sim_mean_diff": 0.0077,
+            "nontarget_dtw_mean_diff": -1.243
+          },
+          "A_vs_C": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 1
+            },
+            "speaker_sim_mean_diff": 0.0082,
+            "nontarget_dtw_mean_diff": 19.353
+          }
+        },
+        "lead|IY": {
+          "conditions": {
+            "A": {
+              "n": 2,
+              "correct": 2,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7318,
+              "nontarget_dtw_vs_A": 0.0,
+              "nontarget_recovered": 1.0
+            },
+            "B": {
+              "n": 2,
+              "correct": 2,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7113,
+              "nontarget_dtw_vs_A": 22.405,
+              "nontarget_recovered": 1.0
+            },
+            "C": {
+              "n": 2,
+              "correct": 2,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.6989,
+              "nontarget_dtw_vs_A": 36.556,
+              "nontarget_recovered": 1.0
+            },
+            "D": {
+              "n": 2,
+              "correct": 2,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.6952,
+              "nontarget_dtw_vs_A": 42.579,
+              "nontarget_recovered": 1.0
+            }
+          },
+          "B_vs_D": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 2
+            },
+            "speaker_sim_mean_diff": -0.0161,
+            "nontarget_dtw_mean_diff": 20.174
+          },
+          "A_vs_C": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 2
+            },
+            "speaker_sim_mean_diff": -0.0328,
+            "nontarget_dtw_mean_diff": 36.556
+          }
+        },
+        "read|EH": {
+          "conditions": {
+            "A": {
+              "n": 3,
+              "correct": 0,
+              "wrong": 0,
+              "unscorable": 3,
+              "acc_scorable": null,
+              "speaker_sim": 0.7451,
+              "nontarget_dtw_vs_A": 0.0,
+              "nontarget_recovered": 1.0
+            },
+            "B": {
+              "n": 3,
+              "correct": 3,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7401,
+              "nontarget_dtw_vs_A": 41.548,
+              "nontarget_recovered": 1.0
+            },
+            "C": {
+              "n": 3,
+              "correct": 3,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.725,
+              "nontarget_dtw_vs_A": 27.862,
+              "nontarget_recovered": 1.0
+            },
+            "D": {
+              "n": 3,
+              "correct": 3,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7254,
+              "nontarget_dtw_vs_A": 44.899,
+              "nontarget_recovered": 1.0
+            }
+          },
+          "B_vs_D": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 3
+            },
+            "speaker_sim_mean_diff": -0.0147,
+            "nontarget_dtw_mean_diff": 3.352
+          },
+          "A_vs_C": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 0
+            },
+            "speaker_sim_mean_diff": -0.0201,
+            "nontarget_dtw_mean_diff": 27.862
+          }
+        },
+        "read|IY": {
+          "conditions": {
+            "A": {
+              "n": 3,
+              "correct": 1,
+              "wrong": 1,
+              "unscorable": 1,
+              "acc_scorable": 0.5,
+              "speaker_sim": 0.7279,
+              "nontarget_dtw_vs_A": 0.0,
+              "nontarget_recovered": 1.0
+            },
+            "B": {
+              "n": 3,
+              "correct": 1,
+              "wrong": 0,
+              "unscorable": 2,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7113,
+              "nontarget_dtw_vs_A": 35.434,
+              "nontarget_recovered": 1.0
+            },
+            "C": {
+              "n": 3,
+              "correct": 2,
+              "wrong": 0,
+              "unscorable": 1,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.702,
+              "nontarget_dtw_vs_A": 32.799,
+              "nontarget_recovered": 1.0
+            },
+            "D": {
+              "n": 3,
+              "correct": 2,
+              "wrong": 0,
+              "unscorable": 1,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.6969,
+              "nontarget_dtw_vs_A": 36.788,
+              "nontarget_recovered": 1.0
+            }
+          },
+          "B_vs_D": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 1
+            },
+            "speaker_sim_mean_diff": -0.0145,
+            "nontarget_dtw_mean_diff": 1.354
+          },
+          "A_vs_C": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 1,
+              "p": 1.0,
+              "n_paired_scorable": 1
+            },
+            "speaker_sim_mean_diff": -0.0259,
+            "nontarget_dtw_mean_diff": 32.799
+          }
+        },
+        "wound|UW": {
+          "conditions": {
+            "A": {
+              "n": 2,
+              "correct": 1,
+              "wrong": 0,
+              "unscorable": 1,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7225,
+              "nontarget_dtw_vs_A": 0.0,
+              "nontarget_recovered": 1.0
+            },
+            "B": {
+              "n": 2,
+              "correct": 2,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7403,
+              "nontarget_dtw_vs_A": 21.982,
+              "nontarget_recovered": 1.0
+            },
+            "C": {
+              "n": 2,
+              "correct": 2,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7344,
+              "nontarget_dtw_vs_A": 34.072,
+              "nontarget_recovered": 1.0
+            },
+            "D": {
+              "n": 2,
+              "correct": 2,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7398,
+              "nontarget_dtw_vs_A": 26.174,
+              "nontarget_recovered": 1.0
+            }
+          },
+          "B_vs_D": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 2
+            },
+            "speaker_sim_mean_diff": -0.0005,
+            "nontarget_dtw_mean_diff": 4.191
+          },
+          "A_vs_C": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 1
+            },
+            "speaker_sim_mean_diff": 0.0118,
+            "nontarget_dtw_mean_diff": 34.072
+          }
+        },
+        "wound|AW": {
+          "conditions": {
+            "A": {
+              "n": 2,
+              "correct": 1,
+              "wrong": 0,
+              "unscorable": 1,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.6347,
+              "nontarget_dtw_vs_A": 0.0,
+              "nontarget_recovered": 1.0
+            },
+            "B": {
+              "n": 2,
+              "correct": 2,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.6324,
+              "nontarget_dtw_vs_A": 29.346,
+              "nontarget_recovered": 1.0
+            },
+            "C": {
+              "n": 2,
+              "correct": 0,
+              "wrong": 0,
+              "unscorable": 2,
+              "acc_scorable": null,
+              "speaker_sim": 0.6583,
+              "nontarget_dtw_vs_A": 35.449,
+              "nontarget_recovered": 1.0
+            },
+            "D": {
+              "n": 2,
+              "correct": 2,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.6493,
+              "nontarget_dtw_vs_A": 40.017,
+              "nontarget_recovered": 1.0
+            }
+          },
+          "B_vs_D": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 2
+            },
+            "speaker_sim_mean_diff": 0.0169,
+            "nontarget_dtw_mean_diff": 10.67
+          },
+          "A_vs_C": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 0
+            },
+            "speaker_sim_mean_diff": 0.0236,
+            "nontarget_dtw_mean_diff": 35.449
+          }
+        }
+      }
+    },
+    "blessing|held_out": {
+      "conditions": {
+        "A": {
+          "n": 54,
+          "correct": 25,
+          "wrong": 12,
+          "unscorable": 17,
+          "acc_scorable": 0.676,
+          "speaker_sim": 0.7293,
+          "nontarget_dtw_vs_A": 0.0,
+          "nontarget_recovered": 0.986
+        },
+        "B": {
+          "n": 54,
+          "correct": 45,
+          "wrong": 0,
+          "unscorable": 9,
+          "acc_scorable": 1.0,
+          "speaker_sim": 0.726,
+          "nontarget_dtw_vs_A": 30.04,
+          "nontarget_recovered": 0.983
+        },
+        "C": {
+          "n": 54,
+          "correct": 40,
+          "wrong": 3,
+          "unscorable": 11,
+          "acc_scorable": 0.93,
+          "speaker_sim": 0.7241,
+          "nontarget_dtw_vs_A": 28.271,
+          "nontarget_recovered": 0.979
+        },
+        "D": {
+          "n": 54,
+          "correct": 43,
+          "wrong": 0,
+          "unscorable": 11,
+          "acc_scorable": 1.0,
+          "speaker_sim": 0.7223,
+          "nontarget_dtw_vs_A": 33.574,
+          "nontarget_recovered": 0.983
+        }
+      },
+      "B_vs_D": {
+        "pronunciation_mcnemar": {
+          "x_only": 0,
+          "y_only": 0,
+          "p": 1.0,
+          "n_paired_scorable": 42
+        },
+        "speaker_sim_mean_diff": -0.0037,
+        "nontarget_dtw_mean_diff": 3.534
+      },
+      "A_vs_C": {
+        "pronunciation_mcnemar": {
+          "x_only": 0,
+          "y_only": 7,
+          "p": 0.0156,
+          "n_paired_scorable": 34
+        },
+        "speaker_sim_mean_diff": -0.0052,
+        "nontarget_dtw_mean_diff": 28.271
+      },
+      "by_word_pron": {
+        "lead|EH": {
+          "conditions": {
+            "A": {
+              "n": 11,
+              "correct": 0,
+              "wrong": 9,
+              "unscorable": 2,
+              "acc_scorable": 0.0,
+              "speaker_sim": 0.7576,
+              "nontarget_dtw_vs_A": 0.0,
+              "nontarget_recovered": 0.972
+            },
+            "B": {
+              "n": 11,
+              "correct": 9,
+              "wrong": 0,
+              "unscorable": 2,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7558,
+              "nontarget_dtw_vs_A": 37.368,
+              "nontarget_recovered": 0.995
+            },
+            "C": {
+              "n": 11,
+              "correct": 7,
+              "wrong": 3,
+              "unscorable": 1,
+              "acc_scorable": 0.7,
+              "speaker_sim": 0.7472,
+              "nontarget_dtw_vs_A": 23.013,
+              "nontarget_recovered": 0.972
+            },
+            "D": {
+              "n": 11,
+              "correct": 10,
+              "wrong": 0,
+              "unscorable": 1,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7587,
+              "nontarget_dtw_vs_A": 36.171,
+              "nontarget_recovered": 0.995
+            }
+          },
+          "B_vs_D": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 9
+            },
+            "speaker_sim_mean_diff": 0.003,
+            "nontarget_dtw_mean_diff": -1.197
+          },
+          "A_vs_C": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 5,
+              "p": 0.0625,
+              "n_paired_scorable": 8
+            },
+            "speaker_sim_mean_diff": -0.0103,
+            "nontarget_dtw_mean_diff": 23.013
+          }
+        },
+        "lead|IY": {
+          "conditions": {
+            "A": {
+              "n": 11,
+              "correct": 10,
+              "wrong": 0,
+              "unscorable": 1,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7169,
+              "nontarget_dtw_vs_A": 0.0,
+              "nontarget_recovered": 0.974
+            },
+            "B": {
+              "n": 11,
+              "correct": 10,
+              "wrong": 0,
+              "unscorable": 1,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7146,
+              "nontarget_dtw_vs_A": 17.718,
+              "nontarget_recovered": 0.938
+            },
+            "C": {
+              "n": 11,
+              "correct": 10,
+              "wrong": 0,
+              "unscorable": 1,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7135,
+              "nontarget_dtw_vs_A": 25.575,
+              "nontarget_recovered": 0.938
+            },
+            "D": {
+              "n": 11,
+              "correct": 10,
+              "wrong": 0,
+              "unscorable": 1,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7169,
+              "nontarget_dtw_vs_A": 28.309,
+              "nontarget_recovered": 0.938
+            }
+          },
+          "B_vs_D": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 10
+            },
+            "speaker_sim_mean_diff": 0.0023,
+            "nontarget_dtw_mean_diff": 10.59
+          },
+          "A_vs_C": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 10
+            },
+            "speaker_sim_mean_diff": -0.0033,
+            "nontarget_dtw_mean_diff": 25.575
+          }
+        },
+        "read|EH": {
+          "conditions": {
+            "A": {
+              "n": 11,
+              "correct": 6,
+              "wrong": 1,
+              "unscorable": 4,
+              "acc_scorable": 0.857,
+              "speaker_sim": 0.7462,
+              "nontarget_dtw_vs_A": 0.0,
+              "nontarget_recovered": 0.985
+            },
+            "B": {
+              "n": 11,
+              "correct": 11,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7376,
+              "nontarget_dtw_vs_A": 37.542,
+              "nontarget_recovered": 0.985
+            },
+            "C": {
+              "n": 11,
+              "correct": 11,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7424,
+              "nontarget_dtw_vs_A": 29.214,
+              "nontarget_recovered": 0.985
+            },
+            "D": {
+              "n": 11,
+              "correct": 11,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7239,
+              "nontarget_dtw_vs_A": 36.217,
+              "nontarget_recovered": 0.985
+            }
+          },
+          "B_vs_D": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 11
+            },
+            "speaker_sim_mean_diff": -0.0136,
+            "nontarget_dtw_mean_diff": -1.325
+          },
+          "A_vs_C": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 1,
+              "p": 1.0,
+              "n_paired_scorable": 7
+            },
+            "speaker_sim_mean_diff": -0.0039,
+            "nontarget_dtw_mean_diff": 29.214
+          }
+        },
+        "read|IY": {
+          "conditions": {
+            "A": {
+              "n": 11,
+              "correct": 6,
+              "wrong": 1,
+              "unscorable": 4,
+              "acc_scorable": 0.857,
+              "speaker_sim": 0.7253,
+              "nontarget_dtw_vs_A": 0.0,
+              "nontarget_recovered": 1.0
+            },
+            "B": {
+              "n": 11,
+              "correct": 7,
+              "wrong": 0,
+              "unscorable": 4,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7176,
+              "nontarget_dtw_vs_A": 26.073,
+              "nontarget_recovered": 1.0
+            },
+            "C": {
+              "n": 11,
+              "correct": 8,
+              "wrong": 0,
+              "unscorable": 3,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7228,
+              "nontarget_dtw_vs_A": 28.222,
+              "nontarget_recovered": 1.0
+            },
+            "D": {
+              "n": 11,
+              "correct": 6,
+              "wrong": 0,
+              "unscorable": 5,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7187,
+              "nontarget_dtw_vs_A": 33.095,
+              "nontarget_recovered": 1.0
+            }
+          },
+          "B_vs_D": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 6
+            },
+            "speaker_sim_mean_diff": 0.0011,
+            "nontarget_dtw_mean_diff": 7.021
+          },
+          "A_vs_C": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 1,
+              "p": 1.0,
+              "n_paired_scorable": 6
+            },
+            "speaker_sim_mean_diff": -0.0025,
+            "nontarget_dtw_mean_diff": 28.222
+          }
+        },
+        "wound|UW": {
+          "conditions": {
+            "A": {
+              "n": 5,
+              "correct": 3,
+              "wrong": 0,
+              "unscorable": 2,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7042,
+              "nontarget_dtw_vs_A": 0.0,
+              "nontarget_recovered": 1.0
+            },
+            "B": {
+              "n": 5,
+              "correct": 4,
+              "wrong": 0,
+              "unscorable": 1,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7,
+              "nontarget_dtw_vs_A": 24.935,
+              "nontarget_recovered": 1.0
+            },
+            "C": {
+              "n": 5,
+              "correct": 3,
+              "wrong": 0,
+              "unscorable": 2,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.682,
+              "nontarget_dtw_vs_A": 33.271,
+              "nontarget_recovered": 1.0
+            },
+            "D": {
+              "n": 5,
+              "correct": 4,
+              "wrong": 0,
+              "unscorable": 1,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.6894,
+              "nontarget_dtw_vs_A": 26.273,
+              "nontarget_recovered": 1.0
+            }
+          },
+          "B_vs_D": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 4
+            },
+            "speaker_sim_mean_diff": -0.0106,
+            "nontarget_dtw_mean_diff": 1.338
+          },
+          "A_vs_C": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 3
+            },
+            "speaker_sim_mean_diff": -0.0222,
+            "nontarget_dtw_mean_diff": 33.271
+          }
+        },
+        "wound|AW": {
+          "conditions": {
+            "A": {
+              "n": 5,
+              "correct": 0,
+              "wrong": 1,
+              "unscorable": 4,
+              "acc_scorable": 0.0,
+              "speaker_sim": 0.6909,
+              "nontarget_dtw_vs_A": 0.0,
+              "nontarget_recovered": 1.0
+            },
+            "B": {
+              "n": 5,
+              "correct": 4,
+              "wrong": 0,
+              "unscorable": 1,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7042,
+              "nontarget_dtw_vs_A": 38.35,
+              "nontarget_recovered": 1.0
+            },
+            "C": {
+              "n": 5,
+              "correct": 1,
+              "wrong": 0,
+              "unscorable": 4,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7009,
+              "nontarget_dtw_vs_A": 38.805,
+              "nontarget_recovered": 1.0
+            },
+            "D": {
+              "n": 5,
+              "correct": 2,
+              "wrong": 0,
+              "unscorable": 3,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.6914,
+              "nontarget_dtw_vs_A": 41.985,
+              "nontarget_recovered": 1.0
+            }
+          },
+          "B_vs_D": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 2
+            },
+            "speaker_sim_mean_diff": -0.0128,
+            "nontarget_dtw_mean_diff": 3.635
+          },
+          "A_vs_C": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 0
+            },
+            "speaker_sim_mean_diff": 0.01,
+            "nontarget_dtw_mean_diff": 38.805
+          }
+        }
+      }
+    },
+    "michael|correction_sentence": {
+      "conditions": {
+        "A": {
+          "n": 14,
+          "correct": 8,
+          "wrong": 6,
+          "unscorable": 0,
+          "acc_scorable": 0.571,
+          "speaker_sim": 0.6724,
+          "nontarget_dtw_vs_A": 0.0,
+          "nontarget_recovered": 0.988
+        },
+        "B": {
+          "n": 14,
+          "correct": 13,
+          "wrong": 0,
+          "unscorable": 1,
+          "acc_scorable": 1.0,
+          "speaker_sim": 0.6689,
+          "nontarget_dtw_vs_A": 41.4,
+          "nontarget_recovered": 0.988
+        },
+        "C": {
+          "n": 14,
+          "correct": 11,
+          "wrong": 1,
+          "unscorable": 2,
+          "acc_scorable": 0.917,
+          "speaker_sim": 0.6771,
+          "nontarget_dtw_vs_A": 38.932,
+          "nontarget_recovered": 0.974
+        },
+        "D": {
+          "n": 14,
+          "correct": 12,
+          "wrong": 0,
+          "unscorable": 2,
+          "acc_scorable": 1.0,
+          "speaker_sim": 0.6617,
+          "nontarget_dtw_vs_A": 49.476,
+          "nontarget_recovered": 0.974
+        }
+      },
+      "B_vs_D": {
+        "pronunciation_mcnemar": {
+          "x_only": 0,
+          "y_only": 0,
+          "p": 1.0,
+          "n_paired_scorable": 12
+        },
+        "speaker_sim_mean_diff": -0.0072,
+        "nontarget_dtw_mean_diff": 8.076
+      },
+      "A_vs_C": {
+        "pronunciation_mcnemar": {
+          "x_only": 0,
+          "y_only": 4,
+          "p": 0.125,
+          "n_paired_scorable": 12
+        },
+        "speaker_sim_mean_diff": 0.0047,
+        "nontarget_dtw_mean_diff": 38.932
+      },
+      "by_word_pron": {
+        "lead|EH": {
+          "conditions": {
+            "A": {
+              "n": 2,
+              "correct": 0,
+              "wrong": 2,
+              "unscorable": 0,
+              "acc_scorable": 0.0,
+              "speaker_sim": 0.6923,
+              "nontarget_dtw_vs_A": 0.0,
+              "nontarget_recovered": 1.0
+            },
+            "B": {
+              "n": 2,
+              "correct": 1,
+              "wrong": 0,
+              "unscorable": 1,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.6489,
+              "nontarget_dtw_vs_A": 61.453,
+              "nontarget_recovered": 1.0
+            },
+            "C": {
+              "n": 2,
+              "correct": 1,
+              "wrong": 1,
+              "unscorable": 0,
+              "acc_scorable": 0.5,
+              "speaker_sim": 0.6792,
+              "nontarget_dtw_vs_A": 23.854,
+              "nontarget_recovered": 1.0
+            },
+            "D": {
+              "n": 2,
+              "correct": 1,
+              "wrong": 0,
+              "unscorable": 1,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.6363,
+              "nontarget_dtw_vs_A": 64.41,
+              "nontarget_recovered": 1.0
+            }
+          },
+          "B_vs_D": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 1
+            },
+            "speaker_sim_mean_diff": -0.0126,
+            "nontarget_dtw_mean_diff": 2.957
+          },
+          "A_vs_C": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 1,
+              "p": 1.0,
+              "n_paired_scorable": 2
+            },
+            "speaker_sim_mean_diff": -0.0132,
+            "nontarget_dtw_mean_diff": 23.854
+          }
+        },
+        "lead|IY": {
+          "conditions": {
+            "A": {
+              "n": 2,
+              "correct": 2,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7384,
+              "nontarget_dtw_vs_A": 0.0,
+              "nontarget_recovered": 1.0
+            },
+            "B": {
+              "n": 2,
+              "correct": 2,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7532,
+              "nontarget_dtw_vs_A": 35.9,
+              "nontarget_recovered": 1.0
+            },
+            "C": {
+              "n": 2,
+              "correct": 2,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7725,
+              "nontarget_dtw_vs_A": 39.228,
+              "nontarget_recovered": 1.0
+            },
+            "D": {
+              "n": 2,
+              "correct": 2,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7472,
+              "nontarget_dtw_vs_A": 44.394,
+              "nontarget_recovered": 1.0
+            }
+          },
+          "B_vs_D": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 2
+            },
+            "speaker_sim_mean_diff": -0.006,
+            "nontarget_dtw_mean_diff": 8.495
+          },
+          "A_vs_C": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 2
+            },
+            "speaker_sim_mean_diff": 0.0342,
+            "nontarget_dtw_mean_diff": 39.228
+          }
+        },
+        "read|EH": {
+          "conditions": {
+            "A": {
+              "n": 3,
+              "correct": 2,
+              "wrong": 1,
+              "unscorable": 0,
+              "acc_scorable": 0.667,
+              "speaker_sim": 0.6317,
+              "nontarget_dtw_vs_A": 0.0,
+              "nontarget_recovered": 0.944
+            },
+            "B": {
+              "n": 3,
+              "correct": 3,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.5909,
+              "nontarget_dtw_vs_A": 52.776,
+              "nontarget_recovered": 0.944
+            },
+            "C": {
+              "n": 3,
+              "correct": 3,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.6311,
+              "nontarget_dtw_vs_A": 40.874,
+              "nontarget_recovered": 0.944
+            },
+            "D": {
+              "n": 3,
+              "correct": 3,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.5935,
+              "nontarget_dtw_vs_A": 52.165,
+              "nontarget_recovered": 0.944
+            }
+          },
+          "B_vs_D": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 3
+            },
+            "speaker_sim_mean_diff": 0.0025,
+            "nontarget_dtw_mean_diff": -0.61
+          },
+          "A_vs_C": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 1,
+              "p": 1.0,
+              "n_paired_scorable": 3
+            },
+            "speaker_sim_mean_diff": -0.0006,
+            "nontarget_dtw_mean_diff": 40.874
+          }
+        },
+        "read|IY": {
+          "conditions": {
+            "A": {
+              "n": 3,
+              "correct": 2,
+              "wrong": 1,
+              "unscorable": 0,
+              "acc_scorable": 0.667,
+              "speaker_sim": 0.6583,
+              "nontarget_dtw_vs_A": 0.0,
+              "nontarget_recovered": 1.0
+            },
+            "B": {
+              "n": 3,
+              "correct": 3,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.6749,
+              "nontarget_dtw_vs_A": 39.918,
+              "nontarget_recovered": 1.0
+            },
+            "C": {
+              "n": 3,
+              "correct": 2,
+              "wrong": 0,
+              "unscorable": 1,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.6717,
+              "nontarget_dtw_vs_A": 36.016,
+              "nontarget_recovered": 1.0
+            },
+            "D": {
+              "n": 3,
+              "correct": 2,
+              "wrong": 0,
+              "unscorable": 1,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.6511,
+              "nontarget_dtw_vs_A": 45.25,
+              "nontarget_recovered": 1.0
+            }
+          },
+          "B_vs_D": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 2
+            },
+            "speaker_sim_mean_diff": -0.0238,
+            "nontarget_dtw_mean_diff": 5.332
+          },
+          "A_vs_C": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 1,
+              "p": 1.0,
+              "n_paired_scorable": 2
+            },
+            "speaker_sim_mean_diff": 0.0133,
+            "nontarget_dtw_mean_diff": 36.016
+          }
+        },
+        "wound|UW": {
+          "conditions": {
+            "A": {
+              "n": 2,
+              "correct": 2,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7148,
+              "nontarget_dtw_vs_A": 0.0,
+              "nontarget_recovered": 1.0
+            },
+            "B": {
+              "n": 2,
+              "correct": 2,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.729,
+              "nontarget_dtw_vs_A": 21.4,
+              "nontarget_recovered": 1.0
+            },
+            "C": {
+              "n": 2,
+              "correct": 2,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.6723,
+              "nontarget_dtw_vs_A": 41.245,
+              "nontarget_recovered": 1.0
+            },
+            "D": {
+              "n": 2,
+              "correct": 2,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.6999,
+              "nontarget_dtw_vs_A": 35.235,
+              "nontarget_recovered": 1.0
+            }
+          },
+          "B_vs_D": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 2
+            },
+            "speaker_sim_mean_diff": -0.0291,
+            "nontarget_dtw_mean_diff": 13.836
+          },
+          "A_vs_C": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 2
+            },
+            "speaker_sim_mean_diff": -0.0425,
+            "nontarget_dtw_mean_diff": 41.245
+          }
+        },
+        "wound|AW": {
+          "conditions": {
+            "A": {
+              "n": 2,
+              "correct": 0,
+              "wrong": 2,
+              "unscorable": 0,
+              "acc_scorable": 0.0,
+              "speaker_sim": 0.6263,
+              "nontarget_dtw_vs_A": 0.0,
+              "nontarget_recovered": 1.0
+            },
+            "B": {
+              "n": 2,
+              "correct": 2,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.6525,
+              "nontarget_dtw_vs_A": 32.008,
+              "nontarget_recovered": 1.0
+            },
+            "C": {
+              "n": 2,
+              "correct": 1,
+              "wrong": 0,
+              "unscorable": 1,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.6613,
+              "nontarget_dtw_vs_A": 52.864,
+              "nontarget_recovered": 0.9
+            },
+            "D": {
+              "n": 2,
+              "correct": 2,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.6815,
+              "nontarget_dtw_vs_A": 56.167,
+              "nontarget_recovered": 0.9
+            }
+          },
+          "B_vs_D": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 2
+            },
+            "speaker_sim_mean_diff": 0.029,
+            "nontarget_dtw_mean_diff": 24.159
+          },
+          "A_vs_C": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 1,
+              "p": 1.0,
+              "n_paired_scorable": 1
+            },
+            "speaker_sim_mean_diff": 0.0351,
+            "nontarget_dtw_mean_diff": 52.864
+          }
+        }
+      }
+    },
+    "michael|held_out": {
+      "conditions": {
+        "A": {
+          "n": 54,
+          "correct": 25,
+          "wrong": 23,
+          "unscorable": 6,
+          "acc_scorable": 0.521,
+          "speaker_sim": 0.7109,
+          "nontarget_dtw_vs_A": 0.0,
+          "nontarget_recovered": 0.981
+        },
+        "B": {
+          "n": 54,
+          "correct": 48,
+          "wrong": 0,
+          "unscorable": 6,
+          "acc_scorable": 1.0,
+          "speaker_sim": 0.7072,
+          "nontarget_dtw_vs_A": 36.483,
+          "nontarget_recovered": 0.981
+        },
+        "C": {
+          "n": 54,
+          "correct": 38,
+          "wrong": 7,
+          "unscorable": 9,
+          "acc_scorable": 0.844,
+          "speaker_sim": 0.7106,
+          "nontarget_dtw_vs_A": 31.829,
+          "nontarget_recovered": 0.985
+        },
+        "D": {
+          "n": 54,
+          "correct": 46,
+          "wrong": 0,
+          "unscorable": 8,
+          "acc_scorable": 1.0,
+          "speaker_sim": 0.7082,
+          "nontarget_dtw_vs_A": 38.857,
+          "nontarget_recovered": 0.988
+        }
+      },
+      "B_vs_D": {
+        "pronunciation_mcnemar": {
+          "x_only": 0,
+          "y_only": 0,
+          "p": 1.0,
+          "n_paired_scorable": 44
+        },
+        "speaker_sim_mean_diff": 0.001,
+        "nontarget_dtw_mean_diff": 2.374
+      },
+      "A_vs_C": {
+        "pronunciation_mcnemar": {
+          "x_only": 0,
+          "y_only": 12,
+          "p": 0.0005,
+          "n_paired_scorable": 43
+        },
+        "speaker_sim_mean_diff": -0.0002,
+        "nontarget_dtw_mean_diff": 31.829
+      },
+      "by_word_pron": {
+        "lead|EH": {
+          "conditions": {
+            "A": {
+              "n": 11,
+              "correct": 0,
+              "wrong": 10,
+              "unscorable": 1,
+              "acc_scorable": 0.0,
+              "speaker_sim": 0.7501,
+              "nontarget_dtw_vs_A": 0.0,
+              "nontarget_recovered": 0.989
+            },
+            "B": {
+              "n": 11,
+              "correct": 11,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7427,
+              "nontarget_dtw_vs_A": 46.912,
+              "nontarget_recovered": 0.987
+            },
+            "C": {
+              "n": 11,
+              "correct": 4,
+              "wrong": 5,
+              "unscorable": 2,
+              "acc_scorable": 0.444,
+              "speaker_sim": 0.744,
+              "nontarget_dtw_vs_A": 25.318,
+              "nontarget_recovered": 0.989
+            },
+            "D": {
+              "n": 11,
+              "correct": 11,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7463,
+              "nontarget_dtw_vs_A": 45.703,
+              "nontarget_recovered": 0.987
+            }
+          },
+          "B_vs_D": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 11
+            },
+            "speaker_sim_mean_diff": 0.0035,
+            "nontarget_dtw_mean_diff": -1.209
+          },
+          "A_vs_C": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 3,
+              "p": 0.25,
+              "n_paired_scorable": 8
+            },
+            "speaker_sim_mean_diff": -0.0061,
+            "nontarget_dtw_mean_diff": 25.318
+          }
+        },
+        "lead|IY": {
+          "conditions": {
+            "A": {
+              "n": 11,
+              "correct": 11,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.6966,
+              "nontarget_dtw_vs_A": 0.0,
+              "nontarget_recovered": 0.951
+            },
+            "B": {
+              "n": 11,
+              "correct": 11,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7,
+              "nontarget_dtw_vs_A": 23.353,
+              "nontarget_recovered": 0.951
+            },
+            "C": {
+              "n": 11,
+              "correct": 11,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7051,
+              "nontarget_dtw_vs_A": 32.574,
+              "nontarget_recovered": 0.987
+            },
+            "D": {
+              "n": 11,
+              "correct": 10,
+              "wrong": 0,
+              "unscorable": 1,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7104,
+              "nontarget_dtw_vs_A": 34.94,
+              "nontarget_recovered": 0.987
+            }
+          },
+          "B_vs_D": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 10
+            },
+            "speaker_sim_mean_diff": 0.0104,
+            "nontarget_dtw_mean_diff": 11.587
+          },
+          "A_vs_C": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 11
+            },
+            "speaker_sim_mean_diff": 0.0085,
+            "nontarget_dtw_mean_diff": 32.574
+          }
+        },
+        "read|EH": {
+          "conditions": {
+            "A": {
+              "n": 11,
+              "correct": 5,
+              "wrong": 5,
+              "unscorable": 1,
+              "acc_scorable": 0.5,
+              "speaker_sim": 0.7018,
+              "nontarget_dtw_vs_A": 0.0,
+              "nontarget_recovered": 0.985
+            },
+            "B": {
+              "n": 11,
+              "correct": 11,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.6789,
+              "nontarget_dtw_vs_A": 44.242,
+              "nontarget_recovered": 0.985
+            },
+            "C": {
+              "n": 11,
+              "correct": 11,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.702,
+              "nontarget_dtw_vs_A": 29.083,
+              "nontarget_recovered": 0.985
+            },
+            "D": {
+              "n": 11,
+              "correct": 11,
+              "wrong": 0,
+              "unscorable": 0,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.674,
+              "nontarget_dtw_vs_A": 42.016,
+              "nontarget_recovered": 0.985
+            }
+          },
+          "B_vs_D": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 11
+            },
+            "speaker_sim_mean_diff": -0.0048,
+            "nontarget_dtw_mean_diff": -2.226
+          },
+          "A_vs_C": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 5,
+              "p": 0.0625,
+              "n_paired_scorable": 10
+            },
+            "speaker_sim_mean_diff": 0.0002,
+            "nontarget_dtw_mean_diff": 29.083
+          }
+        },
+        "read|IY": {
+          "conditions": {
+            "A": {
+              "n": 11,
+              "correct": 5,
+              "wrong": 4,
+              "unscorable": 2,
+              "acc_scorable": 0.556,
+              "speaker_sim": 0.7217,
+              "nontarget_dtw_vs_A": 0.0,
+              "nontarget_recovered": 1.0
+            },
+            "B": {
+              "n": 11,
+              "correct": 8,
+              "wrong": 0,
+              "unscorable": 3,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7196,
+              "nontarget_dtw_vs_A": 32.479,
+              "nontarget_recovered": 1.0
+            },
+            "C": {
+              "n": 11,
+              "correct": 7,
+              "wrong": 0,
+              "unscorable": 4,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7207,
+              "nontarget_dtw_vs_A": 35.495,
+              "nontarget_recovered": 1.0
+            },
+            "D": {
+              "n": 11,
+              "correct": 8,
+              "wrong": 0,
+              "unscorable": 3,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.7185,
+              "nontarget_dtw_vs_A": 35.276,
+              "nontarget_recovered": 1.0
+            }
+          },
+          "B_vs_D": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 6
+            },
+            "speaker_sim_mean_diff": -0.0011,
+            "nontarget_dtw_mean_diff": 2.798
+          },
+          "A_vs_C": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 3,
+              "p": 0.25,
+              "n_paired_scorable": 7
+            },
+            "speaker_sim_mean_diff": -0.0011,
+            "nontarget_dtw_mean_diff": 35.495
+          }
+        },
+        "wound|UW": {
+          "conditions": {
+            "A": {
+              "n": 5,
+              "correct": 4,
+              "wrong": 0,
+              "unscorable": 1,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.6754,
+              "nontarget_dtw_vs_A": 0.0,
+              "nontarget_recovered": 0.96
+            },
+            "B": {
+              "n": 5,
+              "correct": 4,
+              "wrong": 0,
+              "unscorable": 1,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.691,
+              "nontarget_dtw_vs_A": 32.435,
+              "nontarget_recovered": 0.96
+            },
+            "C": {
+              "n": 5,
+              "correct": 4,
+              "wrong": 0,
+              "unscorable": 1,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.6604,
+              "nontarget_dtw_vs_A": 41.035,
+              "nontarget_recovered": 0.92
+            },
+            "D": {
+              "n": 5,
+              "correct": 4,
+              "wrong": 0,
+              "unscorable": 1,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.6852,
+              "nontarget_dtw_vs_A": 31.605,
+              "nontarget_recovered": 0.96
+            }
+          },
+          "B_vs_D": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 4
+            },
+            "speaker_sim_mean_diff": -0.0058,
+            "nontarget_dtw_mean_diff": -0.83
+          },
+          "A_vs_C": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 4
+            },
+            "speaker_sim_mean_diff": -0.015,
+            "nontarget_dtw_mean_diff": 41.035
+          }
+        },
+        "wound|AW": {
+          "conditions": {
+            "A": {
+              "n": 5,
+              "correct": 0,
+              "wrong": 4,
+              "unscorable": 1,
+              "acc_scorable": 0.0,
+              "speaker_sim": 0.6879,
+              "nontarget_dtw_vs_A": 0.0,
+              "nontarget_recovered": 1.0
+            },
+            "B": {
+              "n": 5,
+              "correct": 3,
+              "wrong": 0,
+              "unscorable": 2,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.6961,
+              "nontarget_dtw_vs_A": 38.215,
+              "nontarget_recovered": 1.0
+            },
+            "C": {
+              "n": 5,
+              "correct": 1,
+              "wrong": 2,
+              "unscorable": 2,
+              "acc_scorable": 0.333,
+              "speaker_sim": 0.6966,
+              "nontarget_dtw_vs_A": 33.289,
+              "nontarget_recovered": 1.0
+            },
+            "D": {
+              "n": 5,
+              "correct": 2,
+              "wrong": 0,
+              "unscorable": 3,
+              "acc_scorable": 1.0,
+              "speaker_sim": 0.6953,
+              "nontarget_dtw_vs_A": 40.591,
+              "nontarget_recovered": 1.0
+            }
+          },
+          "B_vs_D": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 0,
+              "p": 1.0,
+              "n_paired_scorable": 2
+            },
+            "speaker_sim_mean_diff": -0.0008,
+            "nontarget_dtw_mean_diff": 2.376
+          },
+          "A_vs_C": {
+            "pronunciation_mcnemar": {
+              "x_only": 0,
+              "y_only": 1,
+              "p": 1.0,
+              "n_paired_scorable": 3
+            },
+            "speaker_sim_mean_diff": 0.0087,
+            "nontarget_dtw_mean_diff": 33.289
+          }
+        }
+      }
+    }
+  }
+}

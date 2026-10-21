@@ -1,0 +1,47 @@
+[
+  {
+    "idx": 0,
+    "word": "Anurag",
+    "phonetic": null,
+    "key": "01b1324805fa38e1",
+    "value": "e5a00aa9991ac8a5",
+    "word_delta": null,
+    "full_delta": null
+  },
+  {
+    "idx": 1,
+    "word": "Bispecific",
+    "phonetic": "By specific",
+    "key": "564cb87acdcbaf1e",
+    "value": "e5a00aa9991ac8a5",
+    "word_delta": null,
+    "full_delta": null
+  },
+  {
+    "idx": 2,
+    "word": "Rybervant",
+    "phonetic": "Ribrovant",
+    "key": "7cf11a40c73e0bbd",
+    "value": "e5a00aa9991ac8a5",
+    "word_delta": null,
+    "full_delta": null
+  },
+  {
+    "idx": 3,
+    "word": "lead",
+    "phonetic": "led",
+    "key": "2e0daeda97637ee8",
+    "value": "952da6c254146798",
+    "word_delta": "a7455257691ab6d5",
+    "full_delta": "fe79abeeb1724216"
+  },
+  {
+    "idx": 4,
+    "word": "lead",
+    "phonetic": "leed",
+    "key": "04750d118434815e",
+    "value": "f911d22aadaf35d9",
+    "word_delta": "b8ed00a5100348b1",
+    "full_delta": "b1cbd8e3833f4082"
+  }
+]

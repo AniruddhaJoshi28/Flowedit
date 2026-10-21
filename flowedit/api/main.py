@@ -1162,7 +1162,7 @@ async def compare_synthesis(
                 "backbone": "Fine-Tuned XTTS-v2 (Autoregressive GPT + Discrete DVAE + HiFi-GAN)",
                 "discrete_bottleneck": "Solved via Differentiable Teacher-Forcing over Codebook Logits",
                 "syllable_timing": "Per-Token Trajectory Matrices with Continuous 1D Interpolation",
-                "context_homographs": "3-Component Gaussian Context Keys (0.72 Auto-Branching)",
+                "context_homographs": "Correction-learned context model (neighbouring words, learned position weights)",
                 "multi_speaker_transfer": "Joint Gender Optimization (Male + Female Invariant)",
                 "general_forgetting": "0.0% Mathematically Guaranteed Zero Forgetting",
                 "streaming_capability": "Real-Time Chunked WAV / SSE / WebSockets (<150ms TTFA)",
@@ -1176,7 +1176,7 @@ async def compare_synthesis(
                 "backbone": "Continuous Flow Matching DiT (Euler ODE N=32)",
                 "discrete_bottleneck": "Non-Functional on Discrete Codebooks (Zero Gradients)",
                 "syllable_timing": "Single Mean-Pooled Vector (Collapses Syllable Sequence)",
-                "context_homographs": "Shared EMA Sense Prototypes (per-occurrence, clause-bounded context)",
+                "context_homographs": "Gaussian-averaged context key over ±3 tokens (characters in F5-TTS)",
                 "multi_speaker_transfer": "Single Reference Audio Overfit (Voice Timbre Drift)",
                 "general_forgetting": "Continuous Vector Field Drift Risk",
                 "streaming_capability": "Non-Streaming (Full 32 ODE steps before playback)",
@@ -1196,9 +1196,9 @@ async def compare_synthesis(
                 },
                 {
                     "pillar": "3. Context & Homograph Disambiguation",
-                    "ours": "3-Component Gaussian Context Keys with dynamic 0.72 sense branching",
-                    "paper": "Basic ±3 word window without automatic clustering",
-                    "why_better": "Clinical homographs (radiation lead vs ECG lead) are resolved automatically without collisions."
+                    "ours": "Context model learned from correction sentences: every correction is kept as evidence",
+                    "paper": "One averaged context key per correction cluster (±3 tokens)",
+                    "why_better": "Corrections accumulate instead of overwriting each other; a correction is not forced onto contexts it was never taught in."
                 },
                 {
                     "pillar": "4. Cross-Speaker Generalization",

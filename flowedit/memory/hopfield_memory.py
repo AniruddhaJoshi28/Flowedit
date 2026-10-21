@@ -39,6 +39,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from flowedit.config import MemoryConfig
+from flowedit.memory import sense_context
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +57,6 @@ DIGIT_WORDS = {
     '5': ' five ', '6': ' six ', '7': ' seven ', '8': ' eight ', '9': ' nine ',
 }
 
-_AUTO = "auto"
 
 
 def broad_acoustic_hash(s: str) -> str:
@@ -158,7 +158,6 @@ class MemoryEntry:
     word_delta: Optional[torch.Tensor] = None   # Canonical word-level δ* ∈ R^[1, L_word, d]
     carrier_texts: List[str] = field(default_factory=list)  # Context sentences merged into this cluster
     phonetic_text: Optional[str] = None                     # Acoustic pronunciation representation from reference audio
-    sense_prototype: Optional[torch.Tensor] = None          # EMA of contextual occurrence embeddings (backbone-independent)
     space_data: Dict[str, Dict[str, Any]] = field(default_factory=dict)
     delta_space: Optional[str] = None
 
@@ -214,8 +213,6 @@ class HopfieldMemory(nn.Module):
         embedding_dim: int = 512,
         embedding_space: Optional[str] = None,
         text_encoder: Optional[Callable[[str, str], torch.Tensor]] = None,
-        sense_encoder: Any = _AUTO,
-        sense_lexicon: Any = _AUTO,
     ):
         super().__init__()
         self.config = config or MemoryConfig()
@@ -243,9 +240,11 @@ class HopfieldMemory(nn.Module):
         self.entries: List[MemoryEntry] = []
         self.current_step = 0
         self._text_encoder = text_encoder
-        self._sense_encoder_spec = sense_encoder
-        self._sense_lexicon_spec = sense_lexicon
         self._rekey_cache: Dict[Tuple[str, str, Tuple[int, int]], torch.Tensor] = {}
+        self.last_sense_decisions: List[Dict[str, Any]] = []
+        # Token statistics of every sentence seen (written corrections and synthesized text)
+        self.background = sense_context.Background()
+        self._context_lambda: Optional[Dict[int, float]] = None
 
     @property
     def num_entries(self) -> int:
@@ -254,71 +253,12 @@ class HopfieldMemory(nn.Module):
     def is_empty(self) -> bool:
         return len(self.entries) == 0
 
-    # ─────────────────────────────────────────────────────────────────────────
-    # Encoders
-    # ─────────────────────────────────────────────────────────────────────────
-
-    @property
-    def sense_encoder(self):
-        """Backbone-independent contextual encoder, or None when disabled/unavailable."""
-        spec = self._sense_encoder_spec
-        if spec is _AUTO:
-            from flowedit.memory.sense_encoder import get_sense_encoder
-            spec = get_sense_encoder(self.config)
-            self._sense_encoder_spec = spec
-        if not spec:
-            return None
-        if hasattr(spec, "available") and not spec.available:
-            return None
-        return spec
-
-    @property
-    def sense_lexicon(self):
-        """Pretrained homograph sense lexicon (shared, adapts to corrections), or None."""
-        spec = self._sense_lexicon_spec
-        if spec is _AUTO:
-            from flowedit.memory.sense_lexicon import get_sense_lexicon
-            spec = get_sense_lexicon(self.config)
-            self._sense_lexicon_spec = spec
-        return spec or None
-
-    def _lexicon_word(self, word: str) -> bool:
-        lex = self.sense_lexicon
-        return lex is not None and len(lex.labels(word)) > 1
-
-    def _entry_label(self, entry: MemoryEntry) -> Optional[str]:
-        """Lexicon sense an entry belongs to (from its spelling, else from its carrier context)."""
-        if not self._lexicon_word(entry.word):
-            return None
-        label = entry.metadata.get("lexicon_label")
-        lex = self.sense_lexicon
-        if label in lex.labels(entry.word):
-            return label
-        label = lex.label_for_spelling(entry.word, entry.phonetic_text)
-        if label is None and not self._is_unconditional(entry.word, entry.carrier_text):
-            span = self._pick_span(entry.carrier_text, entry.word, char_span=entry.metadata.get("char_span"))
-            if span is not None:
-                label = lex.predict(entry.carrier_text, [(entry.word.lower(), span[0], span[1])])[0][0]
-        if label is not None:
-            entry.metadata["lexicon_label"] = label
-        return label
-
     def attach_text_encoder(self, text_encoder: Callable[[str, str], torch.Tensor]) -> None:
         """Attach the owning backbone's text encoder and re-key entries learned on other backbones."""
         self._text_encoder = text_encoder
         for entry in self.entries:
             if entry.space_data.get(self.space) is None:
                 self._localize(entry)
-
-    def _occurrence_vectors(self, text: str, spans: List[Tuple[int, int]]) -> Optional[torch.Tensor]:
-        enc = self.sense_encoder
-        if enc is None or not text or not spans:
-            return None
-        try:
-            return enc.encode(text, spans)
-        except Exception as e:
-            logger.warning(f"Sense encoding failed for '{text[:60]}': {e}")
-            return None
 
     @staticmethod
     def _is_unconditional(word: str, carrier_text: Optional[str]) -> bool:
@@ -345,30 +285,6 @@ class HopfieldMemory(nn.Module):
             est = min(token_indices) * len(text) / max(1, n_tok)
             return min(spans, key=lambda s: abs(s[0] - est))
         return spans[0]
-
-    def _entry_prototype(self, entry: MemoryEntry) -> Optional[torch.Tensor]:
-        """Sense prototype of an entry; legacy entries derive it from their carrier sentences (EMA)."""
-        if entry.sense_prototype is not None:
-            return entry.sense_prototype
-        if self._is_unconditional(entry.word, entry.carrier_text):
-            return None
-        carriers = [c for c in (entry.carrier_texts or [entry.carrier_text]) if c]
-        proto = None
-        for i, c in enumerate(carriers):
-            span = self._pick_span(
-                c, entry.word,
-                char_span=entry.metadata.get("char_span") if i == 0 else None,
-                token_indices=entry.token_indices if i == 0 else None,
-            )
-            if span is None:
-                continue
-            vec = self._occurrence_vectors(c, [span])
-            if vec is None:
-                return None
-            v = vec[0]
-            proto = v if proto is None else F.normalize(self.dedup_ema * proto + (1.0 - self.dedup_ema) * v, p=2, dim=-1)
-        entry.sense_prototype = proto
-        return proto
 
     # ─────────────────────────────────────────────────────────────────────────
     # Backbone context keys
@@ -451,17 +367,27 @@ class HopfieldMemory(nn.Module):
 
     def _rekey(self, entry: MemoryEntry) -> Optional[torch.Tensor]:
         """Recompute an entry's key in this backbone's space from its carrier sentence."""
+        carrier = entry.carrier_text or entry.word
+        return self._carrier_key(carrier, entry.word, entry.metadata.get("char_span"), entry.language)
+
+    def _carrier_key(
+        self,
+        carrier: str,
+        word: str,
+        char_span: Optional[Tuple[int, int]] = None,
+        language: Optional[str] = None,
+    ) -> Optional[torch.Tensor]:
+        """Context key of `word` inside one carrier sentence, in this backbone's space (cached)."""
         if self._text_encoder is None:
             return None
-        carrier = entry.carrier_text or entry.word
-        span = self._pick_span(carrier, entry.word, char_span=entry.metadata.get("char_span"))
-        cache_key = (carrier, entry.word.strip().lower(), span or (0, 0))
+        span = self._pick_span(carrier, word, char_span=char_span)
+        cache_key = (carrier, word.strip().lower(), span or (0, 0))
         cached = self._rekey_cache.get(cache_key)
         if cached is not None:
             return cached
         try:
             with torch.no_grad():
-                emb = self._text_encoder(carrier, entry.language or "en")
+                emb = self._text_encoder(carrier, language or "en")
             n_tok = emb.shape[1] if emb.dim() == 3 else emb.shape[0]
             tok = []
             if span is not None:
@@ -469,12 +395,22 @@ class HopfieldMemory(nn.Module):
                 tok = list(range(ts, te))
             key = self.compute_context_key(emb, tok).detach().cpu().float()
         except Exception as e:
-            logger.warning(f"Could not re-key '{entry.word}' in space {self.space}: {e}")
+            logger.warning(f"Could not re-key '{word}' in space {self.space}: {e}")
             return None
         if key.shape[-1] != self.d:
             return None
         self._rekey_cache[cache_key] = key
         return key
+
+    def _exemplar_keys(self, entry: MemoryEntry) -> List[torch.Tensor]:
+        """One context key per stored carrier sentence of a sense (the corrections it was learned from)."""
+        carriers = [c for c in (entry.carrier_texts or [entry.carrier_text]) if c]
+        keys = []
+        for i, c in enumerate(carriers):
+            k = self._carrier_key(c, entry.word, entry.metadata.get("char_span") if i == 0 else None, entry.language)
+            if k is not None:
+                keys.append(F.normalize(k, p=2, dim=-1))
+        return keys
 
     def _localize(self, entry: MemoryEntry) -> None:
         """Populate the entry's local view (key/value/δ*) for this memory's backbone space."""
@@ -554,37 +490,26 @@ class HopfieldMemory(nn.Module):
         self,
         word: str,
         key_norm: torch.Tensor,
-        proto: Optional[torch.Tensor],
         pron: Optional[str],
         unconditional: bool,
-        label: Optional[str] = None,
     ) -> Tuple[int, float]:
         """Best same-sense cluster for a new correction, or (-1, best_similarity).
 
         Pronunciation decides first: two different learned pronunciations are different senses by
         definition and are never merged; equal pronunciations are the same sense. When either
-        pronunciation is unknown, the contextual sense prototype (or, without an encoder, the
-        backbone context key) must reach the merge threshold.
+        pronunciation is unknown, the backbone context key must reach the merge threshold.
         """
         best_idx, best_sim, best_any = -1, -1.0, -1.0
         w_norm = word.strip().lower()
+        threshold = self.homograph_threshold
         for idx, entry in enumerate(self.entries):
             if entry.word.strip().lower() != w_norm:
                 continue
             e_pron = _norm_pron(entry.word, entry.phonetic_text)
-            e_proto = None if unconditional else self._entry_prototype(entry)
-            if proto is not None and e_proto is not None and e_proto.shape == proto.shape:
-                sim = float(torch.dot(proto, e_proto.to(proto)))
-                threshold = self.config.sense_merge_threshold
-            else:
-                sim = float(torch.dot(key_norm, F.normalize(entry.key.cpu().float(), p=2, dim=-1)))
-                threshold = self.homograph_threshold
+            sim = float(torch.dot(key_norm, F.normalize(entry.key.cpu().float(), p=2, dim=-1)))
             best_any = max(best_any, sim)
 
-            e_label = self._entry_label(entry) if label is not None else None
-            if label is not None and e_label is not None:
-                compatible = label == e_label
-            elif pron is not None and e_pron is not None:
+            if pron is not None and e_pron is not None:
                 compatible = pron == e_pron
             elif unconditional and self._is_unconditional(entry.word, entry.carrier_text):
                 compatible = True
@@ -607,18 +532,20 @@ class HopfieldMemory(nn.Module):
         word_delta: Optional[torch.Tensor] = None,
         phonetic_text: Optional[str] = None,
         char_span: Optional[Tuple[int, int]] = None,
-        sense_vector: Optional[torch.Tensor] = None,
     ) -> Tuple[int, str]:
         """Store or EMA-merge a correction into its sense cluster (Paper Section 3.2).
 
         Sense-level EMA (decay ρ, warm-up decay while the cluster is young):
             K ← norm(ρ K + (1-ρ) K_new)      V ← ρ V + (1-ρ) V_new
             δ*_word ← ρ δ*_word + (1-ρ) δ*_new
-            P ← norm(ρ P + (1-ρ) P_new)      (contextual sense prototype)
+        Every correction sentence is kept in `carrier_texts`; the context sense model learns from them.
         A correction that matches no existing sense of the word becomes a new sense cluster
         (e.g. "lead" metal vs "lead" leader).
         """
         self.current_step += 1
+        if carrier_text:
+            self.background.observe(carrier_text)
+            self._context_lambda = None
         key_1d = key.squeeze().detach().cpu().float()
         val_1d = value.squeeze().detach().cpu().float()
 
@@ -647,30 +574,10 @@ class HopfieldMemory(nn.Module):
             if occ_span is not None:
                 meta["char_span"] = [int(occ_span[0]), int(occ_span[1])]
 
-        proto = None
-        if sense_vector is not None:
-            proto = F.normalize(sense_vector.detach().cpu().float().reshape(-1), p=2, dim=-1)
-        elif occ_span is not None:
-            vec = self._occurrence_vectors(carrier_text, [occ_span])
-            proto = vec[0] if vec is not None else None
-
         pron = _norm_pron(word, phonetic_text)
 
-        # Homographs known to the sense lexicon: a spelling that denotes one of its senses is a
-        # labelled example (the lexicon learns this context); any other spelling is a custom
-        # pronunciation for the sense the lexicon assigns to this context.
-        new_label = None
-        if self._lexicon_word(word) and occ_span is not None:
-            lex = self.sense_lexicon
-            new_label = lex.label_for_spelling(word, phonetic_text)
-            if new_label is not None:
-                lex.learn(word, carrier_text, occ_span, new_label)
-            else:
-                new_label = lex.predict(carrier_text, [(word.lower(), occ_span[0], occ_span[1])])[0][0]
-            meta["lexicon_label"] = new_label
-
         if self.entries:
-            best_idx, best_sim = self._find_merge_target(word, key_norm, proto, pron, unconditional, new_label)
+            best_idx, best_sim = self._find_merge_target(word, key_norm, pron, unconditional)
             if best_idx >= 0:
                 matched = self.entries[best_idx]
                 if matched.access_count <= self.config.ema_warmup_count:
@@ -699,14 +606,6 @@ class HopfieldMemory(nn.Module):
                     matched.delta_space = self.space
                 if stored_full_delta is not None:
                     matched.full_delta = stored_full_delta
-
-                # 4. Contextual sense prototype EMA (backbone-independent)
-                if proto is not None:
-                    old = None if unconditional else self._entry_prototype(matched)
-                    if old is not None and old.shape == proto.shape:
-                        matched.sense_prototype = F.normalize(old * decay + proto * alpha, p=2, dim=-1)
-                    else:
-                        matched.sense_prototype = proto
 
                 matched.access_count += 1
                 matched.last_access_step = self.current_step
@@ -757,7 +656,6 @@ class HopfieldMemory(nn.Module):
             word_delta=cur_word_delta,
             carrier_texts=carrier_list,
             phonetic_text=phonetic_text,
-            sense_prototype=proto,
             delta_space=self.space if cur_word_delta is not None else None,
         )
         self._store_local(entry)
@@ -794,7 +692,6 @@ class HopfieldMemory(nn.Module):
             metadata=dict(entry.metadata or {}),
             carrier_texts=list(getattr(entry, "carrier_texts", []) or ([entry.carrier_text] if entry.carrier_text else [])),
             phonetic_text=entry.phonetic_text,
-            sense_prototype=getattr(entry, "sense_prototype", None),
             space_data=space_data,
         )
         self._localize(new_entry)
@@ -848,42 +745,37 @@ class HopfieldMemory(nn.Module):
     def _select_sense(
         self,
         candidates: List[Tuple[int, MemoryEntry]],
-        occ_vec: Optional[torch.Tensor],
         occ_key_fn: Callable[[], torch.Tensor],
+        occ_text: Optional[str] = None,
+        occ_start: Optional[int] = None,
     ) -> Optional[Tuple[int, MemoryEntry, float]]:
         """Assign one occurrence to a sense cluster of its word.
 
-        - Several senses with different pronunciations: the most similar prototype wins if it
-          reaches `sense_min_similarity` (relative decision between learned senses).
-        - A single learned sense: applies only if similarity reaches `sense_match_threshold`.
-        - Entries learned without sentence context apply when no contextual sense claims the
-          occurrence.
-        Without the contextual encoder the backbone context keys are compared instead.
+        Whether a learned sense applies is gated by the backbone context key: the closest sense must
+        reach `homograph_sim_threshold`. Which sense applies is decided by the context sense model over
+        the stored correction sentences (flowedit/memory/sense_context.py): with one learned
+        pronunciation it applies only where the context supports it over the TTS model's own reading;
+        with several, the most probable one, or the sense with the closest stored correction context
+        when no context token was ever seen with any of them. Without sentence text (embedding-only
+        queries) the closest pooled key is used.
+        Entries learned without sentence context apply when no contextual sense claims the occurrence.
         """
         unconditional = [(i, e) for i, e in candidates if self._is_unconditional(e.word, e.carrier_text)]
         contextual = [(i, e) for i, e in candidates if not self._is_unconditional(e.word, e.carrier_text)]
 
         if contextual:
-            protos = [self._entry_prototype(e) for _, e in contextual] if occ_vec is not None else []
-            use_protos = occ_vec is not None and all(p is not None and p.shape == occ_vec.shape for p in protos)
-            if use_protos:
-                sims = [float(torch.dot(occ_vec, p.to(occ_vec))) for p in protos]
-                single_thr = self.config.sense_match_threshold
-                multi_thr = self.config.sense_min_similarity
-            else:
-                occ_key = occ_key_fn()
-                sims = [
-                    float(torch.dot(occ_key, F.normalize(e.key.to(occ_key), p=2, dim=-1)))
-                    for _, e in contextual
-                ]
-                single_thr = multi_thr = self.homograph_threshold
-            if sims:
-                classes = {
-                    _norm_pron(e.word, e.phonetic_text) or f"#{i}" for i, e in contextual
-                }
-                threshold = multi_thr if len(classes) > 1 else single_thr
-                j = max(range(len(sims)), key=lambda k: sims[k])
-                if sims[j] >= threshold:
+            occ_key = occ_key_fn()
+            sims = [float(torch.dot(occ_key, F.normalize(e.key.to(occ_key), p=2, dim=-1))) for _, e in contextual]
+            j = max(range(len(sims)), key=lambda k: sims[k])
+            if sims[j] >= self.homograph_threshold:
+                if occ_text is not None and occ_start is not None:
+                    verdict, k = self._select_by_context(contextual, occ_text, occ_start)
+                    if verdict == "choose":
+                        m_idx, entry = contextual[k]
+                        return m_idx, entry, sims[k]
+                    if verdict == "undecided":
+                        return self._select_by_exemplars(contextual, sims, occ_key)
+                else:
                     m_idx, entry = contextual[j]
                     return m_idx, entry, sims[j]
 
@@ -891,6 +783,80 @@ class HopfieldMemory(nn.Module):
             m_idx, entry = max(unconditional, key=lambda c: c[1].access_count)
             return m_idx, entry, 1.0
         return None
+
+    def _sense_contexts(self, entries: List[MemoryEntry], window: int) -> List[List[Tuple[int, str]]]:
+        """Context features of every stored correction sentence of these entries."""
+        ctxs = []
+        for e in entries:
+            for i, c in enumerate([c for c in (e.carrier_texts or [e.carrier_text]) if c]):
+                span = self._pick_span(c, e.word, char_span=e.metadata.get("char_span") if i == 0 else None)
+                if span is not None:
+                    ctxs.append(sense_context.context(c, span[0], window))
+        return ctxs
+
+    def _fit_context_lambda(self) -> Dict[int, float]:
+        """λ_d of the context sense model, fitted on every correction in memory (cached until the next write)."""
+        if self._context_lambda is None:
+            window = int(self.config.sense_context_window)
+            groups: Dict[Tuple[str, str], List[MemoryEntry]] = {}
+            for m, e in enumerate(self.entries):
+                if self._is_unconditional(e.word, e.carrier_text):
+                    continue
+                groups.setdefault((e.word.strip().lower(), _norm_pron(e.word, e.phonetic_text) or f"#{m}"), []).append(e)
+            senses = [sense_context.SenseData(lab, self._sense_contexts(es, window)) for (_, lab), es in groups.items()]
+            self._context_lambda = sense_context.fit_lambda(senses, self.background, window)
+        return self._context_lambda
+
+    def _select_by_context(
+        self,
+        contextual: List[Tuple[int, MemoryEntry]],
+        text: str,
+        char_start: int,
+    ) -> Tuple[str, Optional[int]]:
+        """Context sense model decision ('choose' / 'abstain' / 'undecided') over this word's senses."""
+        window = int(self.config.sense_context_window)
+        groups: Dict[str, List[int]] = {}
+        for k, (m, e) in enumerate(contextual):
+            groups.setdefault(_norm_pron(e.word, e.phonetic_text) or f"#{m}", []).append(k)
+        labels = list(groups)
+        senses = [sense_context.SenseData(lab, self._sense_contexts([contextual[k][1] for k in groups[lab]], window))
+                  for lab in labels]
+        keep = [i for i, s in enumerate(senses) if s.n > 0]
+        if not keep:
+            return "undecided", None
+        verdict, i, info = sense_context.decide(
+            sense_context.context(text, char_start, window), [senses[i] for i in keep],
+            self._fit_context_lambda(), self.background,
+        )
+        k = None
+        if i is not None:
+            # representative entry of the chosen pronunciation: one carrying δ* in this space, most used
+            k = max(groups[labels[keep[i]]], key=lambda k: (contextual[k][1].delta_space == self.space,
+                                                            contextual[k][1].access_count))
+        self.last_sense_decisions.append({
+            "method": "context", "verdict": verdict, "senses": [m for m, _ in contextual],
+            "choice": contextual[k][0] if k is not None else None, "lambda": dict(self._context_lambda), **info,
+        })
+        return verdict, k
+
+    def _select_by_exemplars(
+        self,
+        contextual: List[Tuple[int, MemoryEntry]],
+        pooled_sims: List[float],
+        occ_key: torch.Tensor,
+    ) -> Tuple[int, MemoryEntry, float]:
+        """Sense whose closest stored correction context (one backbone key per sentence) matches best."""
+        ex_sims = []
+        for (_, e), pooled in zip(contextual, pooled_sims):
+            keys = self._exemplar_keys(e)
+            ex_sims.append(max(float(torch.dot(occ_key, k.to(occ_key))) for k in keys) if keys else pooled)
+        j = max(range(len(ex_sims)), key=lambda k: ex_sims[k])
+        self.last_sense_decisions.append({
+            "method": "exemplar_keys", "senses": [m for m, _ in contextual], "pooled_sims": pooled_sims,
+            "exemplar_sims": ex_sims, "choice": contextual[j][0],
+        })
+        m_idx, entry = contextual[j]
+        return m_idx, entry, ex_sims[j]
 
     def _span_pronunciation(self, entry: MemoryEntry, text: str, char_start: int) -> Optional[str]:
         """Learned pronunciation of a matched occurrence (memory first, then registered spellings)."""
@@ -921,6 +887,7 @@ class HopfieldMemory(nn.Module):
         """
         device = query_embeddings.device
         dtype = query_embeddings.dtype
+        self.last_sense_decisions = []
         if query_embeddings.dim() == 3:
             Q = query_embeddings[0]  # [S, d]
         else:
@@ -938,10 +905,10 @@ class HopfieldMemory(nn.Module):
                 if e.key.shape[-1] != dim else e
                 for e in valid_entries
             ]
-        lexicon_occ: List[Tuple[str, int, int]] = []
-        if text and self.sense_lexicon is not None:
-            lexicon_occ = [o for o in self.sense_lexicon.occurrences(text) if self._lexicon_word(o[0])]
-        if not valid_entries and not lexicon_occ:
+        if text:
+            self.background.observe(text)
+            self._context_lambda = None
+        if not valid_entries:
             zeros_delta = torch.zeros_like(query_embeddings)
             zeros_gate = torch.zeros(1, seq_len, 1, device=device, dtype=dtype)
             return RetrievalResult(
@@ -1005,15 +972,13 @@ class HopfieldMemory(nn.Module):
 
             occurrences: List[Tuple[str, int, int]] = []
             for w_norm, candidates in word_to_entries.items():
-                if self._lexicon_word(w_norm):
-                    continue
                 for c_start, c_end in self._find_word_char_spans(text, candidates[0][1].word):
                     occurrences.append((w_norm, c_start, c_end))
             occurrences.sort(key=lambda o: o[1])
 
             # Exact BPE prefix boundaries, decoded once per text (not once per occurrence)
             prefix_ends: Optional[List[int]] = None
-            if (occurrences or lexicon_occ) and tokenizer is not None and hasattr(tokenizer, "encode") and hasattr(tokenizer, "decode") \
+            if occurrences and tokenizer is not None and hasattr(tokenizer, "encode") and hasattr(tokenizer, "decode") \
                     and total_chars != seq_len:
                 try:
                     enc = tokenizer.encode(text, lang=language)
@@ -1028,7 +993,6 @@ class HopfieldMemory(nn.Module):
                 except Exception:
                     prefix_ends = None
 
-            occ_vecs = self._occurrence_vectors(text, [(o[1], o[2]) for o in occurrences]) if occurrences else None
             processed_token_spans = set()
 
             def token_span(c_start: int, c_end: int) -> Tuple[int, int]:
@@ -1054,50 +1018,16 @@ class HopfieldMemory(nn.Module):
                 assembled_delta[0, span_start:span_end, :] += self._align_delta(src_delta, span_end - span_start)
                 gate_map[0, span_start:span_end, 0] = 1.0
 
-            # 6a. Lexicon homographs: the pretrained (and correction-adapted) classifier picks the
-            #     sense of every occurrence; learned entries of that sense supply their pronunciation/δ*
-            if lexicon_occ:
-                lex = self.sense_lexicon
-                preds = lex.predict(text, lexicon_occ)
-                for (w_norm, c_start, c_end), (label, prob) in zip(lexicon_occ, preds):
-                    span_start, span_end = token_span(c_start, c_end)
-                    same_sense = [
-                        (i, e) for i, e in word_to_entries.get(w_norm, []) if self._entry_label(e) == label
-                    ]
-                    m_idx, entry = max(same_sense, key=lambda c: c[1].access_count) if same_sense else (-1, None)
-                    pron = None
-                    if entry is not None and _norm_pron(entry.word, entry.phonetic_text):
-                        pron = entry.phonetic_text.strip()
-                    elif prob >= self.config.sense_lexicon_min_confidence and self._respell_sense(w_norm, label):
-                        pron = lex.respelling(w_norm, label)
-                    has_delta = entry is not None and entry.delta_space == self.space and entry.word_delta is not None
-                    logger.info(
-                        f"[Sense Lexicon] '{text[c_start:c_end]}'@{c_start} → {label} (p={prob:.2f}) "
-                        f"pronounce={pron or '(default reading)'}{' +δ*' if has_delta else ''}"
-                    )
-                    if not pron and not has_delta:
-                        continue
-                    processed_token_spans.add((span_start, span_end))
-                    matched_spans.append(MatchedWordSpan(
-                        word=text[c_start:c_end], start_pos=span_start, end_pos=span_end, entry_index=m_idx,
-                        score=float(scores[max(0, span_start - 2):min(seq_len, span_end + 2), m_idx].max().item()) if m_idx >= 0 else 0.0,
-                        gate_value=1.0, carrier_text=entry.carrier_text if entry is not None else "",
-                        phonetic_text=pron, char_start=c_start, char_end=c_end,
-                        has_delta=has_delta, sense_similarity=prob,
-                    ))
-                    if has_delta:
-                        inject(entry, span_start, span_end)
-
-            for o_idx, (w_norm, c_start, c_end) in enumerate(occurrences):
+            for w_norm, c_start, c_end in occurrences:
                 span_start, span_end = token_span(c_start, c_end)
                 if (span_start, span_end) in processed_token_spans:
                     continue
 
-                occ_vec = occ_vecs[o_idx] if occ_vecs is not None else None
                 chosen = self._select_sense(
                     word_to_entries[w_norm],
-                    occ_vec,
                     lambda s=span_start, e=span_end: self.compute_context_key(Q, list(range(s, e))),
+                    occ_text=text,
+                    occ_start=c_start,
                 )
                 if chosen is None:
                     logger.info(f"[Hopfield Retrieve] '{text[c_start:c_end]}' @{c_start}: no learned sense matches this context")
@@ -1185,12 +1115,6 @@ class HopfieldMemory(nn.Module):
             matched_carrier_text=best_carrier,
         )
 
-    def _respell_sense(self, word: str, label: str) -> bool:
-        """The corpus-dominant sense is the word's default reading; only other senses are respelled."""
-        counts = self.sense_lexicon.sense_counts(word)
-        total = sum(counts.values())
-        return not total or counts.get(label, 0) / total < self.config.sense_lexicon_default_share
-
     @staticmethod
     def _align_delta(src_delta: torch.Tensor, span_len: int) -> torch.Tensor:
         """Stretch/contract a [L, d] word perturbation onto `span_len` positions."""
@@ -1208,8 +1132,7 @@ class HopfieldMemory(nn.Module):
     # ─────────────────────────────────────────────────────────────────────────
 
     def save(self, filepath: str) -> None:
-        """Serialize memory entries (all backbone spaces + sense prototypes) to disk."""
-        encoder_name = (self.config.sense_encoder_model or "").strip()
+        """Serialize memory entries (all backbone spaces) and the context token statistics to disk."""
         entries = []
         for e in self.entries:
             if e.space_data.get(self.space) is not None or e.delta_space == self.space:
@@ -1231,13 +1154,12 @@ class HopfieldMemory(nn.Module):
                 "phonetic_text": e.phonetic_text,
                 "embedding_space": self.space,
                 "space_data": e.space_data,
-                "sense_prototype": e.sense_prototype.cpu() if e.sense_prototype is not None else None,
             })
         data = {
             "entries": entries,
             "current_step": self.current_step,
             "gate_threshold": self.gate_threshold.data.cpu(),
-            "sense_encoder_model": encoder_name,
+            "context_background": dict(self.background.counts),
         }
         torch.save(data, filepath)
         logger.info(f"✓ Saved {len(self.entries)} Hopfield Memory entries to {filepath} (space={self.space})")
@@ -1252,7 +1174,6 @@ class HopfieldMemory(nn.Module):
             logger.warning(f"Could not load memory file {filepath}: {e}")
             return
 
-        same_encoder = (data.get("sense_encoder_model") or "") == (self.config.sense_encoder_model or "").strip()
         loaded_entries = []
         for item in data.get("entries", []):
             k = item.get("key")
@@ -1291,12 +1212,22 @@ class HopfieldMemory(nn.Module):
                 metadata=item.get("metadata", {}) or {},
                 carrier_texts=item.get("carrier_texts", [carrier_text] if carrier_text else []),
                 phonetic_text=item.get("phonetic_text", None),
-                sense_prototype=item.get("sense_prototype") if same_encoder else None,
                 space_data=space_data,
             )
             self._localize(entry)
             loaded_entries.append(entry)
         self.entries = loaded_entries
+        background = data.get("context_background")
+        if isinstance(background, dict):
+            self.background = sense_context.Background(background)
+        else:
+            # Files written before the context sense model: start from their correction sentences
+            self.background = sense_context.Background()
+            for e in self.entries:
+                for c in (e.carrier_texts or [e.carrier_text]):
+                    if c:
+                        self.background.observe(c)
+        self._context_lambda = None
         self.current_step = max(self.current_step, int(data.get("current_step", 0) or 0))
         target_tau = float(self.config.gate_threshold_init)
         self.gate_threshold.data = torch.tensor(target_tau, dtype=torch.float32, device=self.gate_threshold.device)

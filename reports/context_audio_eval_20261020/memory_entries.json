@@ -1,0 +1,119 @@
+[
+  {
+    "idx": 0,
+    "word": "Anurag",
+    "phonetic": null,
+    "carriers": [
+      "This product was developed by Samsung team lead by Anurag"
+    ],
+    "key": "01b1324805fa38e1",
+    "value": "e5a00aa9991ac8a5",
+    "word_delta": null,
+    "full_delta": null
+  },
+  {
+    "idx": 1,
+    "word": "Bispecific",
+    "phonetic": "By specific",
+    "carriers": [
+      "Bispecific antibodies are becoming an important approach in cancer treatment."
+    ],
+    "key": "564cb87acdcbaf1e",
+    "value": "e5a00aa9991ac8a5",
+    "word_delta": null,
+    "full_delta": null
+  },
+  {
+    "idx": 2,
+    "word": "Rybervant",
+    "phonetic": "Ribrovant",
+    "carriers": [
+      "Rybervant"
+    ],
+    "key": "7cf11a40c73e0bbd",
+    "value": "e5a00aa9991ac8a5",
+    "word_delta": null,
+    "full_delta": null
+  },
+  {
+    "idx": 3,
+    "word": "lead",
+    "phonetic": "led",
+    "carriers": [
+      "this toy is made of lead",
+      "The old pipes were full of lead.",
+      "Lead paint is dangerous for children."
+    ],
+    "key": "b642a6b8182da516",
+    "value": "44bbc38064d4ff86",
+    "word_delta": "741e021203408bd4",
+    "full_delta": "b9d9b3a7972eab3a"
+  },
+  {
+    "idx": 4,
+    "word": "lead",
+    "phonetic": "leed",
+    "carriers": [
+      "He will lead the team next year.",
+      "Our team lead approved the plan."
+    ],
+    "key": "5ae4c0da58f47a2d",
+    "value": "6a82db3b8a204f6d",
+    "word_delta": "0f8c95b6faf50b23",
+    "full_delta": "bcfc034d7e0a1a94"
+  },
+  {
+    "idx": 5,
+    "word": "read",
+    "phonetic": "red",
+    "carriers": [
+      "Yesterday she read the whole book.",
+      "I have already read that report.",
+      "He read the letter twice last night."
+    ],
+    "key": "4f64cdcf94850dc2",
+    "value": "ac9d824f8916784a",
+    "word_delta": "f530aae45e2a8ef4",
+    "full_delta": "0553c827281540c0"
+  },
+  {
+    "idx": 6,
+    "word": "read",
+    "phonetic": "reed",
+    "carriers": [
+      "Please read the instructions carefully.",
+      "I like to read before bed.",
+      "Can you read this sentence aloud?"
+    ],
+    "key": "bfdf3b831f1133d6",
+    "value": "bfa7640683c7aec8",
+    "word_delta": "09b7af521f8f1e69",
+    "full_delta": "c599231c6873285d"
+  },
+  {
+    "idx": 7,
+    "word": "wound",
+    "phonetic": "woond",
+    "carriers": [
+      "The soldier had a deep wound in his leg.",
+      "Words can wound people deeply."
+    ],
+    "key": "77bd746cc12431b6",
+    "value": "2ac8940c4001437f",
+    "word_delta": "398131670dde8246",
+    "full_delta": "3784a045d51c2bb4"
+  },
+  {
+    "idx": 8,
+    "word": "wound",
+    "phonetic": "wownd",
+    "carriers": [
+      "She wound the clock before bed.",
+      "The path wound through the hills."
+    ],
+    "key": "d10af3763002adcf",
+    "value": "cd59e13bc32e2ef6",
+    "word_delta": "552671531405053a",
+    "full_delta": "82bfa29076c5b614"
+  }
+]

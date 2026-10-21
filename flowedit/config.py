@@ -75,6 +75,12 @@ class MemoryConfig:
     # Contextual homograph threshold: similarity below this for the same word creates a distinct contextual entry
     homograph_sim_threshold: float = 0.65
 
+    # Context sense model for homographs (flowedit/memory/sense_context.py): which learned
+    # pronunciation applies is decided from the words around the occurrence, learned from the
+    # stored correction sentences. Words on each side of an occurrence used as context; how much
+    # each position counts is learned.
+    sense_context_window: int = 3
+
     # EMA decay α for deduplication merges (α = 0.80 for smooth exponential moving average)
     dedup_ema_decay: float = 0.80
 
@@ -94,69 +100,6 @@ class MemoryConfig:
 
     # Learned gate threshold scalar τ (Calibrated to 4.0 for robust target word matching across sentences)
     gate_threshold_init: float = 4.0
-
-    # ─── Contextual sense prototypes (EMA homograph disambiguation) ───
-    # Every memory entry is a sense cluster whose prototype is an EMA of contextual occurrence
-    # embeddings. The encoder is backbone-independent, so XTTS and F5-TTS share the same senses.
-    # Empty string disables the encoder; disambiguation then falls back to backbone context keys.
-    sense_encoder_model: str = field(
-        default_factory=lambda: os.environ.get("FLOWEDIT_SENSE_ENCODER", "sentence-transformers/all-MiniLM-L6-v2")
-    )
-    # Hidden-state layers averaged for the occurrence embedding (middle layers carry word sense best)
-    sense_encoder_layers: Tuple[int, ...] = (3, 4, 5)
-    sense_encoder_device: str = field(default_factory=lambda: os.environ.get("FLOWEDIT_SENSE_DEVICE", "cpu"))
-    # Words of context kept on each side of an occurrence, bounded by clause punctuation, so a
-    # second occurrence in the same sentence is not contaminated by the first one's context
-    sense_context_words: int = 6
-    sense_clause_delimiters: str = ",;:.!?"
-    sense_cache_size: int = 256
-    # Same-pronunciation-unknown corrections merge into a cluster at or above this prototype similarity
-    sense_merge_threshold: float = 0.90
-    # A word with a single learned sense applies it only when the occurrence is at least this similar
-    # (calibrated on held-out contexts: 30/31 same-sense applied, 15/21 other-sense rejected)
-    sense_match_threshold: float = 0.84
-    # A word with several learned senses picks the most similar one, provided it reaches this floor
-    sense_min_similarity: float = 0.60
-    # Encoder-unavailable fallback: minimum distance-weighted word-overlap for a single registered sense
-    sense_lexical_threshold: float = 0.25
-
-    # ─── Pretrained sense lexicon (automatic homograph disambiguation, no corrections needed) ───
-    # Per-homograph classifiers trained from a labelled corpus (scripts/build_sense_lexicon.py).
-    # Features: occurrence embeddings over several clause-bounded window sizes. Empty path disables.
-    sense_lexicon_path: str = field(default_factory=lambda: os.environ.get(
-        "FLOWEDIT_SENSE_LEXICON",
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "sense_lexicon.pt"),
-    ))
-    # User corrections teaching the lexicon (stored as labelled context examples)
-    sense_lexicon_user_path: str = field(default_factory=lambda: os.environ.get(
-        "FLOWEDIT_SENSE_LEXICON_USER", "./sense_lexicon_user.pt"
-    ))
-    # An occurrence whose word-centred context similarity to a corrected example reaches this value
-    # follows that correction; all others follow the corpus-trained classifier (no collateral change)
-    sense_lexicon_user_radius: float = 0.75
-    # Below this predicted probability the word is left to the TTS model's own reading
-    sense_lexicon_min_confidence: float = 0.55
-    # A sense covering at least this share of the corpus is the word's default reading and is not
-    # respelled (TTS models already read the bare word that way); rarer senses are respelled
-    sense_lexicon_default_share: float = 0.65
-    # Fine-tuned sense encoder (scripts/train_sense_model.py); its sense probabilities are averaged
-    # with the lexicon's with this weight. A missing model directory means lexicon only.
-    sense_model_path: str = field(default_factory=lambda: os.environ.get(
-        "FLOWEDIT_SENSE_MODEL",
-        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models", "sense_model"),
-    ))
-    sense_model_weight: float = 0.0
-    # GlossBERT word-sense model (WordNet definitions; scripts/build_wsd_tables.py). Its meaning →
-    # pronunciation evidence is combined with the lexicon only when the lexicon is less sure than
-    # sense_wsd_skip_confidence (keeps ~97% of the accuracy gain while running on ~9% of homographs)
-    sense_wsd_model_path: str = field(default_factory=lambda: os.environ.get(
-        "FLOWEDIT_SENSE_WSD",
-        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models", "glossbert"),
-    ))
-    sense_wsd_device: str = field(default_factory=lambda: os.environ.get("FLOWEDIT_SENSE_WSD_DEVICE", ""))
-    sense_wsd_window_words: int = 8
-    sense_wsd_skip_confidence: float = 0.95
-    sense_wsd_smoothing: float = 1.0
 
     # Context window in words for homograph disambiguation (Paper Section 3.2: ±1-3 words)
     context_window: int = 3

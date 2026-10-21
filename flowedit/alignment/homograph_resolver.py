@@ -2,17 +2,14 @@
 Shared Homograph Context Resolver for FlowEdit.
 
 Data-driven sense matching for registered spelling corrections: a candidate sense is described
-only by the carrier sentence it was registered with. Compatibility between an occurrence and a
-sense is the cosine similarity of their contextual occurrence embeddings (the same
-backbone-independent encoder the Hopfield memory uses for its EMA sense prototypes).
+only by the carrier sentences it was registered with, and an occurrence is assigned with the same
+context sense model the Hopfield memory uses (flowedit/memory/sense_context.py).
 
-There are no word lists, keyword tables or grammar rules: pronunciations come exclusively from
-user corrections (S3 spelling store / Hopfield memory). When the contextual encoder is
-unavailable, a distance-weighted lexical overlap of the surrounding words is used instead.
+There are no word lists, keyword tables, grammar rules or external models: pronunciations come
+exclusively from user corrections (S3 spelling store / Hopfield memory).
 """
 
 import re
-import math
 import hashlib
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, Any
@@ -38,21 +35,15 @@ class SenseProfile:
 
 
 class HomographContextResolver:
-    """Contextual-embedding sense matcher for registered pronunciation senses."""
+    """Context-model sense matcher for registered pronunciation senses."""
 
     def __init__(
         self,
         window_radius: Optional[int] = None,
-        match_threshold: Optional[float] = None,
         config: Optional[MemoryConfig] = None,
-        encoder: Any = None,
     ):
         self.config = config or MemoryConfig()
         self.window_radius = window_radius or self.config.context_window
-        self.match_threshold = self.config.sense_match_threshold if match_threshold is None else match_threshold
-        self.min_similarity = self.config.sense_min_similarity
-        self.lexical_threshold = self.config.sense_lexical_threshold
-        self._encoder = encoder
 
     # ─────────────────────────────────────────────────────────────────────────
     # Context features (structural metadata stored with spelling senses)
@@ -148,17 +139,8 @@ class HomographContextResolver:
         )
 
     # ─────────────────────────────────────────────────────────────────────────
-    # Similarity
+    # Sense matching (context sense model, flowedit/memory/sense_context.py)
     # ─────────────────────────────────────────────────────────────────────────
-
-    @property
-    def encoder(self):
-        if self._encoder is None:
-            from flowedit.memory.sense_encoder import get_sense_encoder
-            self._encoder = get_sense_encoder(self.config) or False
-        if not self._encoder or not self._encoder.available:
-            return None
-        return self._encoder
 
     @staticmethod
     def _occurrence_span(text: str, word: str, char_offset: Optional[int] = None) -> Optional[Tuple[int, int]]:
@@ -173,60 +155,6 @@ class HomographContextResolver:
         carrier = (cand.get("carrier_text") or "").strip().strip(".!?,;:").strip().lower()
         return not carrier or carrier == word.strip().lower() or cand.get("sense_id") == "default"
 
-    def _lexical_similarity(self, query_text: str, word: str, carrier: str, char_offset: Optional[int]) -> float:
-        """Distance-weighted overlap of the words surrounding each occurrence (encoder fallback)."""
-        w = word.strip().lower()
-
-        def weights(text: str, offset: Optional[int]) -> Dict[str, float]:
-            matches = list(_TOKEN_RE.finditer(text.lower()))
-            idx = self._target_token_index(matches, w, offset)
-            if idx < 0:
-                return {}
-            out: Dict[str, float] = {}
-            sigma = float(self.window_radius)
-            for j, m in enumerate(matches):
-                if j == idx or m.group(0) == w:
-                    continue
-                wt = math.exp(-((j - idx) ** 2) / (2.0 * sigma * sigma))
-                out[m.group(0)] = max(out.get(m.group(0), 0.0), wt)
-            return out
-
-        q, c = weights(query_text, char_offset), weights(carrier, None)
-        if not q or not c:
-            return 0.0
-        inter = sum(min(q[t], c[t]) for t in q.keys() & c.keys())
-        union = sum(max(q.get(t, 0.0), c.get(t, 0.0)) for t in q.keys() | c.keys())
-        return inter / union if union > 0 else 0.0
-
-    def compute_context_similarity(
-        self,
-        query_text: str,
-        word: str,
-        candidate_entry: Dict[str, Any],
-        char_offset: Optional[int] = None,
-    ) -> float:
-        """Context compatibility in [0, 1] between a word occurrence and a registered sense.
-
-        Global senses (registered without sentence context) are compatible with every context.
-        """
-        if self._is_global(candidate_entry, word):
-            return 1.0
-        carrier = (candidate_entry.get("carrier_text") or "").strip()
-        enc = self.encoder
-        q_span = self._occurrence_span(query_text, word, char_offset)
-        c_span = self._occurrence_span(carrier, word)
-        if enc is not None and q_span is not None and c_span is not None:
-            vq = enc.encode(query_text, [q_span])
-            vc = enc.encode(carrier, [c_span])
-            if vq is not None and vc is not None:
-                return float((vq[0] * vc[0]).sum())
-        return self._lexical_similarity(query_text, word, carrier, char_offset)
-
-    def _thresholds(self) -> Tuple[float, float]:
-        if self.encoder is None:
-            return self.lexical_threshold, 0.0
-        return self.match_threshold, self.min_similarity
-
     def match_sense(
         self,
         text: str,
@@ -237,38 +165,50 @@ class HomographContextResolver:
     ) -> Optional[Dict[str, Any]]:
         """Select the registered sense matching this occurrence, or None (leave the word unedited).
 
-        - Several contextual senses with different spellings: the most similar sense wins if it
-          reaches the multi-sense floor (relative decision).
-        - A single contextual sense: it must reach the single-sense threshold.
-        - A global sense (no carrier context) applies when no contextual sense claims the word.
+        Registered senses are grouped by spelling; each group's carrier sentences are its examples
+        in the context sense model. A single spelling applies only where the context supports it
+        over the default reading; several spellings compete and the most probable wins when the
+        context carries evidence. A global sense (no carrier context) applies when no contextual
+        sense claims the word.
         """
         if not candidate_senses:
             return None
+        from flowedit.memory import sense_context  # flowedit.memory imports this module via s3_storage
 
         global_cands = [c for c in candidate_senses if self._is_global(c, word)]
         contextual = [c for c in candidate_senses if not self._is_global(c, word)]
 
-        if contextual:
-            single_thr, multi_thr = self._thresholds()
-            scores = [self.compute_context_similarity(text, word, c, char_offset=char_offset) for c in contextual]
-            spellings = {(c.get("spell_as") or "").strip().lower() for c in contextual}
-            threshold = multi_thr if len(spellings) > 1 else single_thr
-            j = max(range(len(scores)), key=lambda k: scores[k])
-            if scores[j] >= threshold and (len(spellings) > 1 or scores[j] > 0.0):
-                return contextual[j]
+        q_span = self._occurrence_span(text, word, char_offset)
+        if contextual and q_span is not None:
+            window = int(self.config.sense_context_window)
+            groups: Dict[str, List[Dict[str, Any]]] = {}
+            for c in contextual:
+                groups.setdefault((c.get("spell_as") or "").strip().lower(), []).append(c)
+            bg = sense_context.Background()
+            senses = []
+            for spelling, cands in groups.items():
+                ctxs = []
+                for c in cands:
+                    carrier = (c.get("carrier_text") or "").strip()
+                    bg.observe(carrier)
+                    span = self._occurrence_span(carrier, word)
+                    if span is not None:
+                        ctxs.append(sense_context.context(carrier, span[0], window))
+                senses.append(sense_context.SenseData(spelling, ctxs))
+            bg.observe(text)
+            keep = [i for i, s in enumerate(senses) if s.n > 0]
+            if keep:
+                kept = [senses[i] for i in keep]
+                verdict, i, _ = sense_context.decide(
+                    sense_context.context(text, q_span[0], window), kept,
+                    sense_context.fit_lambda(kept, bg, window), bg,
+                )
+                if verdict == "choose":
+                    return groups[kept[i].label][0]
+                if verdict == "abstain":
+                    return None
 
         return global_cands[0] if global_cands else None
-
-    def is_same_sense(self, text1: str, text2: str, word: str, char_offset: Optional[int] = None) -> bool:
-        """Check if target word has compatible context across two carrier sentences."""
-        if not text1 or not text2:
-            return True
-        w_clean = word.strip().lower()
-        if text1.strip().lower() == w_clean or text2.strip().lower() == w_clean:
-            return True
-        single_thr, _ = self._thresholds()
-        sim = self.compute_context_similarity(text2, word, {"carrier_text": text1}, char_offset=char_offset)
-        return sim >= single_thr
 
     def resolve_homograph_phonetic(
         self,

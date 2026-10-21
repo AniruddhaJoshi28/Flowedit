@@ -88,9 +88,6 @@ class CorrectionLoop:
             embedding_space=self.backbone.embedding_space,
             text_encoder=self.backbone.encode_text,
         )
-        # Load the shared contextual sense encoder now rather than on the first request
-        self.memory.sense_encoder
-        self.memory.sense_lexicon
 
         self._models_loaded = True
         logger.info(f"✓ FlowEdit Pipeline ready in {time.time() - t0:.2f}s (Embedding dim d={embed_dim})")

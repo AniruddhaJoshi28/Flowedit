@@ -1,0 +1,3372 @@
+[
+ {
+  "id": "A1",
+  "mode": "baseline",
+  "text": "Maria is the lead of the design team.",
+  "expected": [
+   "LEED"
+  ],
+  "synth_text": "Maria is the leed of the design team.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 13,
+    "end": 17,
+    "score": 9.8515625,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 13,
+    "sense_similarity": 0.98046875,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 4,
+    "entry_carrier": "She is the lead of data science."
+   }
+  ],
+  "rerank": []
+ },
+ {
+  "id": "A1",
+  "mode": "shadow",
+  "text": "Maria is the lead of the design team.",
+  "expected": [
+   "LEED"
+  ],
+  "synth_text": "Maria is the leed of the design team.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 13,
+    "end": 17,
+    "score": 9.8515625,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 13,
+    "sense_similarity": 0.98046875,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 4,
+    "entry_carrier": "She is the lead of data science."
+   }
+  ],
+  "rerank": [
+   {
+    "applied": true,
+    "baseline_choice": 4,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.8404067754745483,
+     0.9533432722091675
+    ],
+    "orig_sims": [
+     0.87158203125,
+     0.98046875
+    ],
+    "new_scores": [
+     0.8151137828826904,
+     1.0369369983673096
+    ],
+    "attn_base": [
+     0.21121948957443237,
+     0.6256776452064514
+    ],
+    "attn_new": [
+     0.08212072402238846,
+     0.7547764182090759
+    ],
+    "group_mass": 0.8368971347808838,
+    "new_choice": 4,
+    "max_other_attn_change": 0.0,
+    "mode": "shadow",
+    "word": "lead",
+    "char_start": 13,
+    "text": "Maria is the lead of the design team.",
+    "final_choice": 4
+   }
+  ]
+ },
+ {
+  "id": "A1",
+  "mode": "active",
+  "text": "Maria is the lead of the design team.",
+  "expected": [
+   "LEED"
+  ],
+  "synth_text": "Maria is the leed of the design team.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 13,
+    "end": 17,
+    "score": 9.8515625,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 13,
+    "sense_similarity": 0.98046875,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 4,
+    "entry_carrier": "She is the lead of data science."
+   }
+  ],
+  "rerank": [
+   {
+    "applied": true,
+    "baseline_choice": 4,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.8404067754745483,
+     0.9533432722091675
+    ],
+    "orig_sims": [
+     0.87158203125,
+     0.98046875
+    ],
+    "new_scores": [
+     0.8151137828826904,
+     1.0369369983673096
+    ],
+    "attn_base": [
+     0.21121948957443237,
+     0.6256776452064514
+    ],
+    "attn_new": [
+     0.08212072402238846,
+     0.7547764182090759
+    ],
+    "group_mass": 0.8368971347808838,
+    "new_choice": 4,
+    "max_other_attn_change": 0.0,
+    "mode": "active",
+    "word": "lead",
+    "char_start": 13,
+    "text": "Maria is the lead of the design team.",
+    "final_choice": 4
+   }
+  ]
+ },
+ {
+  "id": "A2",
+  "mode": "baseline",
+  "text": "He was chosen to lead the new research project.",
+  "expected": [
+   "LEED"
+  ],
+  "synth_text": "He was chosen to leed the new research project.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 17,
+    "end": 21,
+    "score": 9.265625,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 17,
+    "sense_similarity": 0.912109375,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 4,
+    "entry_carrier": "She is the lead of data science."
+   }
+  ],
+  "rerank": []
+ },
+ {
+  "id": "A2",
+  "mode": "shadow",
+  "text": "He was chosen to lead the new research project.",
+  "expected": [
+   "LEED"
+  ],
+  "synth_text": "He was chosen to leed the new research project.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 17,
+    "end": 21,
+    "score": 9.265625,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 17,
+    "sense_similarity": 0.912109375,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 4,
+    "entry_carrier": "She is the lead of data science."
+   }
+  ],
+  "rerank": [
+   {
+    "applied": true,
+    "baseline_choice": 4,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.8821768164634705,
+     0.8450626730918884
+    ],
+    "orig_sims": [
+     0.896484375,
+     0.912109375
+    ],
+    "new_scores": [
+     0.915041446685791,
+     0.893552303314209
+    ],
+    "attn_base": [
+     0.3659455478191376,
+     0.4278337061405182
+    ],
+    "attn_new": [
+     0.43937039375305176,
+     0.3544089198112488
+    ],
+    "group_mass": 0.7937792539596558,
+    "new_choice": 3,
+    "max_other_attn_change": 0.0,
+    "mode": "shadow",
+    "word": "lead",
+    "char_start": 17,
+    "text": "He was chosen to lead the new research project.",
+    "final_choice": 4
+   }
+  ]
+ },
+ {
+  "id": "A2",
+  "mode": "active",
+  "text": "He was chosen to lead the new research project.",
+  "expected": [
+   "LEED"
+  ],
+  "synth_text": "He was chosen to led the new research project.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.498046875,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 17,
+    "end": 21,
+    "score": 8.96875,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 17,
+    "sense_similarity": 0.896484375,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 3,
+    "entry_carrier": "this toy is made of lead"
+   }
+  ],
+  "rerank": [
+   {
+    "applied": true,
+    "baseline_choice": 4,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.8821768164634705,
+     0.8450626730918884
+    ],
+    "orig_sims": [
+     0.896484375,
+     0.912109375
+    ],
+    "new_scores": [
+     0.915041446685791,
+     0.893552303314209
+    ],
+    "attn_base": [
+     0.3659455478191376,
+     0.4278337061405182
+    ],
+    "attn_new": [
+     0.43937039375305176,
+     0.3544089198112488
+    ],
+    "group_mass": 0.7937792539596558,
+    "new_choice": 3,
+    "max_other_attn_change": 0.0,
+    "mode": "active",
+    "word": "lead",
+    "char_start": 17,
+    "text": "He was chosen to lead the new research project.",
+    "final_choice": 3
+   }
+  ]
+ },
+ {
+  "id": "A3",
+  "mode": "baseline",
+  "text": "Our lead engineer approved the final plan.",
+  "expected": [
+   "LEED"
+  ],
+  "synth_text": "Our leed engineer approved the final plan.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 4,
+    "end": 8,
+    "score": 8.859375,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 4,
+    "sense_similarity": 0.89453125,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 4,
+    "entry_carrier": "She is the lead of data science."
+   }
+  ],
+  "rerank": []
+ },
+ {
+  "id": "A3",
+  "mode": "shadow",
+  "text": "Our lead engineer approved the final plan.",
+  "expected": [
+   "LEED"
+  ],
+  "synth_text": "Our leed engineer approved the final plan.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 4,
+    "end": 8,
+    "score": 8.859375,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 4,
+    "sense_similarity": 0.89453125,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 4,
+    "entry_carrier": "She is the lead of data science."
+   }
+  ],
+  "rerank": [
+   {
+    "applied": true,
+    "baseline_choice": 4,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.6643098592758179,
+     0.7685314416885376
+    ],
+    "orig_sims": [
+     0.84814453125,
+     0.89453125
+    ],
+    "new_scores": [
+     0.7960337400436401,
+     0.9466420412063599
+    ],
+    "attn_base": [
+     0.1999431699514389,
+     0.31702181696891785
+    ],
+    "attn_new": [
+     0.09383952617645264,
+     0.4231254458427429
+    ],
+    "group_mass": 0.5169649720191956,
+    "new_choice": 4,
+    "max_other_attn_change": 0.0,
+    "mode": "shadow",
+    "word": "lead",
+    "char_start": 4,
+    "text": "Our lead engineer approved the final plan.",
+    "final_choice": 4
+   }
+  ]
+ },
+ {
+  "id": "A3",
+  "mode": "active",
+  "text": "Our lead engineer approved the final plan.",
+  "expected": [
+   "LEED"
+  ],
+  "synth_text": "Our leed engineer approved the final plan.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 4,
+    "end": 8,
+    "score": 8.859375,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 4,
+    "sense_similarity": 0.89453125,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 4,
+    "entry_carrier": "She is the lead of data science."
+   }
+  ],
+  "rerank": [
+   {
+    "applied": true,
+    "baseline_choice": 4,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.6643098592758179,
+     0.7685314416885376
+    ],
+    "orig_sims": [
+     0.84814453125,
+     0.89453125
+    ],
+    "new_scores": [
+     0.7960337400436401,
+     0.9466420412063599
+    ],
+    "attn_base": [
+     0.1999431699514389,
+     0.31702181696891785
+    ],
+    "attn_new": [
+     0.09383952617645264,
+     0.4231254458427429
+    ],
+    "group_mass": 0.5169649720191956,
+    "new_choice": 4,
+    "max_other_attn_change": 0.0,
+    "mode": "active",
+    "word": "lead",
+    "char_start": 4,
+    "text": "Our lead engineer approved the final plan.",
+    "final_choice": 4
+   }
+  ]
+ },
+ {
+  "id": "A4",
+  "mode": "baseline",
+  "text": "The old water pipes in this house are made of lead.",
+  "expected": [
+   "LED"
+  ],
+  "synth_text": "The old water pipes in this house are made of led.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.498046875,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 46,
+    "end": 50,
+    "score": 8.578125,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 46,
+    "sense_similarity": 0.869140625,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 3,
+    "entry_carrier": "this toy is made of lead"
+   }
+  ],
+  "rerank": []
+ },
+ {
+  "id": "A4",
+  "mode": "shadow",
+  "text": "The old water pipes in this house are made of lead.",
+  "expected": [
+   "LED"
+  ],
+  "synth_text": "The old water pipes in this house are made of led.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.498046875,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 46,
+    "end": 50,
+    "score": 8.578125,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 46,
+    "sense_similarity": 0.869140625,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 3,
+    "entry_carrier": "this toy is made of lead"
+   }
+  ],
+  "rerank": [
+   {
+    "applied": true,
+    "baseline_choice": 3,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.9044247269630432,
+     0.7814121246337891
+    ],
+    "orig_sims": [
+     0.869140625,
+     0.81201171875
+    ],
+    "new_scores": [
+     0.9306469559669495,
+     0.7505054473876953
+    ],
+    "attn_base": [
+     0.3562701940536499,
+     0.20141690969467163
+    ],
+    "attn_new": [
+     0.47867465019226074,
+     0.07901246845722198
+    ],
+    "group_mass": 0.5576871037483215,
+    "new_choice": 3,
+    "max_other_attn_change": 0.0,
+    "mode": "shadow",
+    "word": "lead",
+    "char_start": 46,
+    "text": "The old water pipes in this house are made of lead.",
+    "final_choice": 3
+   }
+  ]
+ },
+ {
+  "id": "A4",
+  "mode": "active",
+  "text": "The old water pipes in this house are made of lead.",
+  "expected": [
+   "LED"
+  ],
+  "synth_text": "The old water pipes in this house are made of led.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.498046875,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 46,
+    "end": 50,
+    "score": 8.578125,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 46,
+    "sense_similarity": 0.869140625,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 3,
+    "entry_carrier": "this toy is made of lead"
+   }
+  ],
+  "rerank": [
+   {
+    "applied": true,
+    "baseline_choice": 3,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.9044247269630432,
+     0.7814121246337891
+    ],
+    "orig_sims": [
+     0.869140625,
+     0.81201171875
+    ],
+    "new_scores": [
+     0.9306469559669495,
+     0.7505054473876953
+    ],
+    "attn_base": [
+     0.3562701940536499,
+     0.20141690969467163
+    ],
+    "attn_new": [
+     0.47867465019226074,
+     0.07901246845722198
+    ],
+    "group_mass": 0.5576871037483215,
+    "new_choice": 3,
+    "max_other_attn_change": 0.0,
+    "mode": "active",
+    "word": "lead",
+    "char_start": 46,
+    "text": "The old water pipes in this house are made of lead.",
+    "final_choice": 3
+   }
+  ]
+ },
+ {
+  "id": "A5",
+  "mode": "baseline",
+  "text": "Paint that contains lead is dangerous for children.",
+  "expected": [
+   "LED"
+  ],
+  "synth_text": "Paint that contains led is dangerous for children.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.498046875,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 20,
+    "end": 24,
+    "score": 9.375,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 20,
+    "sense_similarity": 0.9345703125,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 3,
+    "entry_carrier": "this toy is made of lead"
+   }
+  ],
+  "rerank": []
+ },
+ {
+  "id": "A5",
+  "mode": "shadow",
+  "text": "Paint that contains lead is dangerous for children.",
+  "expected": [
+   "LED"
+  ],
+  "synth_text": "Paint that contains led is dangerous for children.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.498046875,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 20,
+    "end": 24,
+    "score": 9.375,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 20,
+    "sense_similarity": 0.9345703125,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 3,
+    "entry_carrier": "this toy is made of lead"
+   }
+  ],
+  "rerank": [
+   {
+    "applied": true,
+    "baseline_choice": 3,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.8611790537834167,
+     0.8441234230995178
+    ],
+    "orig_sims": [
+     0.9345703125,
+     0.89501953125
+    ],
+    "new_scores": [
+     0.9430981278419495,
+     0.8864917159080505
+    ],
+    "attn_base": [
+     0.46791157126426697,
+     0.3166047930717468
+    ],
+    "attn_new": [
+     0.5004073977470398,
+     0.284108966588974
+    ],
+    "group_mass": 0.7845163345336914,
+    "new_choice": 3,
+    "max_other_attn_change": 0.0,
+    "mode": "shadow",
+    "word": "lead",
+    "char_start": 20,
+    "text": "Paint that contains lead is dangerous for children.",
+    "final_choice": 3
+   }
+  ]
+ },
+ {
+  "id": "A5",
+  "mode": "active",
+  "text": "Paint that contains lead is dangerous for children.",
+  "expected": [
+   "LED"
+  ],
+  "synth_text": "Paint that contains led is dangerous for children.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.498046875,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 20,
+    "end": 24,
+    "score": 9.375,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 20,
+    "sense_similarity": 0.9345703125,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 3,
+    "entry_carrier": "this toy is made of lead"
+   }
+  ],
+  "rerank": [
+   {
+    "applied": true,
+    "baseline_choice": 3,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.8611790537834167,
+     0.8441234230995178
+    ],
+    "orig_sims": [
+     0.9345703125,
+     0.89501953125
+    ],
+    "new_scores": [
+     0.9430981278419495,
+     0.8864917159080505
+    ],
+    "attn_base": [
+     0.46791157126426697,
+     0.3166047930717468
+    ],
+    "attn_new": [
+     0.5004073977470398,
+     0.284108966588974
+    ],
+    "group_mass": 0.7845163345336914,
+    "new_choice": 3,
+    "max_other_attn_change": 0.0,
+    "mode": "active",
+    "word": "lead",
+    "char_start": 20,
+    "text": "Paint that contains lead is dangerous for children.",
+    "final_choice": 3
+   }
+  ]
+ },
+ {
+  "id": "A6",
+  "mode": "baseline",
+  "text": "The fishing weights were cast from solid lead.",
+  "expected": [
+   "LED"
+  ],
+  "synth_text": "The fishing weights were cast from solid led.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.498046875,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 41,
+    "end": 45,
+    "score": 8.828125,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 41,
+    "sense_similarity": 0.88623046875,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 3,
+    "entry_carrier": "this toy is made of lead"
+   }
+  ],
+  "rerank": []
+ },
+ {
+  "id": "A6",
+  "mode": "shadow",
+  "text": "The fishing weights were cast from solid lead.",
+  "expected": [
+   "LED"
+  ],
+  "synth_text": "The fishing weights were cast from solid led.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.498046875,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 41,
+    "end": 45,
+    "score": 8.828125,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 41,
+    "sense_similarity": 0.88623046875,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 3,
+    "entry_carrier": "this toy is made of lead"
+   }
+  ],
+  "rerank": [
+   {
+    "applied": true,
+    "baseline_choice": 3,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.8246694803237915,
+     0.8083522319793701
+    ],
+    "orig_sims": [
+     0.88623046875,
+     0.81494140625
+    ],
+    "new_scores": [
+     0.8943890929222107,
+     0.8067827820777893
+    ],
+    "attn_base": [
+     0.4080234467983246,
+     0.20041437447071075
+    ],
+    "attn_new": [
+     0.42956051230430603,
+     0.1788773089647293
+    ],
+    "group_mass": 0.6084378361701965,
+    "new_choice": 3,
+    "max_other_attn_change": 0.0,
+    "mode": "shadow",
+    "word": "lead",
+    "char_start": 41,
+    "text": "The fishing weights were cast from solid lead.",
+    "final_choice": 3
+   }
+  ]
+ },
+ {
+  "id": "A6",
+  "mode": "active",
+  "text": "The fishing weights were cast from solid lead.",
+  "expected": [
+   "LED"
+  ],
+  "synth_text": "The fishing weights were cast from solid led.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.498046875,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 41,
+    "end": 45,
+    "score": 8.828125,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 41,
+    "sense_similarity": 0.88623046875,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 3,
+    "entry_carrier": "this toy is made of lead"
+   }
+  ],
+  "rerank": [
+   {
+    "applied": true,
+    "baseline_choice": 3,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.8246694803237915,
+     0.8083522319793701
+    ],
+    "orig_sims": [
+     0.88623046875,
+     0.81494140625
+    ],
+    "new_scores": [
+     0.8943890929222107,
+     0.8067827820777893
+    ],
+    "attn_base": [
+     0.4080234467983246,
+     0.20041437447071075
+    ],
+    "attn_new": [
+     0.42956051230430603,
+     0.1788773089647293
+    ],
+    "group_mass": 0.6084378361701965,
+    "new_choice": 3,
+    "max_other_attn_change": 0.0,
+    "mode": "active",
+    "word": "lead",
+    "char_start": 41,
+    "text": "The fishing weights were cast from solid lead.",
+    "final_choice": 3
+   }
+  ]
+ },
+ {
+  "id": "B1",
+  "mode": "baseline",
+  "text": "The toy is made of lead.",
+  "expected": [
+   "LED"
+  ],
+  "synth_text": "The toy is made of led.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.498046875,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 19,
+    "end": 23,
+    "score": 9.4921875,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 19,
+    "sense_similarity": 0.9560546875,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 3,
+    "entry_carrier": "this toy is made of lead"
+   }
+  ],
+  "rerank": []
+ },
+ {
+  "id": "B1",
+  "mode": "shadow",
+  "text": "The toy is made of lead.",
+  "expected": [
+   "LED"
+  ],
+  "synth_text": "The toy is made of led.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.498046875,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 19,
+    "end": 23,
+    "score": 9.4921875,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 19,
+    "sense_similarity": 0.9560546875,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 3,
+    "entry_carrier": "this toy is made of lead"
+   }
+  ],
+  "rerank": [
+   {
+    "applied": true,
+    "baseline_choice": 3,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.9878196716308594,
+     0.8268317580223083
+    ],
+    "orig_sims": [
+     0.9560546875,
+     0.86962890625
+    ],
+    "new_scores": [
+     1.0365486145019531,
+     0.7891349196434021
+    ],
+    "attn_base": [
+     0.5521330833435059,
+     0.23196850717067719
+    ],
+    "attn_new": [
+     0.7231836915016174,
+     0.06091786175966263
+    ],
+    "group_mass": 0.7841016054153442,
+    "new_choice": 3,
+    "max_other_attn_change": 0.0,
+    "mode": "shadow",
+    "word": "lead",
+    "char_start": 19,
+    "text": "The toy is made of lead.",
+    "final_choice": 3
+   }
+  ]
+ },
+ {
+  "id": "B1",
+  "mode": "active",
+  "text": "The toy is made of lead.",
+  "expected": [
+   "LED"
+  ],
+  "synth_text": "The toy is made of led.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.498046875,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 19,
+    "end": 23,
+    "score": 9.4921875,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 19,
+    "sense_similarity": 0.9560546875,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 3,
+    "entry_carrier": "this toy is made of lead"
+   }
+  ],
+  "rerank": [
+   {
+    "applied": true,
+    "baseline_choice": 3,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.9878196716308594,
+     0.8268317580223083
+    ],
+    "orig_sims": [
+     0.9560546875,
+     0.86962890625
+    ],
+    "new_scores": [
+     1.0365486145019531,
+     0.7891349196434021
+    ],
+    "attn_base": [
+     0.5521330833435059,
+     0.23196850717067719
+    ],
+    "attn_new": [
+     0.7231836915016174,
+     0.06091786175966263
+    ],
+    "group_mass": 0.7841016054153442,
+    "new_choice": 3,
+    "max_other_attn_change": 0.0,
+    "mode": "active",
+    "word": "lead",
+    "char_start": 19,
+    "text": "The toy is made of lead.",
+    "final_choice": 3
+   }
+  ]
+ },
+ {
+  "id": "B2",
+  "mode": "baseline",
+  "text": "She is the lead of data science.",
+  "expected": [
+   "LEED"
+  ],
+  "synth_text": "She is the leed of data science.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 11,
+    "end": 15,
+    "score": 9.953125,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 11,
+    "sense_similarity": 1.0,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 4,
+    "entry_carrier": "She is the lead of data science."
+   }
+  ],
+  "rerank": []
+ },
+ {
+  "id": "B2",
+  "mode": "shadow",
+  "text": "She is the lead of data science.",
+  "expected": [
+   "LEED"
+  ],
+  "synth_text": "She is the leed of data science.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 11,
+    "end": 15,
+    "score": 9.953125,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 11,
+    "sense_similarity": 1.0,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 4,
+    "entry_carrier": "She is the lead of data science."
+   }
+  ],
+  "rerank": [
+   {
+    "applied": true,
+    "baseline_choice": 4,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.8210467100143433,
+     1.0
+    ],
+    "orig_sims": [
+     0.87109375,
+     1.0
+    ],
+    "new_scores": [
+     0.7816171050071716,
+     1.0894765853881836
+    ],
+    "attn_base": [
+     0.17941012978553772,
+     0.6511479616165161
+    ],
+    "attn_new": [
+     0.03654363378882408,
+     0.7940144538879395
+    ],
+    "group_mass": 0.8305580615997314,
+    "new_choice": 4,
+    "max_other_attn_change": 0.0,
+    "mode": "shadow",
+    "word": "lead",
+    "char_start": 11,
+    "text": "She is the lead of data science.",
+    "final_choice": 4
+   }
+  ]
+ },
+ {
+  "id": "B2",
+  "mode": "active",
+  "text": "She is the lead of data science.",
+  "expected": [
+   "LEED"
+  ],
+  "synth_text": "She is the leed of data science.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 11,
+    "end": 15,
+    "score": 9.953125,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 11,
+    "sense_similarity": 1.0,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 4,
+    "entry_carrier": "She is the lead of data science."
+   }
+  ],
+  "rerank": [
+   {
+    "applied": true,
+    "baseline_choice": 4,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.8210467100143433,
+     1.0
+    ],
+    "orig_sims": [
+     0.87109375,
+     1.0
+    ],
+    "new_scores": [
+     0.7816171050071716,
+     1.0894765853881836
+    ],
+    "attn_base": [
+     0.17941012978553772,
+     0.6511479616165161
+    ],
+    "attn_new": [
+     0.03654363378882408,
+     0.7940144538879395
+    ],
+    "group_mass": 0.8305580615997314,
+    "new_choice": 4,
+    "max_other_attn_change": 0.0,
+    "mode": "active",
+    "word": "lead",
+    "char_start": 11,
+    "text": "She is the lead of data science.",
+    "final_choice": 4
+   }
+  ]
+ },
+ {
+  "id": "B3",
+  "mode": "baseline",
+  "text": "Lead poisoning is a serious health risk.",
+  "expected": [
+   "LED"
+  ],
+  "synth_text": "Leed poisoning is a serious health risk.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 0,
+    "end": 4,
+    "score": 7.890625,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 0,
+    "sense_similarity": 0.77734375,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 4,
+    "entry_carrier": "She is the lead of data science."
+   }
+  ],
+  "rerank": []
+ },
+ {
+  "id": "B3",
+  "mode": "shadow",
+  "text": "Lead poisoning is a serious health risk.",
+  "expected": [
+   "LED"
+  ],
+  "synth_text": "Leed poisoning is a serious health risk.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 0,
+    "end": 4,
+    "score": 7.890625,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 0,
+    "sense_similarity": 0.77734375,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 4,
+    "entry_carrier": "She is the lead of data science."
+   }
+  ],
+  "rerank": [
+   {
+    "applied": true,
+    "baseline_choice": 4,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.9209020733833313,
+     0.8338342308998108
+    ],
+    "orig_sims": [
+     0.75390625,
+     0.77734375
+    ],
+    "new_scores": [
+     0.7974401712417603,
+     0.7338098287582397
+    ],
+    "attn_base": [
+     0.1149468943476677,
+     0.14530649781227112
+    ],
+    "attn_new": [
+     0.1701842099428177,
+     0.09006921201944351
+    ],
+    "group_mass": 0.2602533996105194,
+    "new_choice": 3,
+    "max_other_attn_change": 0.0,
+    "mode": "shadow",
+    "word": "lead",
+    "char_start": 0,
+    "text": "Lead poisoning is a serious health risk.",
+    "final_choice": 4
+   }
+  ]
+ },
+ {
+  "id": "B3",
+  "mode": "active",
+  "text": "Lead poisoning is a serious health risk.",
+  "expected": [
+   "LED"
+  ],
+  "synth_text": "Led poisoning is a serious health risk.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.498046875,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 0,
+    "end": 4,
+    "score": 7.5859375,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 0,
+    "sense_similarity": 0.75390625,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 3,
+    "entry_carrier": "this toy is made of lead"
+   }
+  ],
+  "rerank": [
+   {
+    "applied": true,
+    "baseline_choice": 4,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.9209020733833313,
+     0.8338342308998108
+    ],
+    "orig_sims": [
+     0.75390625,
+     0.77734375
+    ],
+    "new_scores": [
+     0.7974401712417603,
+     0.7338098287582397
+    ],
+    "attn_base": [
+     0.1149468943476677,
+     0.14530649781227112
+    ],
+    "attn_new": [
+     0.1701842099428177,
+     0.09006921201944351
+    ],
+    "group_mass": 0.2602533996105194,
+    "new_choice": 3,
+    "max_other_attn_change": 0.0,
+    "mode": "active",
+    "word": "lead",
+    "char_start": 0,
+    "text": "Lead poisoning is a serious health risk.",
+    "final_choice": 3
+   }
+  ]
+ },
+ {
+  "id": "B4",
+  "mode": "baseline",
+  "text": "Lead the way, and we will follow you.",
+  "expected": [
+   "LEED"
+  ],
+  "synth_text": "Leed the way, and we will follow you.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 0,
+    "end": 4,
+    "score": 8.5078125,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 0,
+    "sense_similarity": 0.82568359375,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 4,
+    "entry_carrier": "She is the lead of data science."
+   }
+  ],
+  "rerank": []
+ },
+ {
+  "id": "B4",
+  "mode": "shadow",
+  "text": "Lead the way, and we will follow you.",
+  "expected": [
+   "LEED"
+  ],
+  "synth_text": "Leed the way, and we will follow you.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 0,
+    "end": 4,
+    "score": 8.5078125,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 0,
+    "sense_similarity": 0.82568359375,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 4,
+    "entry_carrier": "She is the lead of data science."
+   }
+  ],
+  "rerank": [
+   {
+    "applied": true,
+    "baseline_choice": 4,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.9186722040176392,
+     0.7922612428665161
+    ],
+    "orig_sims": [
+     0.77685546875,
+     0.82568359375
+    ],
+    "new_scores": [
+     0.8400609493255615,
+     0.7624781131744385
+    ],
+    "attn_base": [
+     0.16195303201675415,
+     0.2639046013355255
+    ],
+    "attn_new": [
+     0.2916189730167389,
+     0.13423864543437958
+    ],
+    "group_mass": 0.42585763335227966,
+    "new_choice": 3,
+    "max_other_attn_change": 0.0,
+    "mode": "shadow",
+    "word": "lead",
+    "char_start": 0,
+    "text": "Lead the way, and we will follow you.",
+    "final_choice": 4
+   }
+  ]
+ },
+ {
+  "id": "B4",
+  "mode": "active",
+  "text": "Lead the way, and we will follow you.",
+  "expected": [
+   "LEED"
+  ],
+  "synth_text": "Led the way, and we will follow you.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.498046875,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 0,
+    "end": 4,
+    "score": 7.76953125,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 0,
+    "sense_similarity": 0.77685546875,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 3,
+    "entry_carrier": "this toy is made of lead"
+   }
+  ],
+  "rerank": [
+   {
+    "applied": true,
+    "baseline_choice": 4,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.9186722040176392,
+     0.7922612428665161
+    ],
+    "orig_sims": [
+     0.77685546875,
+     0.82568359375
+    ],
+    "new_scores": [
+     0.8400609493255615,
+     0.7624781131744385
+    ],
+    "attn_base": [
+     0.16195303201675415,
+     0.2639046013355255
+    ],
+    "attn_new": [
+     0.2916189730167389,
+     0.13423864543437958
+    ],
+    "group_mass": 0.42585763335227966,
+    "new_choice": 3,
+    "max_other_attn_change": 0.0,
+    "mode": "active",
+    "word": "lead",
+    "char_start": 0,
+    "text": "Lead the way, and we will follow you.",
+    "final_choice": 3
+   }
+  ]
+ },
+ {
+  "id": "C1",
+  "mode": "baseline",
+  "text": "After years of careful study and many failed attempts in the laboratory, the chemists finally confirmed that the heavy grey metal was lead.",
+  "expected": [
+   "LED"
+  ],
+  "synth_text": "After years of careful study and many failed attempts in the laboratory, the chemists finally confirmed that the heavy grey metal was led.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.498046875,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 134,
+    "end": 138,
+    "score": 7.9140625,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 134,
+    "sense_similarity": 0.80419921875,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 3,
+    "entry_carrier": "this toy is made of lead"
+   }
+  ],
+  "rerank": []
+ },
+ {
+  "id": "C1",
+  "mode": "shadow",
+  "text": "After years of careful study and many failed attempts in the laboratory, the chemists finally confirmed that the heavy grey metal was lead.",
+  "expected": [
+   "LED"
+  ],
+  "synth_text": "After years of careful study and many failed attempts in the laboratory, the chemists finally confirmed that the heavy grey metal was led.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.498046875,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 134,
+    "end": 138,
+    "score": 7.9140625,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 134,
+    "sense_similarity": 0.80419921875,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 3,
+    "entry_carrier": "this toy is made of lead"
+   }
+  ],
+  "rerank": [
+   {
+    "applied": true,
+    "baseline_choice": 3,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.7696962356567383,
+     0.7601552605628967
+    ],
+    "orig_sims": [
+     0.80419921875,
+     0.79296875
+    ],
+    "new_scores": [
+     0.8089697360992432,
+     0.7881982922554016
+    ],
+    "attn_base": [
+     0.29399481415748596,
+     0.2635352313518524
+    ],
+    "attn_new": [
+     0.3076130747795105,
+     0.2499169558286667
+    ],
+    "group_mass": 0.5575300455093384,
+    "new_choice": 3,
+    "max_other_attn_change": 0.0,
+    "mode": "shadow",
+    "word": "lead",
+    "char_start": 134,
+    "text": "After years of careful study and many failed attempts in the laboratory, the chemists finally confirmed that the heavy grey metal was lead.",
+    "final_choice": 3
+   }
+  ]
+ },
+ {
+  "id": "C1",
+  "mode": "active",
+  "text": "After years of careful study and many failed attempts in the laboratory, the chemists finally confirmed that the heavy grey metal was lead.",
+  "expected": [
+   "LED"
+  ],
+  "synth_text": "After years of careful study and many failed attempts in the laboratory, the chemists finally confirmed that the heavy grey metal was led.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.498046875,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 134,
+    "end": 138,
+    "score": 7.9140625,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 134,
+    "sense_similarity": 0.80419921875,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 3,
+    "entry_carrier": "this toy is made of lead"
+   }
+  ],
+  "rerank": [
+   {
+    "applied": true,
+    "baseline_choice": 3,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.7696962356567383,
+     0.7601552605628967
+    ],
+    "orig_sims": [
+     0.80419921875,
+     0.79296875
+    ],
+    "new_scores": [
+     0.8089697360992432,
+     0.7881982922554016
+    ],
+    "attn_base": [
+     0.29399481415748596,
+     0.2635352313518524
+    ],
+    "attn_new": [
+     0.3076130747795105,
+     0.2499169558286667
+    ],
+    "group_mass": 0.5575300455093384,
+    "new_choice": 3,
+    "max_other_attn_change": 0.0,
+    "mode": "active",
+    "word": "lead",
+    "char_start": 134,
+    "text": "After years of careful study and many failed attempts in the laboratory, the chemists finally confirmed that the heavy grey metal was lead.",
+    "final_choice": 3
+   }
+  ]
+ },
+ {
+  "id": "C2",
+  "mode": "baseline",
+  "text": "After years of training junior staff and running every weekly meeting for the department, Priya was finally promoted to team lead.",
+  "expected": [
+   "LEED"
+  ],
+  "synth_text": "After years of training junior staff and running every weekly meeting for the department, Priya was finally promoted to team led.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.498046875,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 125,
+    "end": 129,
+    "score": 7.9609375,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 125,
+    "sense_similarity": 0.80224609375,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 3,
+    "entry_carrier": "this toy is made of lead"
+   }
+  ],
+  "rerank": []
+ },
+ {
+  "id": "C2",
+  "mode": "shadow",
+  "text": "After years of training junior staff and running every weekly meeting for the department, Priya was finally promoted to team lead.",
+  "expected": [
+   "LEED"
+  ],
+  "synth_text": "After years of training junior staff and running every weekly meeting for the department, Priya was finally promoted to team led.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.498046875,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 125,
+    "end": 129,
+    "score": 7.9609375,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 125,
+    "sense_similarity": 0.80224609375,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 3,
+    "entry_carrier": "this toy is made of lead"
+   }
+  ],
+  "rerank": [
+   {
+    "applied": true,
+    "baseline_choice": 3,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.75682133436203,
+     0.7846987843513489
+    ],
+    "orig_sims": [
+     0.80224609375,
+     0.7861328125
+    ],
+    "new_scores": [
+     0.7883073687553406,
+     0.8000715374946594
+    ],
+    "attn_base": [
+     0.2917547821998596,
+     0.24760906398296356
+    ],
+    "attn_new": [
+     0.25383731722831726,
+     0.2855265438556671
+    ],
+    "group_mass": 0.5393638610839844,
+    "new_choice": 4,
+    "max_other_attn_change": 0.0,
+    "mode": "shadow",
+    "word": "lead",
+    "char_start": 125,
+    "text": "After years of training junior staff and running every weekly meeting for the department, Priya was finally promoted to team lead.",
+    "final_choice": 3
+   }
+  ]
+ },
+ {
+  "id": "C2",
+  "mode": "active",
+  "text": "After years of training junior staff and running every weekly meeting for the department, Priya was finally promoted to team lead.",
+  "expected": [
+   "LEED"
+  ],
+  "synth_text": "After years of training junior staff and running every weekly meeting for the department, Priya was finally promoted to team leed.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.5,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 125,
+    "end": 129,
+    "score": 7.9921875,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 125,
+    "sense_similarity": 0.7861328125,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 4,
+    "entry_carrier": "She is the lead of data science."
+   }
+  ],
+  "rerank": [
+   {
+    "applied": true,
+    "baseline_choice": 3,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.75682133436203,
+     0.7846987843513489
+    ],
+    "orig_sims": [
+     0.80224609375,
+     0.7861328125
+    ],
+    "new_scores": [
+     0.7883073687553406,
+     0.8000715374946594
+    ],
+    "attn_base": [
+     0.2917547821998596,
+     0.24760906398296356
+    ],
+    "attn_new": [
+     0.25383731722831726,
+     0.2855265438556671
+    ],
+    "group_mass": 0.5393638610839844,
+    "new_choice": 4,
+    "max_other_attn_change": 0.0,
+    "mode": "active",
+    "word": "lead",
+    "char_start": 125,
+    "text": "After years of training junior staff and running every weekly meeting for the department, Priya was finally promoted to team lead.",
+    "final_choice": 4
+   }
+  ]
+ },
+ {
+  "id": "C3",
+  "mode": "baseline",
+  "text": "The engineers who tested the soil samples from the old battery factory found dangerous traces of lead.",
+  "expected": [
+   "LED"
+  ],
+  "synth_text": "The engineers who tested the soil samples from the old battery factory found dangerous traces of led.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.498046875,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 97,
+    "end": 101,
+    "score": 7.9765625,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 97,
+    "sense_similarity": 0.8115234375,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 3,
+    "entry_carrier": "this toy is made of lead"
+   }
+  ],
+  "rerank": []
+ },
+ {
+  "id": "C3",
+  "mode": "shadow",
+  "text": "The engineers who tested the soil samples from the old battery factory found dangerous traces of lead.",
+  "expected": [
+   "LED"
+  ],
+  "synth_text": "The engineers who tested the soil samples from the old battery factory found dangerous traces of led.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.498046875,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 97,
+    "end": 101,
+    "score": 7.9765625,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 97,
+    "sense_similarity": 0.8115234375,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 3,
+    "entry_carrier": "this toy is made of lead"
+   }
+  ],
+  "rerank": [
+   {
+    "applied": true,
+    "baseline_choice": 3,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.8288154602050781,
+     0.8004591464996338
+    ],
+    "orig_sims": [
+     0.8115234375,
+     0.7939453125
+    ],
+    "new_scores": [
+     0.8257015943527222,
+     0.7797671556472778
+    ],
+    "attn_base": [
+     0.2733568251132965,
+     0.2283981889486313
+    ],
+    "attn_new": [
+     0.30750492215156555,
+     0.19425004720687866
+    ],
+    "group_mass": 0.5017549991607666,
+    "new_choice": 3,
+    "max_other_attn_change": 0.0,
+    "mode": "shadow",
+    "word": "lead",
+    "char_start": 97,
+    "text": "The engineers who tested the soil samples from the old battery factory found dangerous traces of lead.",
+    "final_choice": 3
+   }
+  ]
+ },
+ {
+  "id": "C3",
+  "mode": "active",
+  "text": "The engineers who tested the soil samples from the old battery factory found dangerous traces of lead.",
+  "expected": [
+   "LED"
+  ],
+  "synth_text": "The engineers who tested the soil samples from the old battery factory found dangerous traces of led.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.498046875,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 97,
+    "end": 101,
+    "score": 7.9765625,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 97,
+    "sense_similarity": 0.8115234375,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 3,
+    "entry_carrier": "this toy is made of lead"
+   }
+  ],
+  "rerank": [
+   {
+    "applied": true,
+    "baseline_choice": 3,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.8288154602050781,
+     0.8004591464996338
+    ],
+    "orig_sims": [
+     0.8115234375,
+     0.7939453125
+    ],
+    "new_scores": [
+     0.8257015943527222,
+     0.7797671556472778
+    ],
+    "attn_base": [
+     0.2733568251132965,
+     0.2283981889486313
+    ],
+    "attn_new": [
+     0.30750492215156555,
+     0.19425004720687866
+    ],
+    "group_mass": 0.5017549991607666,
+    "new_choice": 3,
+    "max_other_attn_change": 0.0,
+    "mode": "active",
+    "word": "lead",
+    "char_start": 97,
+    "text": "The engineers who tested the soil samples from the old battery factory found dangerous traces of lead.",
+    "final_choice": 3
+   }
+  ]
+ },
+ {
+  "id": "D1",
+  "mode": "baseline",
+  "text": "The lead researcher found lead in the old pipes.",
+  "expected": [
+   "LEED",
+   "LED"
+  ],
+  "synth_text": "The leed researcher found led in the old pipes.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 4,
+    "end": 8,
+    "score": 8.921875,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 4,
+    "sense_similarity": 0.90185546875,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 4,
+    "entry_carrier": "She is the lead of data science."
+   },
+   {
+    "word": "lead",
+    "start": 26,
+    "end": 30,
+    "score": 9.34375,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 26,
+    "sense_similarity": 0.91259765625,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 3,
+    "entry_carrier": "this toy is made of lead"
+   }
+  ],
+  "rerank": []
+ },
+ {
+  "id": "D1",
+  "mode": "shadow",
+  "text": "The lead researcher found lead in the old pipes.",
+  "expected": [
+   "LEED",
+   "LED"
+  ],
+  "synth_text": "The leed researcher found led in the old pipes.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 4,
+    "end": 8,
+    "score": 8.921875,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 4,
+    "sense_similarity": 0.90185546875,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 4,
+    "entry_carrier": "She is the lead of data science."
+   },
+   {
+    "word": "lead",
+    "start": 26,
+    "end": 30,
+    "score": 9.34375,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 26,
+    "sense_similarity": 0.91259765625,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 3,
+    "entry_carrier": "this toy is made of lead"
+   }
+  ],
+  "rerank": [
+   {
+    "applied": true,
+    "baseline_choice": 4,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.679786741733551,
+     0.8198831677436829
+    ],
+    "orig_sims": [
+     0.8515625,
+     0.90185546875
+    ],
+    "new_scores": [
+     0.7815142869949341,
+     0.9719036817550659
+    ],
+    "attn_base": [
+     0.1941181868314743,
+     0.3200467824935913
+    ],
+    "attn_new": [
+     0.06667090952396393,
+     0.4474940598011017
+    ],
+    "group_mass": 0.5141649842262268,
+    "new_choice": 4,
+    "max_other_attn_change": 0.0,
+    "mode": "shadow",
+    "word": "lead",
+    "char_start": 4,
+    "text": "The lead researcher found lead in the old pipes.",
+    "final_choice": 4
+   },
+   {
+    "applied": true,
+    "baseline_choice": 3,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.8807794451713562,
+     0.8200788497924805
+    ],
+    "orig_sims": [
+     0.91259765625,
+     0.89501953125
+    ],
+    "new_scores": [
+     0.9429479241371155,
+     0.8646692037582397
+    ],
+    "attn_base": [
+     0.413530558347702,
+     0.3482276499271393
+    ],
+    "attn_new": [
+     0.5227798223495483,
+     0.23897838592529297
+    ],
+    "group_mass": 0.7617582082748413,
+    "new_choice": 3,
+    "max_other_attn_change": 0.0,
+    "mode": "shadow",
+    "word": "lead",
+    "char_start": 26,
+    "text": "The lead researcher found lead in the old pipes.",
+    "final_choice": 3
+   }
+  ]
+ },
+ {
+  "id": "D1",
+  "mode": "active",
+  "text": "The lead researcher found lead in the old pipes.",
+  "expected": [
+   "LEED",
+   "LED"
+  ],
+  "synth_text": "The leed researcher found led in the old pipes.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 4,
+    "end": 8,
+    "score": 8.921875,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 4,
+    "sense_similarity": 0.90185546875,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 4,
+    "entry_carrier": "She is the lead of data science."
+   },
+   {
+    "word": "lead",
+    "start": 26,
+    "end": 30,
+    "score": 9.34375,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 26,
+    "sense_similarity": 0.91259765625,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 3,
+    "entry_carrier": "this toy is made of lead"
+   }
+  ],
+  "rerank": [
+   {
+    "applied": true,
+    "baseline_choice": 4,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.679786741733551,
+     0.8198831677436829
+    ],
+    "orig_sims": [
+     0.8515625,
+     0.90185546875
+    ],
+    "new_scores": [
+     0.7815142869949341,
+     0.9719036817550659
+    ],
+    "attn_base": [
+     0.1941181868314743,
+     0.3200467824935913
+    ],
+    "attn_new": [
+     0.06667090952396393,
+     0.4474940598011017
+    ],
+    "group_mass": 0.5141649842262268,
+    "new_choice": 4,
+    "max_other_attn_change": 0.0,
+    "mode": "active",
+    "word": "lead",
+    "char_start": 4,
+    "text": "The lead researcher found lead in the old pipes.",
+    "final_choice": 4
+   },
+   {
+    "applied": true,
+    "baseline_choice": 3,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.8807794451713562,
+     0.8200788497924805
+    ],
+    "orig_sims": [
+     0.91259765625,
+     0.89501953125
+    ],
+    "new_scores": [
+     0.9429479241371155,
+     0.8646692037582397
+    ],
+    "attn_base": [
+     0.413530558347702,
+     0.3482276499271393
+    ],
+    "attn_new": [
+     0.5227798223495483,
+     0.23897838592529297
+    ],
+    "group_mass": 0.7617582082748413,
+    "new_choice": 3,
+    "max_other_attn_change": 0.0,
+    "mode": "active",
+    "word": "lead",
+    "char_start": 26,
+    "text": "The lead researcher found lead in the old pipes.",
+    "final_choice": 3
+   }
+  ]
+ },
+ {
+  "id": "D2",
+  "mode": "baseline",
+  "text": "Our team lead says the water contains lead.",
+  "expected": [
+   "LEED",
+   "LED"
+  ],
+  "synth_text": "Our team leed says the water contains led.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 9,
+    "end": 13,
+    "score": 9.40625,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 9,
+    "sense_similarity": 0.939453125,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 4,
+    "entry_carrier": "She is the lead of data science."
+   },
+   {
+    "word": "lead",
+    "start": 38,
+    "end": 42,
+    "score": 8.71875,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 38,
+    "sense_similarity": 0.88427734375,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 3,
+    "entry_carrier": "this toy is made of lead"
+   }
+  ],
+  "rerank": []
+ },
+ {
+  "id": "D2",
+  "mode": "shadow",
+  "text": "Our team lead says the water contains lead.",
+  "expected": [
+   "LEED",
+   "LED"
+  ],
+  "synth_text": "Our team leed says the water contains led.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 9,
+    "end": 13,
+    "score": 9.40625,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 9,
+    "sense_similarity": 0.939453125,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 4,
+    "entry_carrier": "She is the lead of data science."
+   },
+   {
+    "word": "lead",
+    "start": 38,
+    "end": 42,
+    "score": 8.71875,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 38,
+    "sense_similarity": 0.88427734375,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 3,
+    "entry_carrier": "this toy is made of lead"
+   }
+  ],
+  "rerank": [
+   {
+    "applied": true,
+    "baseline_choice": 4,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.7817431092262268,
+     0.8614326119422913
+    ],
+    "orig_sims": [
+     0.859375,
+     0.939453125
+    ],
+    "new_scores": [
+     0.8195302486419678,
+     0.9792978763580322
+    ],
+    "attn_base": [
+     0.21160206198692322,
+     0.4694596827030182
+    ],
+    "attn_new": [
+     0.11462730914354324,
+     0.5664345026016235
+    ],
+    "group_mass": 0.6810617446899414,
+    "new_choice": 4,
+    "max_other_attn_change": 0.0,
+    "mode": "shadow",
+    "word": "lead",
+    "char_start": 9,
+    "text": "Our team lead says the water contains lead.",
+    "final_choice": 4
+   },
+   {
+    "applied": true,
+    "baseline_choice": 3,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.845372200012207,
+     0.816112756729126
+    ],
+    "orig_sims": [
+     0.88427734375,
+     0.82177734375
+    ],
+    "new_scores": [
+     0.8989070653915405,
+     0.8071476221084595
+    ],
+    "attn_base": [
+     0.4088203012943268,
+     0.21882574260234833
+    ],
+    "attn_new": [
+     0.4484856128692627,
+     0.17916043102741241
+    ],
+    "group_mass": 0.6276460289955139,
+    "new_choice": 3,
+    "max_other_attn_change": 0.0,
+    "mode": "shadow",
+    "word": "lead",
+    "char_start": 38,
+    "text": "Our team lead says the water contains lead.",
+    "final_choice": 3
+   }
+  ]
+ },
+ {
+  "id": "D2",
+  "mode": "active",
+  "text": "Our team lead says the water contains lead.",
+  "expected": [
+   "LEED",
+   "LED"
+  ],
+  "synth_text": "Our team leed says the water contains led.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 9,
+    "end": 13,
+    "score": 9.40625,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 9,
+    "sense_similarity": 0.939453125,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 4,
+    "entry_carrier": "She is the lead of data science."
+   },
+   {
+    "word": "lead",
+    "start": 38,
+    "end": 42,
+    "score": 8.71875,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 38,
+    "sense_similarity": 0.88427734375,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 3,
+    "entry_carrier": "this toy is made of lead"
+   }
+  ],
+  "rerank": [
+   {
+    "applied": true,
+    "baseline_choice": 4,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.7817431092262268,
+     0.8614326119422913
+    ],
+    "orig_sims": [
+     0.859375,
+     0.939453125
+    ],
+    "new_scores": [
+     0.8195302486419678,
+     0.9792978763580322
+    ],
+    "attn_base": [
+     0.21160206198692322,
+     0.4694596827030182
+    ],
+    "attn_new": [
+     0.11462730914354324,
+     0.5664345026016235
+    ],
+    "group_mass": 0.6810617446899414,
+    "new_choice": 4,
+    "max_other_attn_change": 0.0,
+    "mode": "active",
+    "word": "lead",
+    "char_start": 9,
+    "text": "Our team lead says the water contains lead.",
+    "final_choice": 4
+   },
+   {
+    "applied": true,
+    "baseline_choice": 3,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.845372200012207,
+     0.816112756729126
+    ],
+    "orig_sims": [
+     0.88427734375,
+     0.82177734375
+    ],
+    "new_scores": [
+     0.8989070653915405,
+     0.8071476221084595
+    ],
+    "attn_base": [
+     0.4088203012943268,
+     0.21882574260234833
+    ],
+    "attn_new": [
+     0.4484856128692627,
+     0.17916043102741241
+    ],
+    "group_mass": 0.6276460289955139,
+    "new_choice": 3,
+    "max_other_attn_change": 0.0,
+    "mode": "active",
+    "word": "lead",
+    "char_start": 38,
+    "text": "Our team lead says the water contains lead.",
+    "final_choice": 3
+   }
+  ]
+ },
+ {
+  "id": "D3",
+  "mode": "baseline",
+  "text": "This toy is made of lead, and she is the lead of data science.",
+  "expected": [
+   "LED",
+   "LEED"
+  ],
+  "synth_text": "This toy is made of led, and she is the leed of data science.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 20,
+    "end": 24,
+    "score": 9.5234375,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 20,
+    "sense_similarity": 0.94970703125,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 3,
+    "entry_carrier": "this toy is made of lead"
+   },
+   {
+    "word": "lead",
+    "start": 41,
+    "end": 45,
+    "score": 8.703125,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 41,
+    "sense_similarity": 0.880859375,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 4,
+    "entry_carrier": "She is the lead of data science."
+   }
+  ],
+  "rerank": []
+ },
+ {
+  "id": "D3",
+  "mode": "shadow",
+  "text": "This toy is made of lead, and she is the lead of data science.",
+  "expected": [
+   "LED",
+   "LEED"
+  ],
+  "synth_text": "This toy is made of led, and she is the leed of data science.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 20,
+    "end": 24,
+    "score": 9.5234375,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 20,
+    "sense_similarity": 0.94970703125,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 3,
+    "entry_carrier": "this toy is made of lead"
+   },
+   {
+    "word": "lead",
+    "start": 41,
+    "end": 45,
+    "score": 8.703125,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 41,
+    "sense_similarity": 0.880859375,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 4,
+    "entry_carrier": "She is the lead of data science."
+   }
+  ],
+  "rerank": [
+   {
+    "applied": true,
+    "baseline_choice": 3,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.9769982099533081,
+     0.8001378178596497
+    ],
+    "orig_sims": [
+     0.94970703125,
+     0.890625
+    ],
+    "new_scores": [
+     1.0381371974945068,
+     0.8021947741508484
+    ],
+    "attn_base": [
+     0.5079119205474854,
+     0.28049561381340027
+    ],
+    "attn_new": [
+     0.7203525900840759,
+     0.06805499643087387
+    ],
+    "group_mass": 0.788407564163208,
+    "new_choice": 3,
+    "max_other_attn_change": 0.0,
+    "mode": "shadow",
+    "word": "lead",
+    "char_start": 20,
+    "text": "This toy is made of lead, and she is the lead of data science.",
+    "final_choice": 3
+   },
+   {
+    "applied": true,
+    "baseline_choice": 4,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.8270189166069031,
+     0.8685804605484009
+    ],
+    "orig_sims": [
+     0.8603515625,
+     0.880859375
+    ],
+    "new_scores": [
+     0.8395708203315735,
+     0.9016401767730713
+    ],
+    "attn_base": [
+     0.30269530415534973,
+     0.3737787902355194
+    ],
+    "attn_new": [
+     0.2365114688873291,
+     0.4399626553058624
+    ],
+    "group_mass": 0.6764740943908691,
+    "new_choice": 4,
+    "max_other_attn_change": 0.0,
+    "mode": "shadow",
+    "word": "lead",
+    "char_start": 41,
+    "text": "This toy is made of lead, and she is the lead of data science.",
+    "final_choice": 4
+   }
+  ]
+ },
+ {
+  "id": "D3",
+  "mode": "active",
+  "text": "This toy is made of lead, and she is the lead of data science.",
+  "expected": [
+   "LED",
+   "LEED"
+  ],
+  "synth_text": "This toy is made of led, and she is the leed of data science.",
+  "is_modified": true,
+  "gate_max": 1.0,
+  "delta_norm": 3.501953125,
+  "injection_mode": "multi_span_word_delta",
+  "matched_spans": [
+   {
+    "word": "lead",
+    "start": 20,
+    "end": 24,
+    "score": 9.5234375,
+    "gate": 1.0,
+    "phonetic_text": "led",
+    "char_start": 20,
+    "sense_similarity": 0.94970703125,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 3,
+    "entry_carrier": "this toy is made of lead"
+   },
+   {
+    "word": "lead",
+    "start": 41,
+    "end": 45,
+    "score": 8.703125,
+    "gate": 1.0,
+    "phonetic_text": "leed",
+    "char_start": 41,
+    "sense_similarity": 0.880859375,
+    "has_delta": true,
+    "entry_word": "lead",
+    "entry_index": 4,
+    "entry_carrier": "She is the lead of data science."
+   }
+  ],
+  "rerank": [
+   {
+    "applied": true,
+    "baseline_choice": 3,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.9769982099533081,
+     0.8001378178596497
+    ],
+    "orig_sims": [
+     0.94970703125,
+     0.890625
+    ],
+    "new_scores": [
+     1.0381371974945068,
+     0.8021947741508484
+    ],
+    "attn_base": [
+     0.5079119205474854,
+     0.28049561381340027
+    ],
+    "attn_new": [
+     0.7203525900840759,
+     0.06805499643087387
+    ],
+    "group_mass": 0.788407564163208,
+    "new_choice": 3,
+    "max_other_attn_change": 0.0,
+    "mode": "active",
+    "word": "lead",
+    "char_start": 20,
+    "text": "This toy is made of lead, and she is the lead of data science.",
+    "final_choice": 3
+   },
+   {
+    "applied": true,
+    "baseline_choice": 4,
+    "group": [
+     3,
+     4
+    ],
+    "labels": [
+     "led",
+     "leed"
+    ],
+    "ctx_sims": [
+     0.8270189166069031,
+     0.8685804605484009
+    ],
+    "orig_sims": [
+     0.8603515625,
+     0.880859375
+    ],
+    "new_scores": [
+     0.8395708203315735,
+     0.9016401767730713
+    ],
+    "attn_base": [
+     0.30269530415534973,
+     0.3737787902355194
+    ],
+    "attn_new": [
+     0.2365114688873291,
+     0.4399626553058624
+    ],
+    "group_mass": 0.6764740943908691,
+    "new_choice": 4,
+    "max_other_attn_change": 0.0,
+    "mode": "active",
+    "word": "lead",
+    "char_start": 41,
+    "text": "This toy is made of lead, and she is the lead of data science.",
+    "final_choice": 4
+   }
+  ]
+ },
+ {
+  "id": "E1",
+  "mode": "baseline",
+  "text": "Bispecific antibodies are becoming an important approach in cancer treatment.",
+  "expected": [],
+  "synth_text": "By specific antibodies are becoming an important approach in cancer treatment.",
+  "is_modified": true,
+  "gate_max": 0.0,
+  "delta_norm": 0.0,
+  "injection_mode": "pronunciation_only",
+  "matched_spans": [
+   {
+    "word": "Bispecific",
+    "start": 0,
+    "end": 10,
+    "score": 9.625,
+    "gate": 1.0,
+    "phonetic_text": "By specific",
+    "char_start": 0,
+    "sense_similarity": 1.0,
+    "has_delta": false,
+    "entry_word": "Bispecific",
+    "entry_index": 1,
+    "entry_carrier": "Bispecific antibodies are becoming an important approach in cancer treatment."
+   }
+  ],
+  "rerank": []
+ },
+ {
+  "id": "E1",
+  "mode": "shadow",
+  "text": "Bispecific antibodies are becoming an important approach in cancer treatment.",
+  "expected": [],
+  "synth_text": "By specific antibodies are becoming an important approach in cancer treatment.",
+  "is_modified": true,
+  "gate_max": 0.0,
+  "delta_norm": 0.0,
+  "injection_mode": "pronunciation_only",
+  "matched_spans": [
+   {
+    "word": "Bispecific",
+    "start": 0,
+    "end": 10,
+    "score": 9.625,
+    "gate": 1.0,
+    "phonetic_text": "By specific",
+    "char_start": 0,
+    "sense_similarity": 1.0,
+    "has_delta": false,
+    "entry_word": "Bispecific",
+    "entry_index": 1,
+    "entry_carrier": "Bispecific antibodies are becoming an important approach in cancer treatment."
+   }
+  ],
+  "rerank": [
+   {
+    "applied": false,
+    "baseline_choice": 1,
+    "mode": "shadow",
+    "word": "bispecific",
+    "char_start": 0,
+    "text": "Bispecific antibodies are becoming an important approach in cancer treatment.",
+    "final_choice": 1
+   }
+  ]
+ },
+ {
+  "id": "E1",
+  "mode": "active",
+  "text": "Bispecific antibodies are becoming an important approach in cancer treatment.",
+  "expected": [],
+  "synth_text": "By specific antibodies are becoming an important approach in cancer treatment.",
+  "is_modified": true,
+  "gate_max": 0.0,
+  "delta_norm": 0.0,
+  "injection_mode": "pronunciation_only",
+  "matched_spans": [
+   {
+    "word": "Bispecific",
+    "start": 0,
+    "end": 10,
+    "score": 9.625,
+    "gate": 1.0,
+    "phonetic_text": "By specific",
+    "char_start": 0,
+    "sense_similarity": 1.0,
+    "has_delta": false,
+    "entry_word": "Bispecific",
+    "entry_index": 1,
+    "entry_carrier": "Bispecific antibodies are becoming an important approach in cancer treatment."
+   }
+  ],
+  "rerank": [
+   {
+    "applied": false,
+    "baseline_choice": 1,
+    "mode": "active",
+    "word": "bispecific",
+    "char_start": 0,
+    "text": "Bispecific antibodies are becoming an important approach in cancer treatment.",
+    "final_choice": 1
+   }
+  ]
+ },
+ {
+  "id": "E2",
+  "mode": "baseline",
+  "text": "Rybervant is approved for the treatment of lung cancer.",
+  "expected": [],
+  "synth_text": "Ribrovant is approved for the treatment of lung cancer.",
+  "is_modified": true,
+  "gate_max": 0.0,
+  "delta_norm": 0.0,
+  "injection_mode": "pronunciation_only",
+  "matched_spans": [
+   {
+    "word": "Rybervant",
+    "start": 0,
+    "end": 9,
+    "score": 9.5390625,
+    "gate": 1.0,
+    "phonetic_text": "Ribrovant",
+    "char_start": 0,
+    "sense_similarity": 1.0,
+    "has_delta": false,
+    "entry_word": "Rybervant",
+    "entry_index": 2,
+    "entry_carrier": "Rybervant"
+   }
+  ],
+  "rerank": []
+ },
+ {
+  "id": "E2",
+  "mode": "shadow",
+  "text": "Rybervant is approved for the treatment of lung cancer.",
+  "expected": [],
+  "synth_text": "Ribrovant is approved for the treatment of lung cancer.",
+  "is_modified": true,
+  "gate_max": 0.0,
+  "delta_norm": 0.0,
+  "injection_mode": "pronunciation_only",
+  "matched_spans": [
+   {
+    "word": "Rybervant",
+    "start": 0,
+    "end": 9,
+    "score": 9.5390625,
+    "gate": 1.0,
+    "phonetic_text": "Ribrovant",
+    "char_start": 0,
+    "sense_similarity": 1.0,
+    "has_delta": false,
+    "entry_word": "Rybervant",
+    "entry_index": 2,
+    "entry_carrier": "Rybervant"
+   }
+  ],
+  "rerank": [
+   {
+    "word": "rybervant",
+    "char_start": 0,
+    "text": "Rybervant is approved for the treatment of lung cancer.",
+    "mode": "shadow",
+    "final_choice": 2
+   }
+  ]
+ },
+ {
+  "id": "E2",
+  "mode": "active",
+  "text": "Rybervant is approved for the treatment of lung cancer.",
+  "expected": [],
+  "synth_text": "Ribrovant is approved for the treatment of lung cancer.",
+  "is_modified": true,
+  "gate_max": 0.0,
+  "delta_norm": 0.0,
+  "injection_mode": "pronunciation_only",
+  "matched_spans": [
+   {
+    "word": "Rybervant",
+    "start": 0,
+    "end": 9,
+    "score": 9.5390625,
+    "gate": 1.0,
+    "phonetic_text": "Ribrovant",
+    "char_start": 0,
+    "sense_similarity": 1.0,
+    "has_delta": false,
+    "entry_word": "Rybervant",
+    "entry_index": 2,
+    "entry_carrier": "Rybervant"
+   }
+  ],
+  "rerank": [
+   {
+    "word": "rybervant",
+    "char_start": 0,
+    "text": "Rybervant is approved for the treatment of lung cancer.",
+    "mode": "active",
+    "final_choice": 2
+   }
+  ]
+ },
+ {
+  "id": "E3",
+  "mode": "baseline",
+  "text": "The weather is pleasant today.",
+  "expected": [],
+  "synth_text": "The weather is pleasant today.",
+  "is_modified": false,
+  "gate_max": 0.0,
+  "delta_norm": 0.0,
+  "injection_mode": "none",
+  "matched_spans": [],
+  "rerank": []
+ },
+ {
+  "id": "E3",
+  "mode": "shadow",
+  "text": "The weather is pleasant today.",
+  "expected": [],
+  "synth_text": "The weather is pleasant today.",
+  "is_modified": false,
+  "gate_max": 0.0,
+  "delta_norm": 0.0,
+  "injection_mode": "none",
+  "matched_spans": [],
+  "rerank": []
+ },
+ {
+  "id": "E3",
+  "mode": "active",
+  "text": "The weather is pleasant today.",
+  "expected": [],
+  "synth_text": "The weather is pleasant today.",
+  "is_modified": false,
+  "gate_max": 0.0,
+  "delta_norm": 0.0,
+  "injection_mode": "none",
+  "matched_spans": [],
+  "rerank": []
+ }
+]

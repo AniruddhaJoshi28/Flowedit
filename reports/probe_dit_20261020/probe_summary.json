@@ -1,0 +1,350 @@
+{
+  "protocol": {
+    "times": [
+      0.0,
+      0.5,
+      0.9
+    ],
+    "ks": [
+      1,
+      2,
+      3
+    ],
+    "noise_seed": 1234,
+    "prompt_text": "In oncology, delivery of breakthrough therapy is a high-stakes mission. ",
+    "n_val": 40,
+    "n_test": 40,
+    "layers": 22
+  },
+  "selected_on_validation": {
+    "rep": "L06",
+    "method": "prototype",
+    "val_mean_acc": 0.6666666666666666
+  },
+  "validation_ranking_top10": [
+    [
+      "L06|prototype",
+      0.667
+    ],
+    [
+      "L05|prototype",
+      0.658
+    ],
+    [
+      "L10|prototype",
+      0.65
+    ],
+    [
+      "L15|prototype",
+      0.65
+    ],
+    [
+      "L16|prototype",
+      0.65
+    ],
+    [
+      "L00|prototype",
+      0.642
+    ],
+    [
+      "L01|prototype",
+      0.642
+    ],
+    [
+      "L02|prototype",
+      0.642
+    ],
+    [
+      "L05|exemplar",
+      0.642
+    ],
+    [
+      "L06|exemplar",
+      0.642
+    ]
+  ],
+  "test": {
+    "k1": {
+      "probe_selected": [
+        0.675,
+        40
+      ],
+      "probe_selected_t0.5": [
+        0.65,
+        40
+      ],
+      "probe_selected_t0.9": [
+        0.65,
+        40
+      ],
+      "probe_text_embed_exemplar": [
+        0.7,
+        40
+      ],
+      "context_model": [
+        0.725,
+        40
+      ],
+      "pooled_model": [
+        0.7,
+        40
+      ],
+      "per_word": {
+        "lead": {
+          "probe": [
+            0.7,
+            10
+          ],
+          "context": [
+            0.8,
+            10
+          ]
+        },
+        "read": {
+          "probe": [
+            0.5,
+            10
+          ],
+          "context": [
+            0.4,
+            10
+          ]
+        },
+        "wound": {
+          "probe": [
+            0.875,
+            8
+          ],
+          "context": [
+            0.875,
+            8
+          ]
+        },
+        "live": {
+          "probe": [
+            0.625,
+            8
+          ],
+          "context": [
+            0.75,
+            8
+          ]
+        },
+        "tear": {
+          "probe": [
+            0.75,
+            4
+          ],
+          "context": [
+            1.0,
+            4
+          ]
+        }
+      }
+    },
+    "k2": {
+      "probe_selected": [
+        0.65,
+        40
+      ],
+      "probe_selected_t0.5": [
+        0.625,
+        40
+      ],
+      "probe_selected_t0.9": [
+        0.675,
+        40
+      ],
+      "probe_text_embed_exemplar": [
+        0.625,
+        40
+      ],
+      "context_model": [
+        0.825,
+        40
+      ],
+      "pooled_model": [
+        0.65,
+        40
+      ],
+      "per_word": {
+        "lead": {
+          "probe": [
+            0.7,
+            10
+          ],
+          "context": [
+            0.8,
+            10
+          ]
+        },
+        "read": {
+          "probe": [
+            0.5,
+            10
+          ],
+          "context": [
+            0.7,
+            10
+          ]
+        },
+        "wound": {
+          "probe": [
+            0.875,
+            8
+          ],
+          "context": [
+            0.875,
+            8
+          ]
+        },
+        "live": {
+          "probe": [
+            0.625,
+            8
+          ],
+          "context": [
+            0.875,
+            8
+          ]
+        },
+        "tear": {
+          "probe": [
+            0.5,
+            4
+          ],
+          "context": [
+            1.0,
+            4
+          ]
+        }
+      }
+    },
+    "k3": {
+      "probe_selected": [
+        0.675,
+        40
+      ],
+      "probe_selected_t0.5": [
+        0.675,
+        40
+      ],
+      "probe_selected_t0.9": [
+        0.725,
+        40
+      ],
+      "probe_text_embed_exemplar": [
+        0.75,
+        40
+      ],
+      "context_model": [
+        0.875,
+        40
+      ],
+      "pooled_model": [
+        0.65,
+        40
+      ],
+      "per_word": {
+        "lead": {
+          "probe": [
+            0.7,
+            10
+          ],
+          "context": [
+            0.9,
+            10
+          ]
+        },
+        "read": {
+          "probe": [
+            0.6,
+            10
+          ],
+          "context": [
+            0.9,
+            10
+          ]
+        },
+        "wound": {
+          "probe": [
+            0.875,
+            8
+          ],
+          "context": [
+            0.75,
+            8
+          ]
+        },
+        "live": {
+          "probe": [
+            0.5,
+            8
+          ],
+          "context": [
+            0.875,
+            8
+          ]
+        },
+        "tear": {
+          "probe": [
+            0.75,
+            4
+          ],
+          "context": [
+            1.0,
+            4
+          ]
+        }
+      }
+    }
+  },
+  "validation_curve_t0": {
+    "text_embed|exemplar": 0.592,
+    "text_embed|prototype": 0.617,
+    "L00|exemplar": 0.617,
+    "L00|prototype": 0.642,
+    "L01|exemplar": 0.617,
+    "L01|prototype": 0.642,
+    "L02|exemplar": 0.617,
+    "L02|prototype": 0.642,
+    "L03|exemplar": 0.608,
+    "L03|prototype": 0.633,
+    "L04|exemplar": 0.617,
+    "L04|prototype": 0.633,
+    "L05|exemplar": 0.642,
+    "L05|prototype": 0.658,
+    "L06|exemplar": 0.642,
+    "L06|prototype": 0.667,
+    "L07|exemplar": 0.633,
+    "L07|prototype": 0.642,
+    "L08|exemplar": 0.633,
+    "L08|prototype": 0.642,
+    "L09|exemplar": 0.625,
+    "L09|prototype": 0.633,
+    "L10|exemplar": 0.642,
+    "L10|prototype": 0.65,
+    "L11|exemplar": 0.617,
+    "L11|prototype": 0.642,
+    "L12|exemplar": 0.617,
+    "L12|prototype": 0.642,
+    "L13|exemplar": 0.608,
+    "L13|prototype": 0.642,
+    "L14|exemplar": 0.617,
+    "L14|prototype": 0.642,
+    "L15|exemplar": 0.608,
+    "L15|prototype": 0.65,
+    "L16|exemplar": 0.6,
+    "L16|prototype": 0.65,
+    "L17|exemplar": 0.6,
+    "L17|prototype": 0.625,
+    "L18|exemplar": 0.608,
+    "L18|prototype": 0.625,
+    "L19|exemplar": 0.617,
+    "L19|prototype": 0.625,
+    "L20|exemplar": 0.608,
+    "L20|prototype": 0.633,
+    "L21|exemplar": 0.608,
+    "L21|prototype": 0.633
+  }
+}

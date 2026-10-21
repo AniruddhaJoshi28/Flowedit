@@ -1,0 +1,28 @@
+{
+  "backbone_class": "F5TTSBackbone",
+  "api_class": "f5_tts.api.F5TTS",
+  "cfm_class": "CFM",
+  "transformer_class": "f5_tts.model.backbones.dit.DiT",
+  "checkpoint": "/home/rsurya/projects/flow_edit/Flowedit/models/f5tts/f5tts/F5TTS_Base/model_1200000.safetensors",
+  "checkpoint_bytes": 1348645281,
+  "checkpoint_sha256": "4180310f91d592cee4bc14998cd37c781f779cf105e8ca8744d9bd48ca7046ae",
+  "params_total": 337096804,
+  "transformer_dim": 1024,
+  "transformer_depth": 22,
+  "text_embed_weight": [
+    2546,
+    512
+  ],
+  "encode_text_shape": [
+    1,
+    32,
+    512
+  ],
+  "embedding_dim": 512,
+  "embedding_space": "F5TTSBackbone:512",
+  "character_level": true,
+  "device": "cuda:0",
+  "dtype": "torch.float16",
+  "gpu": "NVIDIA RTX A6000",
+  "torch": "2.10.0+cu128"
+}

@@ -1,0 +1,12 @@
+{
+  "pooled": {
+    "correct": 34,
+    "wrong": 28,
+    "abstain": 0
+  },
+  "context": {
+    "correct": 50,
+    "wrong": 12,
+    "abstain": 0
+  }
+}

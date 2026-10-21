@@ -104,7 +104,6 @@ def run_text(args) -> int:
     if args.memory and os.path.exists(args.memory):
         shutil.copy(args.memory, mem_path)
 
-    print(f"Sense encoder: {MemoryConfig().sense_encoder_model or '(disabled)'}")
     for bb in backbones:
         mem = HopfieldMemory(MemoryConfig(), bb.embedding_dim, bb.embedding_space, text_encoder=bb.encode_text)
         mem.load(mem_path)
